@@ -6,38 +6,10 @@ import os
 import errno
 import atexit
 import socket
-from sys import argv
+import sys
+import smbus
 from time import sleep
 from datetime import datetime
-
-class RadioBuffer(object):
-# fragsize: How long the block from data will be. Likely 8 or 32
-# delay: Time, in seconds, between frag updates
-# data: Complete string of all data to be sent
-# fragments: How many block of 8 or 32 characters the data is
-# frag: Current fragment to be sent by radio
-# tick: Counter to track time until next delay interval reached
-
-	def __init__(self, data='', fragsize=8, delay=4):
-		self.fragsize = fragsize
-		self.delay = delay
-		self.updateData(data)
-
-	def updateData(self, data):
-		self.data = data.ljust(self.fragsize) # Ensure at least one fragment
-		self.__fragments = (len(self.data) - 1) // self.fragsize + 1
-		self.__tick = self.delay - 1 # Setup nextTick to return true
-		self.__frag = self.__fragments - 1 # Setup currentFragment to start at the beginning
-
-	def currentFragment(self):
-		return (self.data[self.fragsize * self.__frag:self.fragsize * (self.__frag + 1)]).ljust(self.fragsize)
-
-	def nextTick(self):
-		self.__tick = (self.__tick + 1) % self.delay
-		if self.__tick == 0:
-			self.__frag = (self.__frag + 1) % self.__fragments
-			return True
-		return False
 
 @atexit.register
 def cleanup():
@@ -47,6 +19,7 @@ def cleanup():
 	except:
 		pass
 
+# TODO for PLUGIN: Clean up default values
 def read_config():
 	global config
 	config = {
@@ -76,7 +49,7 @@ def read_config():
 		'LoggingLevel': 'INFO'
 	}
 
-	configfile = os.getenv('CFGDIR', '/home/fpp/media/config') + '/plugin.Si4713_FM_RDS'
+	configfile = os.getenv('CFGDIR', '/home/fpp/media/config') + '/plugin.Dynamic_RDS'
 	try:
 		with open(configfile, 'r') as f:
         		for line in f:
@@ -94,41 +67,218 @@ def init_actions():
 	RDSText.delay = int(config['RDSTextDelay'])
 	RDSText.updateData(config['RDSTextText'])
 
-def Si4713_start():
-	global radio
-	global radio_ready
-	logging.info('Si4713 Start')
-	radio = Adafruit_Si4713(resetpin = int(config['GPIONumReset']))
+class basicI2C(object):
+  def __init__(self, address):
+    self.address = address
+    # TODO: Assuming SMBus of 1 on most modern hardware - Test what happens if this fails to setup a fall back to SMBus(0), maybe a config option?
+    self.bus = smbus.SMBus(1)
 
-	if config['Preemphasis'] == '50us':
-		radio.preemphasis = 1
+  def write(self, address, values):
+    # Simple i2c write - Always takes an list, even for 1 byte
+    logging.debug('I2C write at 0x{0:02x} of {1}'.format(address, ' '.join('0x{:02x}'.format(a) for a in values)))
+    for _ in range(3):
+      try:
+        self.bus.write_i2c_block_data(self.address, address, values)
+      except Exception:
+        logging.exception("write_i2c_block_data error")
+        continue
+      else:
+        break
+    else:
+      logging.error("failed to write after 3 attempts")
+      exit(-1)
 
-	if not radio.begin():
-		logging.error('Unable to initialize radio. Check that the Si4713 is connected, then restart FPPD.')
-		exit(1)
+  def read(self, address, num_bytes):
+    # Simple i2c read - Always returns a list
+    for _ in range(3):
+      try:
+        retVal = self.bus.read_i2c_block_data(self.address, address, num_bytes)
+        logging.debug('I2C read at 0x{0:02x} of {1} byte(s) returned {2}'.format(address, num_bytes, ' '.join('0x{:02x}'.format(a) for a in retVal)))
+        return retVal
+      except Exception:
+        logging.exception("read_i2c_block_data error")
+        continue
+      else:
+        break
+    else:
+      logging.error("failed to read after 3 attempts")
+      exit(-1)
 
-	radio.setTXpower(int(config['Power']), int(config['AntCap']))
-	radio.tuneFM(int(float(config['Frequency'])*100))
-	radio.pty = int(config['Pty'])
+# ======================
+# RDS Transmit Functions
+# ======================
 
-	if config['EnableRDS'] == 'True':
-		radio.beginRDS()
-		radio.setRDSstation(RDSStation.currentFragment())
+def MOCK_transmitRDS(rdsBytes):
+  # Useful for testing
+  logging.verbose('MOCK Transmit {0}'.format(' '.join('0x{:02x}'.format(a) for a in rdsBytes)))
+  sleep(0.0876)
 
-	radio_ready = True
-	logging.info('Radio initialized')
-	Si4713_status()
-	
-def Si4713_status():
-	logging.debug('Radio status')
-	radio.readTuneStatus()
-	radio.readASQ()
-	logging.info('Radio status --- Power: %s dBuV - ANTcap: %s - Noise level: %s - Frequency: %s - ASQ: %s - Inlevel: %s dBfs', radio.currdBuV, radio.currAntCap, radio.currNoiseLevel, radio.currFreq, hex(radio.currASQ), radio.currInLevel)
-	if radio.currFreq != int(float(config['Frequency'])*100):
-		logging.error('Radio frequency of %s does not match %s which is configured from %s', radio.currFreq, config['Frequency'], int(float(config['Frequency'])*100))
-	if radio.currdBuV != int(config['Power']):
-		logging.error('Radio power of %s does not match %s which is configured', radio.currdBuV, config['Power'])
-	
+def transmitRDS(rdsBytes):
+  # Specific to QN 8036 and 8066 chips
+  rdsStatusByte = transmitter.read(0x01, 1)[0]
+  rdsSendToggleBit = rdsStatusByte >> 1 & 0b1
+  rdsSentStatusToggleBit = transmitter.read(0x1a, 1)[0] >> 2 & 0b1
+  logging.verbose('Transmit {0} - Send Bit {1} - Status Bit {2}'.format(' '.join('0x{:02x}'.format(a) for a in rdsBytes), rdsSendToggleBit, rdsSentStatusToggleBit))
+  transmitter.write(0x1c, rdsBytes)
+  transmitter.write(0x01, [rdsStatusByte ^ 0b10])
+  # RDS specifications indicate 87.6ms to send a group
+  # sleep is a bit less, plus time to read the status toggle bit
+  # In testing, loop is only executed once about every 30 seconds
+  sleep(0.0865)
+  while (transmitter.read(0x1a, 1)[0] >> 2 & 1) == rdsSentStatusToggleBit:
+    logging.verbose('Waiting for rdsSentStatusToggleBit to flip')
+    sleep(0.001)
+    # TODO: If we hit this more than a few times, something is wrong....how to reset? Maybe a max number of tries, then move on?
+
+# ==================
+# RDS Buffer Classes
+# ==================
+# This holds the current entire RDS data to send, how much can be displayed at a time, how many chars per RDS group, and how long between updates
+# Data - Entire string to show on RDS Screen over time - updateData called once per track, resets all counters
+# Fragment - What's on a single RDS Screen - Hold 8 for PS or 32/64 chars for RT - sendNextGroup tracks time to determine when to move to next fragment
+# Group - Single RDS Data Packet - Holds 2 or 4 chars - sendNextGroup called multiple times per second
+
+class RDSBuffer(object):
+  def __init__(self, data='', frag_size=0, group_size=0, delay=4):
+    self.frag_size = frag_size
+    self.group_size = group_size
+    self.delay = delay
+    self.updateData(data)
+
+  def updateData(self, data):
+    self.fragments = []
+    self.currentFragment = 0
+    self.lastFragmentTime = datetime.now()
+    self.currentGroup = 0
+    for i in range(0, len(data), self.frag_size):
+      self.fragments.append(data[i : i + self.frag_size])
+    # TODO: Improve how we cut up the data (smart split) - Align with spaces, etc
+    # TODO: Maybe provide an option between strict split and smart split
+
+class PSBuffer(RDSBuffer):
+  # Sends RDS type 0B groups - Program Service
+  # Fragment size of 8, Groups send 2 characters at a time
+  def __init__(self, data, delay=4):
+    super(PSBuffer, self).__init__(data, 8, 2, delay)
+
+  def updateData(self, data):
+    super(PSBuffer, self).updateData(data)
+    # Adjust last fragment to make all 8 characters long
+    self.fragments[-1] = self.fragments[-1].ljust(self.frag_size)
+    logging.info('Updated PS Data {}'.format(self.fragments))
+    logging.info('PS Fragment \'{}\''.format(self.fragments[self.currentFragment]))
+
+  def sendNextGroup(self):
+    if self.currentGroup == 0 and (datetime.now() - self.lastFragmentTime).total_seconds() >= self.delay:
+      self.currentFragment = (self.currentFragment + 1) % len(self.fragments)
+      self.lastFragmentTime = datetime.now()
+      logging.info('PS Fragment \'{}\''.format(self.fragments[self.currentFragment]))
+
+    # TODO: Seems like this could be improved
+    rdsBytes = [pi_byte1, pi_byte2, 0b10<<2 | pty>>3, (0b00111 & pty)<<5 | self.currentGroup, pi_byte1, pi_byte2]
+    rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size]))
+    rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size + 1]))
+
+    # Will block for ~87.6ms for RDS Group to be sent
+    #MOCK_transmitRDS([pi_byte1, pi_byte2, 0b10<<2 | pty>>3, (0b00111 & pty)<<5 | self.currentGroup, pi_byte1, pi_byte2, ord(char1), ord(char2)])
+    transmitRDS(rdsBytes)
+    self.currentGroup = (self.currentGroup + 1) % (self.frag_size // self.group_size)
+    print (self.currentGroup)
+
+class RTBuffer(RDSBuffer):
+  # Sends RDS type 2A groups - RadioText
+  # Max fragment size of 64, Groups send 4 characters at a time
+  def __init__(self, data, delay=7):
+    self.ab = 0
+    super(RTBuffer, self).__init__(data, 32, 4, delay)
+
+  def updateData(self, data):
+    super(RTBuffer, self).updateData(data)
+    # Add 0x0d to end of last fragment to indicate RT is done
+    if len(self.fragments[-1]) < self.frag_size:
+      self.fragments[-1] += chr(0x0d)
+    self.ab = not self.ab
+    logging.info('Updated RT Data {}'.format(self.fragments))
+    logging.info('RT Fragment \'{}\''.format(self.fragments[self.currentFragment].replace('\r','\\r')))
+
+  def sendNextGroup(self):
+    # Will block for ~80-90ms for RDS Group to be sent
+    # Check time, if it has been long enough AND a full RT fragment has been sent, move to next fragment
+    # Flip A/B bit, send next group, if last group set full RT sent flag
+    # Need to make sure full RT group has been sent at least once before moving on
+    if self.currentGroup == 0 and (datetime.now() - self.lastFragmentTime).total_seconds() >= self.delay:
+      self.currentFragment = (self.currentFragment + 1) % len(self.fragments)
+      self.lastFragmentTime = datetime.now()
+      self.ab = not self.ab
+      logging.info('RT Fragment \'{}\''.format(self.fragments[self.currentFragment].replace('\r','\\r')))
+
+    # TODO: Seems like this could be improved
+    #RDS_RT = [pi_byte1, pi_byte2, gtype<<4 | b0<<3 | tp<<2 | pty>>3, ((pty & 4) + (pty & 2) + (pty & 1))<<5 | ab<<4 | c<<3, ord('I'), ord(' '), ord('g'), ord('o')]
+    rdsBytes = [pi_byte1, pi_byte2, 0b1000<<2 | pty>>3, (0b00111 & pty)<<5 | self.ab<<4 | self.currentGroup]
+    rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size]))
+    rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size + 1]) if len(self.fragments[self.currentFragment]) - self.currentGroup * self.group_size >= 2 else 0x20)
+    rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size + 2]) if len(self.fragments[self.currentFragment]) - self.currentGroup * self.group_size >= 3 else 0x20)
+    rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size + 3]) if len(self.fragments[self.currentFragment]) - self.currentGroup * self.group_size >= 4 else 0x20)
+
+    # Will block for ~87.6ms for RDS Group to be sent
+    #MOCK_transmitRDS([pi_byte1, pi_byte2, 0b1000<<2 | pty>>3, (0b00111 & pty)<<5 | self.ab<<4 | self.currentGroup, ord(char1), ord(char2), ord(char3), ord(char4)])
+    transmitRDS(rdsBytes)
+
+    self.currentGroup += 1
+    if self.currentGroup * self.group_size >= len(self.fragments[self.currentFragment]):
+      self.currentGroup = 0
+
+def QN8066_init():
+  # TODO: Expand to all the QN8066 init work
+  # Start RDS
+  try:
+    if not (transmitter.read(0x01, 1)[0]>>6 & 1):
+      transmitter.write(0x01, [0x41])
+      sleep(0.5)
+  except Exception:
+    logging.error('Failed to initialize transmitter')
+    exit(-1)
+
+# ====================
+# Main line code start
+# ====================
+logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+# Setup logging
+script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+#logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+
+# Adding in verbose log level between debug and info
+# Allow for debug to be really detailed
+# Verbose is as deep as most people would want
+VERBOSE = 15
+
+def verbose(msg, *args, **kwargs):
+  if logging.getLogger().isEnabledFor(VERBOSE):
+    logging.log(VERBOSE, msg, *args, **kwargs)
+
+logging.addLevelName(15, 'VERBOSE')
+logging.VERBOSE = VERBOSE
+logging.verbose = verbose
+logging.Logger.verbose = verbose
+
+logging.getLogger().setLevel(logging.VERBOSE);
+
+logging.info('--------');
+
+# Establish lock via socket or exit if failed
+try:
+	lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+	lock_socket.bind('\0Dynamic_RDS_Engine')
+	logging.debug('Lock created')
+except:
+	logging.error('Unable to create lock. Another instance of Dynamic_RDS_Engine.py running?')
+	exit(1)
+
+
+
+transmitter = basicI2C(0x21)
+QN8066_init()
+
 def updateRDSData():
 	logging.info('Updating RDS Data')
 	logging.debug('Title %s', title)
@@ -169,11 +319,13 @@ def nearest(str, size):
 	# -(-X // Y) functions as ceiling division
 	return -(-len(str) // size) * size
 
+# ===============================================================================================
+
 # Common variables
 radio_ready = False
 
-RDSStation = RadioBuffer('', 8, 4)
-RDSText = RadioBuffer('', 32, 7)
+#RDSStation = RadioBuffer('', 8, 4)
+#RDSText = RadioBuffer('', 32, 7)
 
 title = ''
 artist = ''
@@ -183,22 +335,10 @@ length = 0
 radio = None
 config = {}
 
-# Setup logging
-script_dir = os.path.dirname(os.path.abspath(argv[0]))
 
-logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
-logging.info("----------")
+#logging.info("----------")
 
 #init_actions()
-
-# Establish lock via socket or exit if failed
-try:
-	lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-	lock_socket.bind('\0Dynamic_RDS_Engine')
-	logging.debug('Lock created')
-except:
-	logging.error('Unable to create lock. Another instance of Dynamic_RDS_Engine.py running?')
-	exit(1)
 
 # Setup fifo
 fifo_path = script_dir + "/Dynamic_RDS_FIFO"
@@ -212,29 +352,29 @@ except OSError as oe:
 		logging.debug('Fifo already exists')
 
 # Main loop
-with open(fifo_path, 'r', 0) as fifo:
+with open(fifo_path, 'r') as fifo:
 	while True:
 		line = fifo.readline().rstrip()
 		if len(line) > 0:
 			logging.debug('line %s', line)
 			if line == 'EXIT':
 				logging.info('Processing exit')
-				radio.reset()
+				#radio.reset()
 				exit()
 
 			elif line == 'RESET':
 				logging.info('Processing reset')
-				read_config()
-				radio = None
-				radio = Adafruit_Si4713(resetpin = int(config['GPIONumReset']))
-				radio.reset()
-				radio_ready = False
+				#read_config()
+				#radio = None
+				#radio = Adafruit_Si4713(resetpin = int(config['GPIONumReset']))
+				#radio.reset()
+				#radio_ready = False
 				if config['Start'] == "FPPDStart":
 					Si4713_start()
 
 			elif line == 'INIT':
 				logging.info('Processing init')
-				init_actions()
+				#init_actions()
 				if config['Start'] == "FPPDStart":
 					Si4713_start()
 
@@ -251,9 +391,9 @@ with open(fifo_path, 'r', 0) as fifo:
 				updateRDSData()
 
 				if config['Stop'] == "PlaylistStop":
-					radio.reset()
-					radio = None
-					radio_ready = False
+					#radio.reset()
+					#radio = None
+					#radio_ready = False
 					logging.info('Radio stopped')
 
 			elif line[0] == 'T':
@@ -268,9 +408,9 @@ with open(fifo_path, 'r', 0) as fifo:
 				logging.debug('Processing track number')
 				tracknum = line[1:]
 				# TANL is always sent together with N being last item for RDS, so we only need to update the RDS Data once with the new values
-				updateRDSData()
+				#updateRDSData()
 				# Check radio status between each track
-				Si4713_status()
+				#Si4713_status()
 
 			elif line[0] == 'L':
 				logging.debug('Processing length')
@@ -284,17 +424,17 @@ with open(fifo_path, 'r', 0) as fifo:
 			if radio_ready:
 				if RDSStation.nextTick():
 					logging.debug('Station Fragment [%s]', RDSStation.currentFragment())
-					radio.setRDSstation(RDSStation.currentFragment())
+					#radio.setRDSstation(RDSStation.currentFragment())
 				if RDSText.nextTick():
 					logging.debug('Buffer Fragment  [%s]', RDSText.currentFragment())
-					radio.setRDSbuffer(RDSText.currentFragment())
+					#radio.setRDSbuffer(RDSText.currentFragment())
 
 			length = length - 1
 			if length == 0:
 				title = ''
 				artist = ''
 				tracknum = ''
-				updateRDSData()
+				#updateRDSData()
 
 			# Sleep until the top of the next second
 			sleep ((1000000 - datetime.now().microsecond) / 1000000.0)

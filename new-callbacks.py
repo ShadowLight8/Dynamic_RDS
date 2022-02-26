@@ -28,7 +28,7 @@ logging.debug('Arguments %s', argv[1:])
 # Environ has a few useful items when FPPD runs callbacks.py, but logging it all the time, even at debug, is too much
 #logging.debug('Environ %s', os.environ)
 
-# Always start the Updater since it does the real work for all command
+# Always start the Engine since it does the real work for all command
 updater_path = script_dir + '/Dynamic_RDS_Engine.py'
 try:
 	logging.debug('Checking for socket lock by %s', updater_path)
@@ -42,7 +42,7 @@ try:
 except socket.error:
 	logging.debug('Lock found - %s is running', updater_path)
 
-# Always setup FIFO
+# Always setup FIFO - Expects Engine to be running to open the read side of the FIFO
 fifo_path = script_dir + '/Dynamic_RDS_FIFO'
 try:
 	logging.debug('Setting up write side of fifo %s', fifo_path)
@@ -56,7 +56,8 @@ except OSError as oe:
 with open(fifo_path, 'w') as fifo:
 	logging.info('Processing %s', argv[1])
 	if argv[1] == '--list':
-		fifo.write('INIT\n')
+                # Typically called first and will block if read side isn't open
+		fifo.write('INIT\n') 
 		print('media,playlist')
 
 	elif argv[1] == '--reset':
@@ -64,7 +65,7 @@ with open(fifo_path, 'w') as fifo:
 		fifo.write('RESET\n')
 
 	elif argv[1] == '--exit':
-		# Not used by FPPD, but useful for testing
+		# Not used by FPPD, but useful for testing or scripting
 		fifo.write('EXIT\n')
 
 	elif argv[1] == '--type' and argv[2] == 'media':
@@ -86,13 +87,13 @@ with open(fifo_path, 'w') as fifo:
 		logging.debug('Track # is %s', media_tracknum)
 		logging.debug('Length is %s', media_length)
 
+                # TODO: Review this case - what to send to Engine
 		if media_type == 'pause' or media_type == 'event':
 			fifo.write('T\n') # Blank Title
 			fifo.write('A\n') # Blank Artist
 		else:
 			fifo.write('T' + media_title + '\n')
 			fifo.write('A' + media_artist + '\n')
-		# TODO: Will tracknum and length never show up at the wrong time?
 		fifo.write('N' + media_tracknum + '\n')
 		fifo.write('L' + media_length + '\n')
 
