@@ -1,6 +1,4 @@
-#!/usr/bin/python
-
-exit()
+#!/usr/bin/python3
 
 import logging
 import json
@@ -11,7 +9,6 @@ import socket
 from sys import argv
 from time import sleep
 from datetime import datetime
-from Adafruit_Si4713 import Adafruit_Si4713
 
 class RadioBuffer(object):
 # fragsize: How long the block from data will be. Likely 8 or 32
@@ -189,22 +186,22 @@ config = {}
 # Setup logging
 script_dir = os.path.dirname(os.path.abspath(argv[0]))
 
-logging.basicConfig(filename=script_dir + '/Si4713_updater.log', level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
 logging.info("----------")
 
-init_actions()
+#init_actions()
 
 # Establish lock via socket or exit if failed
 try:
 	lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-	lock_socket.bind('\0Si4713_RDS_Updater')
+	lock_socket.bind('\0Dynamic_RDS_Engine')
 	logging.debug('Lock created')
 except:
-	logging.error('Unable to create lock. Another instance of Si4713_RDS_Updater.py running?')
+	logging.error('Unable to create lock. Another instance of Dynamic_RDS_Engine.py running?')
 	exit(1)
 
 # Setup fifo
-fifo_path = script_dir + "/Si4713_FM_RDS_FIFO"
+fifo_path = script_dir + "/Dynamic_RDS_FIFO"
 try:
 	logging.debug('Setting up read side of fifo %s', fifo_path)
 	os.mkfifo(fifo_path)

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import logging
 import json
@@ -10,18 +10,18 @@ from sys import argv
 from time import sleep
 
 if len(argv) <= 1:
-	print 'Usage:'
-	print '   --list     | Used by fppd at startup. Used to start up the QN8066_RDS_Updater.py script'
-	print '   --reset    | Function by plugin_setup.php to reset the GPIO pin connected to the QN8066'
-	print '   --exit     | Function used to shutdown the QN8066_RDS_Updater.py script'
-	print '   --type media --data \'{...}\'    | Used by fppd when a new items starts in a playlist'
-	print '   --type playlist --data \'{...}\' | Used by fppd when a playlist starts or stops'
-	print 'Note: Running with sudo might be needed for manual execution'
+	print('Usage:')
+	print('   --list     | Used by fppd at startup. Used to start up the Dynamic_RDS_Engine.py script')
+	print('   --reset    | Function by plugin_setup.php to reset the GPIO pin')
+	print('   --exit     | Function used to shutdown the Dynamic_RDS_Engine.py script')
+	print('   --type media --data \'{..json..}\'    | Used by fppd when a new items starts in a playlist')
+	print('   --type playlist --data \'{..json..}\' | Used by fppd when a playlist starts or stops')
+	print('Note: Running with sudo might be needed for manual execution')
 	exit()
 
 script_dir = os.path.dirname(os.path.abspath(argv[0]))
 
-logging.basicConfig(filename=script_dir + '/QN8066_callbacks.log', level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+logging.basicConfig(filename=script_dir + '/Dynamic_RDS_callbacks.log', level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
 logging.info('----------')
 logging.debug('Arguments %s', argv[1:])
 
@@ -29,11 +29,11 @@ logging.debug('Arguments %s', argv[1:])
 #logging.debug('Environ %s', os.environ)
 
 # Always start the Updater since it does the real work for all command
-updater_path = script_dir + '/QN8066_RDS_Updater.py'
+updater_path = script_dir + '/Dynamic_RDS_Engine.py'
 try:
 	logging.debug('Checking for socket lock by %s', updater_path)
 	lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-	lock_socket.bind('QN8066_RDS_Updater')
+	lock_socket.bind('\0Dynamic_RDS_Engine')
 	lock_socket.close()
 	logging.debug('Lock not found')
 	logging.info('Starting %s', updater_path)
@@ -43,7 +43,7 @@ except socket.error:
 	logging.debug('Lock found - %s is running', updater_path)
 
 # Always setup FIFO
-fifo_path = script_dir + '/QN8066_FM_RDS_FIFO'
+fifo_path = script_dir + '/Dynamic_RDS_FIFO'
 try:
 	logging.debug('Setting up write side of fifo %s', fifo_path)
 	os.mkfifo(fifo_path)
@@ -57,7 +57,7 @@ with open(fifo_path, 'w') as fifo:
 	logging.info('Processing %s', argv[1])
 	if argv[1] == '--list':
 		fifo.write('INIT\n')
-		print 'media,playlist'
+		print('media,playlist')
 
 	elif argv[1] == '--reset':
 		# Not used by FPPD, but used by plugin_setup.php
