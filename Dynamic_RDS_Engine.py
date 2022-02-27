@@ -20,6 +20,7 @@ def cleanup():
 		pass
 
 # TODO for PLUGIN: Clean up default values
+# TODO for PLUGIN: Make sure all defaults support working out of the box
 def read_config():
 	global config
 	config = {
@@ -39,7 +40,7 @@ def read_config():
 		'StationTrackNum': 'True',
 		'StationTrackNumSuf': 'of 4',
 		'RDSTextDelay': '7',
-		'RDSTextText': 'Happy   Hallo-     -ween',
+		'RDSTextText': 'Happy Halloween!!',
 		'RDSTextTitle': 'True',
 		'RDSTextArtist': 'True',
 		'RDSTextTrackNumPre': 'Track ',
@@ -59,13 +60,6 @@ def read_config():
 		logging.warning('No config file found, using defaults.')
 	#logging.getLogger().setLevel(config['LoggingLevel'])
 	logging.info('Config %s', config)
-
-def init_actions():
-	read_config()
-	RDSStation.delay = int(config['StationDelay'])
-	RDSStation.updateData(config['StationText'])
-	RDSText.delay = int(config['RDSTextDelay'])
-	RDSText.updateData(config['RDSTextText'])
 
 class basicI2C(object):
   def __init__(self, address):
@@ -153,7 +147,7 @@ class RDSBuffer(object):
     for i in range(0, len(data), self.frag_size):
       self.fragments.append(data[i : i + self.frag_size])
     # TODO: Improve how we cut up the data (smart split) - Align with spaces, etc
-    # TODO: Maybe provide an option between strict split and smart split
+    #       In context of an FPP Plugin, have main script function deal with this and keep transmitter impl simple
 
 class PSBuffer(RDSBuffer):
   # Sends RDS type 0B groups - Program Service
@@ -238,69 +232,15 @@ def QN8066_init():
     logging.error('Failed to initialize transmitter')
     exit(-1)
 
-# ====================
-# Main line code start
-# ====================
-#logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
-# Setup logging
-script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
-
-# Adding in verbose log level between debug and info
-# Allow for debug to be really detailed
-# Verbose is as deep as most people would want
-VERBOSE = 15
-
-def verbose(msg, *args, **kwargs):
-  if logging.getLogger().isEnabledFor(VERBOSE):
-    logging.log(VERBOSE, msg, *args, **kwargs)
-
-logging.addLevelName(15, 'VERBOSE')
-logging.VERBOSE = VERBOSE
-logging.verbose = verbose
-logging.Logger.verbose = verbose
-
-logging.getLogger().setLevel(logging.INFO);
-
-logging.info('--------');
-
-# Global RDS Values
-title = ''
-artist = ''
-tracknum = ''
-length = 0
-
-config = {}
-read_config()
-
-PS = PSBuffer(' ', 4)
-RT = RTBuffer(' ', 7)
-
-# RDS Global Values
-pi_byte1 = 0x81
-pi_byte2 = 0x9b
-pty = 0b00010
-
-# Establish lock via socket or exit if failed
-try:
-	lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-	lock_socket.bind('\0Dynamic_RDS_Engine')
-	logging.debug('Lock created')
-except:
-	logging.error('Unable to create lock. Another instance of Dynamic_RDS_Engine.py running?')
-	exit(1)
-
-transmitter = basicI2C(0x21)
-QN8066_init()
-
 def updateRDSData():
+	# TODO: Maybe provide an option between strict split and smart split
 	logging.info('Updating RDS Data')
 	logging.debug('Title %s', title)
 	logging.debug('Artist %s', artist)
 	logging.debug('Tracknum %s', tracknum)
-	logging.debug('Length %s', length)
+	logging.debug('Length %s', tracklength)
 
-	# TODO: Add ability for transmitting length
+	# TODO: Add ability for transmitting tracklength
 	
 	tmp_StationTitle = title if config['StationTitle'] == 'True' else ''
 	tmp_StationArtist = artist if config['StationArtist'] == 'True' else ''
@@ -336,16 +276,40 @@ def nearest(str, size):
 	# -(-X // Y) functions as ceiling division
 	return -(-len(str) // size) * size
 
-# ===============================================================================================
+# ===============
+# Main code start
+# ===============
 
-# Common variables
-radio_ready = False
+# Setup logging
+script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
 
-radio = None
+# Adding in verbose log level between debug and info
+# Allow for debug to be really detailed
+# Verbose is as deep as most people would want
+VERBOSE = 15
 
-#logging.info("----------")
+def verbose(msg, *args, **kwargs):
+  if logging.getLogger().isEnabledFor(VERBOSE):
+    logging.log(VERBOSE, msg, *args, **kwargs)
 
-#init_actions()
+logging.addLevelName(15, 'VERBOSE')
+logging.VERBOSE = VERBOSE
+logging.verbose = verbose
+logging.Logger.verbose = verbose
+
+logging.getLogger().setLevel(logging.INFO);
+
+logging.info('--------');
+
+# Establish lock via socket or exit if failed
+try:
+	lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+	lock_socket.bind('\0Dynamic_RDS_Engine')
+	logging.debug('Lock created')
+except:
+	logging.error('Unable to create lock. Another instance of Dynamic_RDS_Engine.py running?')
+	exit(1)
 
 # Setup fifo
 fifo_path = script_dir + "/Dynamic_RDS_FIFO"
@@ -358,7 +322,45 @@ except OSError as oe:
 	else:
 		logging.debug('Fifo already exists')
 
-# Main loop
+# Global RDS Values
+title = ''
+artist = ''
+tracknum = ''
+tracklength = 0
+
+# Get config populated and/or loaded
+config = {}
+read_config()
+
+# RDS Global Values
+# TODO: These need to come from config
+pi_byte1 = 0x81
+pi_byte2 = 0x9b
+pty = 0b00010
+
+# Setup transmitter
+# TODO: This will eventually be more like
+# Transmitter parent class
+#   QN8066 child class
+#   Si4713 child class
+# Transmitter interface
+#   setup - Initialization of transmitter
+#   reset - Back to an initial state; Si4713 is done with a reset pin; QN8066 by I2C write
+#   PSBuffer 
+#   RTBuffer
+#   sendNextGroup
+
+PS = PSBuffer(' ', 4)
+RT = RTBuffer(' ', 7)
+transmitter = basicI2C(0x21)
+QN8066_init()
+
+# =========
+# Main Loop
+# =========
+
+# Check if new information is in the FIFO and process accordingly
+# ?(Always or when no new info)? send the next RDS groups each loop
 with open(fifo_path, 'r') as fifo:
 	while True:
 		line = fifo.readline().rstrip()
@@ -381,26 +383,25 @@ with open(fifo_path, 'r') as fifo:
 
 			elif line == 'INIT':
 				logging.info('Processing init')
-				#init_actions()
+				# TODO: Setup non-transmitter items, assuming this isn't defaultly done
 				if config['Start'] == "FPPDStart":
-					print('start after init')
+					print('start transmitter after init')
 
 			elif line == 'START':
 				logging.info('Processing start')
 				if config['Start'] == "PlaylistStart":
-					print('start with playlist start')
+					print('start transmitter with playlist start')
 
 			elif line == 'STOP':
 				logging.info('Processing stop')
 				title = ''
 				artist = ''
 				tracknum = ''
+				tracklength = '0'
 				updateRDSData()
 
 				if config['Stop'] == "PlaylistStop":
-					#radio.reset()
-					#radio = None
-					#radio_ready = False
+					# TODO: Stop transmitter
 					logging.info('Radio stopped')
 
 			elif line[0] == 'T':
@@ -417,13 +418,12 @@ with open(fifo_path, 'r') as fifo:
 
 			elif line[0] == 'L':
 				logging.debug('Processing length')
-				length = max(int(line[1:10]) - max(int(config['StationDelay']), int(config['RDSTextDelay'])), 1)
-				logging.debug('Length %s', int(length))
+				tracklength = max(int(line[1:10]) - max(int(config['StationDelay']), int(config['RDSTextDelay'])), 1)
+				logging.debug('Length %s', int(tracklength))
 
 				# TANL is always sent together with L being last item, so we only need to update the RDS Data once with the new values
 				updateRDSData()
-				# Check radio status between each track
-				#Si4713_status()
+				# TODO: Check radio status between each track
 
 			else:
 				logging.error('Unknown fifo input %s', line)
@@ -431,20 +431,5 @@ with open(fifo_path, 'r') as fifo:
 		else:
 			PS.sendNextGroup()
 			RT.sendNextGroup()
-			#if radio_ready:
-			#	if RDSStation.nextTick():
-			#		logging.debug('Station Fragment [%s]', RDSStation.currentFragment())
-					#radio.setRDSstation(RDSStation.currentFragment())
-			#	if RDSText.nextTick():
-			#		logging.debug('Buffer Fragment  [%s]', RDSText.currentFragment())
-					#radio.setRDSbuffer(RDSText.currentFragment())
-
-			#length = length - 1
-			#if length == 0:
-			#	title = ''
-			#	artist = ''
-			#	tracknum = ''
-				#updateRDSData()
-
-			# Sleep until the top of the next second
-			#sleep ((1000000 - datetime.now().microsecond) / 1000000.0)
+			# TODO: Determine when track length is done to reset RDS
+			# TODO: Could add 1 sec to length, so normally track change will update data rather than time expiring. Reset should only happen when playlist is stopped?

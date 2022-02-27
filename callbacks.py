@@ -7,7 +7,6 @@ import errno
 import subprocess
 import socket
 from sys import argv
-from time import sleep
 
 if len(argv) <= 1:
 	print('Usage:')
@@ -84,10 +83,10 @@ with open(fifo_path, 'w') as fifo:
 		logging.debug('Type is %s', media_type)
 		logging.debug('Title is %s', media_title)
 		logging.debug('Artist is %s', media_artist)
-		logging.debug('Track # is %s', media_tracknum)
+		logging.debug('Tracknum is %s', media_tracknum)
 		logging.debug('Length is %s', media_length)
 
-                # TODO: Review this case - what to send to Engine
+                # TODO: Review this case - what to send to Engine for other playlist events
 		if media_type == 'pause' or media_type == 'event':
 			fifo.write('T\n') # Blank Title
 			fifo.write('A\n') # Blank Artist
