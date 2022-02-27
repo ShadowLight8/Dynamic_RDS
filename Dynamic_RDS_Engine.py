@@ -181,7 +181,7 @@ class PSBuffer(RDSBuffer):
 
     # Will block for ~87.6ms for RDS Group to be sent
     #MOCK_transmitRDS([pi_byte1, pi_byte2, 0b10<<2 | pty>>3, (0b00111 & pty)<<5 | self.currentGroup, pi_byte1, pi_byte2, ord(char1), ord(char2)])
-    MOCK_transmitRDS(rdsBytes)
+    transmitRDS(rdsBytes)
     self.currentGroup = (self.currentGroup + 1) % (self.frag_size // self.group_size)
 
 class RTBuffer(RDSBuffer):
@@ -221,7 +221,7 @@ class RTBuffer(RDSBuffer):
 
     # Will block for ~87.6ms for RDS Group to be sent
     #MOCK_transmitRDS([pi_byte1, pi_byte2, 0b1000<<2 | pty>>3, (0b00111 & pty)<<5 | self.ab<<4 | self.currentGroup, ord(char1), ord(char2), ord(char3), ord(char4)])
-    MOCK_transmitRDS(rdsBytes)
+    transmitRDS(rdsBytes)
 
     self.currentGroup += 1
     if self.currentGroup * self.group_size >= len(self.fragments[self.currentFragment]):
@@ -241,10 +241,10 @@ def QN8066_init():
 # ====================
 # Main line code start
 # ====================
-logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+#logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
 # Setup logging
 script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-#logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
 
 # Adding in verbose log level between debug and info
 # Allow for debug to be really detailed
@@ -377,18 +377,18 @@ with open(fifo_path, 'r') as fifo:
 				#radio.reset()
 				#radio_ready = False
 				if config['Start'] == "FPPDStart":
-					Si4713_start()
+					print('start after reset')
 
 			elif line == 'INIT':
 				logging.info('Processing init')
 				#init_actions()
 				if config['Start'] == "FPPDStart":
-					print('init')
+					print('start after init')
 
 			elif line == 'START':
 				logging.info('Processing start')
 				if config['Start'] == "PlaylistStart":
-					Si4713_start()
+					print('start with playlist start')
 
 			elif line == 'STOP':
 				logging.info('Processing stop')
