@@ -46,7 +46,7 @@ def read_config():
 		'RDSTextTrackNum': 'True',
 		'RDSTextTrackNumSuf': 'of 4',
 		'Pty': '2',
-		'LoggingLevel': 'INFO'
+		'LoggingLevel': 'DEBUG'
 	}
 
 	configfile = os.getenv('CFGDIR', '/home/fpp/media/config') + '/plugin.Dynamic_RDS'
@@ -56,9 +56,9 @@ def read_config():
                 		(key, val) = line.split(' = ')
 	                	config[key] = val.replace('"', '').strip()
 	except IOError:
-		logging.warn('No config file found, using defaults.')
-	logging.getLogger().setLevel(config['LoggingLevel'])
-	logging.debug('Config %s', config)
+		logging.warning('No config file found, using defaults.')
+	#logging.getLogger().setLevel(config['LoggingLevel'])
+	logging.info('Config %s', config)
 
 def init_actions():
 	read_config()
@@ -181,9 +181,8 @@ class PSBuffer(RDSBuffer):
 
     # Will block for ~87.6ms for RDS Group to be sent
     #MOCK_transmitRDS([pi_byte1, pi_byte2, 0b10<<2 | pty>>3, (0b00111 & pty)<<5 | self.currentGroup, pi_byte1, pi_byte2, ord(char1), ord(char2)])
-    transmitRDS(rdsBytes)
+    MOCK_transmitRDS(rdsBytes)
     self.currentGroup = (self.currentGroup + 1) % (self.frag_size // self.group_size)
-    print (self.currentGroup)
 
 class RTBuffer(RDSBuffer):
   # Sends RDS type 2A groups - RadioText
@@ -222,7 +221,7 @@ class RTBuffer(RDSBuffer):
 
     # Will block for ~87.6ms for RDS Group to be sent
     #MOCK_transmitRDS([pi_byte1, pi_byte2, 0b1000<<2 | pty>>3, (0b00111 & pty)<<5 | self.ab<<4 | self.currentGroup, ord(char1), ord(char2), ord(char3), ord(char4)])
-    transmitRDS(rdsBytes)
+    MOCK_transmitRDS(rdsBytes)
 
     self.currentGroup += 1
     if self.currentGroup * self.group_size >= len(self.fragments[self.currentFragment]):
@@ -261,9 +260,26 @@ logging.VERBOSE = VERBOSE
 logging.verbose = verbose
 logging.Logger.verbose = verbose
 
-logging.getLogger().setLevel(logging.VERBOSE);
+logging.getLogger().setLevel(logging.INFO);
 
 logging.info('--------');
+
+# Global RDS Values
+title = ''
+artist = ''
+tracknum = ''
+length = 0
+
+config = {}
+read_config()
+
+PS = PSBuffer(' ', 4)
+RT = RTBuffer(' ', 7)
+
+# RDS Global Values
+pi_byte1 = 0x81
+pi_byte2 = 0x9b
+pty = 0b00010
 
 # Establish lock via socket or exit if failed
 try:
@@ -274,8 +290,6 @@ except:
 	logging.error('Unable to create lock. Another instance of Dynamic_RDS_Engine.py running?')
 	exit(1)
 
-
-
 transmitter = basicI2C(0x21)
 QN8066_init()
 
@@ -284,6 +298,9 @@ def updateRDSData():
 	logging.debug('Title %s', title)
 	logging.debug('Artist %s', artist)
 	logging.debug('Tracknum %s', tracknum)
+	logging.debug('Length %s', length)
+
+	# TODO: Add ability for transmitting length
 	
 	tmp_StationTitle = title if config['StationTitle'] == 'True' else ''
 	tmp_StationArtist = artist if config['StationArtist'] == 'True' else ''
@@ -297,23 +314,23 @@ def updateRDSData():
 	if config['RDSTextTrackNum'] == 'True' and tracknum != '0' and tracknum !='':
 		tmp_RDSTextTrackNum = '{} {} {}'.format(config['RDSTextTrackNumPre'], tracknum, config['RDSTextTrackNumSuf']).strip()
 
-	Stationstr = '{s: <{sw}}{t: <{tw}}{a: <{aw}}{n: <{nw}}'.format( \
+	PSstr = '{s: <{sw}}{t: <{tw}}{a: <{aw}}{n: <{nw}}'.format( \
 		s=config['StationText'], sw=nearest(config['StationText'], 8), \
 		t=tmp_StationTitle, tw=nearest(tmp_StationTitle, 8), \
 		a=tmp_StationArtist, aw=nearest(tmp_StationArtist, 8), \
 		n=tmp_StationTrackNum, nw=nearest(tmp_StationTrackNum, 8))
 
-	RDSTextstr = '{s: <{sw}}{t: <{tw}}{a: <{aw}}{n: <{nw}}'.format( \
+	RTstr = '{s: <{sw}}{t: <{tw}}{a: <{aw}}{n: <{nw}}'.format( \
 		s=config['RDSTextText'], sw=nearest(config['RDSTextText'], 32), \
 		t=tmp_RDSTextTitle, tw=nearest(tmp_RDSTextTitle,32), \
 		a=tmp_RDSTextArtist, aw=nearest(tmp_RDSTextArtist,32), \
 		n=tmp_RDSTextTrackNum, nw=nearest(tmp_RDSTextTrackNum, 32))
 
-	logging.info('Updated Station Text [%s]', Stationstr)
-	logging.info('Updated RDS Text [%s]', RDSTextstr)
+	logging.info('Updated PS Text [%s]', PSstr)
+	logging.info('Updated RDS Text [%s]', RTstr)
 
-	RDSStation.updateData(Stationstr)
-	RDSText.updateData(RDSTextstr)
+	PS.updateData(PSstr)
+	RT.updateData(RTstr)
 
 def nearest(str, size):
 	# -(-X // Y) functions as ceiling division
@@ -324,17 +341,7 @@ def nearest(str, size):
 # Common variables
 radio_ready = False
 
-#RDSStation = RadioBuffer('', 8, 4)
-#RDSText = RadioBuffer('', 32, 7)
-
-title = ''
-artist = ''
-tracknum = ''
-length = 0
-
 radio = None
-config = {}
-
 
 #logging.info("----------")
 
@@ -376,7 +383,7 @@ with open(fifo_path, 'r') as fifo:
 				logging.info('Processing init')
 				#init_actions()
 				if config['Start'] == "FPPDStart":
-					Si4713_start()
+					print('init')
 
 			elif line == 'START':
 				logging.info('Processing start')
@@ -407,34 +414,37 @@ with open(fifo_path, 'r') as fifo:
 			elif line[0] == 'N':
 				logging.debug('Processing track number')
 				tracknum = line[1:]
-				# TANL is always sent together with N being last item for RDS, so we only need to update the RDS Data once with the new values
-				#updateRDSData()
-				# Check radio status between each track
-				#Si4713_status()
 
 			elif line[0] == 'L':
 				logging.debug('Processing length')
 				length = max(int(line[1:10]) - max(int(config['StationDelay']), int(config['RDSTextDelay'])), 1)
 				logging.debug('Length %s', int(length))
 
+				# TANL is always sent together with L being last item, so we only need to update the RDS Data once with the new values
+				updateRDSData()
+				# Check radio status between each track
+				#Si4713_status()
+
 			else:
 				logging.error('Unknown fifo input %s', line)
 
 		else:
-			if radio_ready:
-				if RDSStation.nextTick():
-					logging.debug('Station Fragment [%s]', RDSStation.currentFragment())
+			PS.sendNextGroup()
+			RT.sendNextGroup()
+			#if radio_ready:
+			#	if RDSStation.nextTick():
+			#		logging.debug('Station Fragment [%s]', RDSStation.currentFragment())
 					#radio.setRDSstation(RDSStation.currentFragment())
-				if RDSText.nextTick():
-					logging.debug('Buffer Fragment  [%s]', RDSText.currentFragment())
+			#	if RDSText.nextTick():
+			#		logging.debug('Buffer Fragment  [%s]', RDSText.currentFragment())
 					#radio.setRDSbuffer(RDSText.currentFragment())
 
-			length = length - 1
-			if length == 0:
-				title = ''
-				artist = ''
-				tracknum = ''
+			#length = length - 1
+			#if length == 0:
+			#	title = ''
+			#	artist = ''
+			#	tracknum = ''
 				#updateRDSData()
 
 			# Sleep until the top of the next second
-			sleep ((1000000 - datetime.now().microsecond) / 1000000.0)
+			#sleep ((1000000 - datetime.now().microsecond) / 1000000.0)
