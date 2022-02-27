@@ -1,0 +1,21 @@
+{
+	"repoName": "Dynamic_RDS",
+	"name": "Dynamic RDS",
+	"author": "Nick Anderson (ShadowLight8)",
+	"description": "Dynamically updaing RDS for various transmitters. Uses the Title, Artist, and Track Number from the media's metadata.",
+	"homeURL": "https://github.com/ShadowLight8/Dynamic_RDS",
+	"srcURL": "https://github.com/ShadowLight8/Dynamic_RDS.git",
+	"bugURL": "https://github.com/ShadowLight8/Dynamic_RDS/issues",
+	"allowUpdates": 1,
+	"versions": [
+		{
+			"minFPPVersion": "5.0",
+			"maxFPPVersion": "0",
+			"branch": "main",
+			"sha": "",
+			"platforms": [
+			"Raspberry Pi"
+			]
+		}
+	]
+}
