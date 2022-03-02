@@ -37,7 +37,7 @@ try:
 	logging.debug('Lock not found')
 	logging.info('Starting %s', updater_path)
 	devnull = open(os.devnull, 'w')
-	subprocess.Popen(['python', updater_path], stdin=devnull, stdout=devnull, stderr=devnull, close_fds=True)
+	subprocess.Popen(['python3', updater_path], stdin=devnull, stdout=devnull, stderr=devnull, close_fds=True)
 except socket.error:
 	logging.debug('Lock found - %s is running', updater_path)
 
@@ -71,6 +71,7 @@ with open(fifo_path, 'w') as fifo:
 		logging.info('Type media')
 		
 		# TODO: Exception handling for json?
+		# TODO: Deal with Michael Buble with the accented e character \xe9
 		j = json.loads(argv[4])
 
 		# When default values are sent over fifo, other side more or less ignores them
