@@ -91,7 +91,7 @@ class Transmitter:
     #logging.debug('Transmitter shutdown')
     self.active = False
 
-  def reset(self, resetdelay=3):
+  def reset(self, resetdelay=1):
     # Used to restart the transmitter
     #logging.debug('Transmitter reset')
     self.shutdown()
@@ -154,15 +154,71 @@ class QN80xx(Transmitter):
     self.RT = self.RTBuffer(self, ' ', 7)
 
   def startup(self):
-    # TODO: Next up is to build out what it takes to fully initialize the QN8066
-    try:
-      if not (self.I2C.read(0x01, 1)[0]>>6 & 1):
-        self.I2C.write(0x01, [0x41])
-        sleep(0.5)
-    except Exception:
-      logging.error('Failed to initialize transmitter')
+    tempReadValue = self.I2C.read(0x06, 1)[0]>>2
+    if (tempReadValue != 0b1101): # TO TEST
+      logging.error('Chip ID value is {} instead of 13. Is this a QN8066 chip?'.format(tempReadValue))
       exit(-1)
+    #tempReadValue = self.I2C.read(0x0a, 1)[0]>>4
+    #if (tempReadvalue != 0): # TO TEST
+    #  logging.warning('Chip state is {} instead of 0 (Standby). Was startup already run?'.format(tempReadValue))
+
+    # Reset everything
+    self.I2C.write(0x00, [0b11100011])
+    sleep(0.2)
+
+    # Setup expected clock source and div
+    self.I2C.write(0x02, [0b00010000])
+    self.I2C.write(0x07, [0b11101000, 0b00001011])
+
+    # Set frequency to 100.1 at the moment
+    # TODO: Pull freq from config
+    self.I2C.write(0x19, [0b00100011])
+    self.I2C.write(0x1b, [0b00100010])
+
+    # Enable RDS TX
+    # TODO: Pull in pre-emphasis from config
+    self.I2C.write(0x01, [0b01000001])
+
+    # Exit standby, enter TX
+    self.I2C.write(0x00, [0b00001011])
+    sleep(0.2)
+
+    # Try without 0x25 0b01111101 - TX Freq Dev of 86.25KHz
+    # Try without 0x26 0b00111100 - RDS Freq Dev of 21KHz
+
+    # Disable timer for PA off when no audio
+    # TODO: Pull in soft clip from config
+    self.I2C.write(0x27, [0b00111001])
+
+    # Try without 0x28 0b01001011 - TX gain changes and input impedance
+    self.I2C.write(0x6e, [0b10110111]) # Stops AGC, which introduces obvious audio changes
+    self.I2C.write(0x28, [0b01011011])
+
+    #try:
+      #if not (self.I2C.read(0x01, 1)[0]>>6 & 1):
+      #  self.I2C.write(0x01, [0x41])
+      #  sleep(0.5)
+    #except Exception:
+      #logging.error('Failed to initialize transmitter')
+      #exit(-1)
     super().startup()
+
+  def shutdown(self):
+    # Exit TX, Enter standby
+    self.I2C.write(0x00, [0b00100011])
+    super().startup()
+
+  def status(self):
+    self.aud_pk = self.I2C.read(0x1a, 1)[0]>>3 & 0b1111
+    self.fsm = self.I2C.read(0x0a,1)[0]>>4
+    # Check frequency? 0x19 1:0 + 0x1b
+
+    logging.info('Status - State {} (expect 10) - Audio Peak {} (target <= 8)'.format(self.fsm, self.aud_pk))
+
+    # Reset aud_pk
+    self.I2C.write(0x24, [0b11111111]);
+    self.I2C.write(0x24, [0b01111111]);
+    super().status()
 
   def updateRDSData(self, PSdata, RTdata):
     #super().updateRDSData(data) - Not sure if this will be needed
