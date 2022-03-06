@@ -170,14 +170,17 @@ class QN80xx(Transmitter):
     self.I2C.write(0x02, [0b00010000])
     self.I2C.write(0x07, [0b11101000, 0b00001011])
 
-    # Set frequency to 100.1 at the moment
-    # TODO: Pull freq from config
-    self.I2C.write(0x19, [0b00100011])
-    self.I2C.write(0x1b, [0b00100010])
+    # Set frequency from config
+    # (Frequency - 60) / 0.05
+    tempFreq = int((float(config['Frequency'])-60)/0.05)
+    self.I2C.write(0x19, [0b00100000 | tempFreq>>8])
+    self.I2C.write(0x1b, [0b11111111 & tempFreq])
 
-    # Enable RDS TX
-    # TODO: Pull in pre-emphasis from config
-    self.I2C.write(0x01, [0b01000001])
+    # Enable RDS TX and set pre-emphasis
+    if config['Preemphasis'] == "50us":
+      self.I2C.write(0x01, [0b01000000])
+    else:
+      self.I2C.write(0x01, [0b01000001])
 
     # Exit standby, enter TX
     self.I2C.write(0x00, [0b00001011])
@@ -491,6 +494,7 @@ pty = 0b00010
 
 # TODO: Based on config init the correct transmitter
 transmitter = QN80xx()
+updateRDSData()
 
 # =========
 # Main Loop
