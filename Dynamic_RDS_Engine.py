@@ -24,6 +24,8 @@ def cleanup():
 # ===============
 # Used by the Transmitter child classes (if they are i2c), but could also be used on its own if needed
 # TODO: Assuming SMBus of 1 on most modern hardware - Test what happens if this fails to setup a fall back to SMBus(0), maybe a config option?
+# ls -1 /sys/class/i2c-dev/
+# returns list of i2c busses
 class basicI2C(object):
   def __init__(self, address, bus=1):
     self.address = address
@@ -172,12 +174,12 @@ class QN80xx(Transmitter):
 
     # Set frequency from config
     # (Frequency - 60) / 0.05
-    tempFreq = int((float(config['Frequency'])-60)/0.05)
+    tempFreq = int((float(config['DynRDSFrequency'])-60)/0.05)
     self.I2C.write(0x19, [0b00100000 | tempFreq>>8])
     self.I2C.write(0x1b, [0b11111111 & tempFreq])
 
     # Enable RDS TX and set pre-emphasis
-    if config['Preemphasis'] == "50us":
+    if config['DynRDSPreemphasis'] == "50us":
       self.I2C.write(0x01, [0b01000000])
     else:
       self.I2C.write(0x01, [0b01000001])
@@ -346,30 +348,30 @@ class QN80xx(Transmitter):
 def read_config():
 	global config
 	config = {
-		'Start': 'FPPDStart',
-		'Stop': 'Never',
-		'GPIONumReset': '4',
-		'Frequency': '100.10',
-		'Power': '113',
-		'Preemphasis': '75us',
-		'AntCap': '32',
-		'EnableRDS': 'True',
-		'StationDelay': '4',
-		'StationText': 'Happy   Hallo-     -ween',
-		'StationTitle': 'True',
-		'StationArtist': 'True',
-		'StationTrackNumPre': '',
-		'StationTrackNum': 'True',
-		'StationTrackNumSuf': 'of 4',
-		'RDSTextDelay': '7',
-		'RDSTextText': 'Happy Halloween!!',
-		'RDSTextTitle': 'True',
-		'RDSTextArtist': 'True',
-		'RDSTextTrackNumPre': 'Track ',
-		'RDSTextTrackNum': 'True',
-		'RDSTextTrackNumSuf': 'of 4',
-		'Pty': '2',
-		'LoggingLevel': 'DEBUG'
+		'DynRDSStart': 'FPPDStart',
+		'DynRDSStop': 'Never',
+		'DynRDSGPIONumReset': '4',
+		'DynRDSFrequency': '100.1',
+		'DynRDSPower': '113',
+		'DynRDSPreemphasis': '75us',
+		'DynRDSAntCap': '32',
+		'DynRDSEnableRDS': 'True',
+		'DynRDSStationDelay': '4',
+		'DynRDSStationText': 'Happy   Hallo-     -ween',
+		'DynRDSStationTitle': 'True',
+		'DynRDSStationArtist': 'True',
+		'DynRDSStationTrackNumPre': '',
+		'DynRDSStationTrackNum': 'True',
+		'DynRDSStationTrackNumSuf': 'of 4',
+		'DynRDSRDSTextDelay': '7',
+		'DynRDSRDSTextText': 'Happy Halloween!!',
+		'DynRDSRDSTextTitle': 'True',
+		'DynRDSRDSTextArtist': 'True',
+		'DynRDSRDSTextTrackNumPre': 'Track ',
+		'DynRDSRDSTextTrackNum': 'True',
+		'DynRDSRDSTextTrackNumSuf': 'of 4',
+		'DynRDSPty': '2',
+		'DynRDSLoggingLevel': 'DEBUG'
 	}
 
 	configfile = os.getenv('CFGDIR', '/home/fpp/media/config') + '/plugin.Dynamic_RDS'
@@ -380,7 +382,7 @@ def read_config():
 	                	config[key] = val.replace('"', '').strip()
 	except IOError:
 		logging.warning('No config file found, using defaults.')
-	logging.getLogger().setLevel(config['LoggingLevel'])
+	logging.getLogger().setLevel(config['DynRDSLoggingLevel'])
 	logging.info('Config %s', config)
 
 # ===============================
@@ -398,26 +400,26 @@ def updateRDSData():
 
 	# TODO: Add ability for transmitting tracklength
 	
-	tmp_StationTitle = title if config['StationTitle'] == 'True' else ''
-	tmp_StationArtist = artist if config['StationArtist'] == 'True' else ''
+	tmp_StationTitle = title if config['DynRDSStationTitle'] == 'True' else ''
+	tmp_StationArtist = artist if config['DynRDSStationArtist'] == 'True' else ''
 	tmp_StationTrackNum = ''
-	if config['StationTrackNum'] == 'True' and tracknum != '0' and tracknum !='':
-		tmp_StationTrackNum = '{} {} {}'.format(config['StationTrackNumPre'], tracknum, config['StationTrackNumSuf']).strip()
+	if config['DynRDSStationTrackNum'] == 'True' and tracknum != '0' and tracknum !='':
+		tmp_StationTrackNum = '{} {} {}'.format(config['DynRDSStationTrackNumPre'], tracknum, config['DynRDSStationTrackNumSuf']).strip()
 
-	tmp_RDSTextTitle = title if config['RDSTextTitle'] == 'True' else ''
-	tmp_RDSTextArtist = artist if config['RDSTextArtist'] == 'True' else ''
+	tmp_RDSTextTitle = title if config['DynRDSRDSTextTitle'] == 'True' else ''
+	tmp_RDSTextArtist = artist if config['DynRDSRDSTextArtist'] == 'True' else ''
 	tmp_RDSTextTrackNum = ''
-	if config['RDSTextTrackNum'] == 'True' and tracknum != '0' and tracknum !='':
-		tmp_RDSTextTrackNum = '{} {} {}'.format(config['RDSTextTrackNumPre'], tracknum, config['RDSTextTrackNumSuf']).strip()
+	if config['DynRDSRDSTextTrackNum'] == 'True' and tracknum != '0' and tracknum !='':
+		tmp_RDSTextTrackNum = '{} {} {}'.format(config['DynRDSRDSTextTrackNumPre'], tracknum, config['DynRDSRDSTextTrackNumSuf']).strip()
 
 	PSstr = '{s: <{sw}}{t: <{tw}}{a: <{aw}}{n: <{nw}}'.format( \
-		s=config['StationText'], sw=nearest(config['StationText'], 8), \
+		s=config['DynRDSStationText'], sw=nearest(config['DynRDSStationText'], 8), \
 		t=tmp_StationTitle, tw=nearest(tmp_StationTitle, 8), \
 		a=tmp_StationArtist, aw=nearest(tmp_StationArtist, 8), \
 		n=tmp_StationTrackNum, nw=nearest(tmp_StationTrackNum, 8))
 
 	RTstr = '{s: <{sw}}{t: <{tw}}{a: <{aw}}{n: <{nw}}'.format( \
-		s=config['RDSTextText'], sw=nearest(config['RDSTextText'], 32), \
+		s=config['DynRDSRDSTextText'], sw=nearest(config['DynRDSRDSTextText'], 32), \
 		t=tmp_RDSTextTitle, tw=nearest(tmp_RDSTextTitle,32), \
 		a=tmp_RDSTextArtist, aw=nearest(tmp_RDSTextArtist,32), \
 		n=tmp_RDSTextTrackNum, nw=nearest(tmp_RDSTextTrackNum, 32))
@@ -516,20 +518,20 @@ with open(fifo_path, 'r') as fifo:
 				logging.info('Processing reset')
 				read_config()
 				transmitter.reset()
-				if config['Start'] == "FPPDStart":
+				if config['DynRDSStart'] == "FPPDStart":
 					#print('start after reset')
 					transmitter.startup()
 
 			elif line == 'INIT':
 				logging.info('Processing init')
 				# TODO: Setup non-transmitter items, assuming this isn't defaultly done - Don't think this will be anything yet
-				if config['Start'] == "FPPDStart":
+				if config['DynRDSStart'] == "FPPDStart":
 					#print('start transmitter after init')
 					transmitter.startup()
 
 			elif line == 'START':
 				logging.info('Processing start')
-				if config['Start'] == "PlaylistStart":
+				if config['DynRDSStart'] == "PlaylistStart":
 					#print('start transmitter with playlist start')
 					transmitter.startup()
 
@@ -542,7 +544,7 @@ with open(fifo_path, 'r') as fifo:
 				tracklength = '0'
 				updateRDSData()
 
-				if config['Stop'] == "PlaylistStop":
+				if config['DynRDSStop'] == "PlaylistStop":
 					transmitter.shutdown()
 					logging.info('Radio stopped')
 
@@ -560,7 +562,7 @@ with open(fifo_path, 'r') as fifo:
 
 			elif line[0] == 'L':
 				logging.debug('Processing length')
-				tracklength = max(int(line[1:10]) - max(int(config['StationDelay']), int(config['RDSTextDelay'])), 1)
+				tracklength = max(int(line[1:10]) - max(int(config['DynRDSStationDelay']), int(config['DynRDSRDSTextDelay'])), 1)
 				logging.debug('Length %s', int(tracklength))
 
 				# TANL is always sent together with L being last item, so we only need to update the RDS Data once with the new values

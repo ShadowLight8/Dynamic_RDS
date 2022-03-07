@@ -1,0 +1,73 @@
+{
+    "settingGroups": {
+        "DynRDSPluginActivation": {
+            "description": "Plugin Activation",
+            "settings": [
+                "DynRDSStart",
+                "DynRDSStop"
+            ]
+        },
+        "DynRDSTransmitterSettings": {
+            "description": "Transmitter Settings",
+            "settings": [
+                "DynRDSFrequency",
+                "DynRDSPreemphasis"
+            ]
+        }
+    },
+    "settings": {
+        "DynRDSStart": {
+            "name": "DynRDSStart",
+            "description": "Start with",
+            "tip": "When starting, the transmitter is reset, settings initialized, will broadcast any audio played, and send static RDS messages (if enabled).",
+            "restart": 1,
+            "reboot": 0,
+            "type": "select",
+            "options": {
+                "FPPD Start (default)": "FPPDStart",
+                "Plalist Start": "PlaylistStart",
+                "Never": "Never"
+            },
+            "default": "FPPDStart"
+        },
+        "DynRDSStop": {
+            "name": "DynRDSStop",
+            "description": "Stop with",
+            "tip": "When stopped, the transmitter is reset. Listeners will hear static.",
+            "restart": 1,
+            "reboot": 0,
+            "type": "select",
+            "options": {
+                "Plalist Stop": "PlaylistStart",
+                "Never (default)": "Never"                
+            },
+            "default": "Never"
+        },
+        "DynRDSFrequency": {
+            "name": "DynRDSFrequency",
+            "description": "Frequency (76.00-108.00)",
+            "tip": "Broadcast frequency of the transmitter",
+            "restart": 1,
+            "reboot": 0,
+            "type": "number",
+            "min": 76.00,
+            "max": 108.00,
+            "step": 0.05,
+            "suffix": "MHz",
+            "default": 100.10
+        },
+        "DynRDSPreemphasis": {
+            "name": "DynRDSPreemphasis",
+            "description": "Preemphasis",
+            "tip": "...",
+            "restart": 1,
+            "reboot": 0,
+            "type": "select",
+            "options": {
+                "75 &mu;s (USA, default)": "75us",
+                "50 &mu;s (Europe, Australia, Japan)": "50us"
+            },
+            "default": "75us"
+        }
+    }
+}
