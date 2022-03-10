@@ -10,8 +10,20 @@
         "DynRDSTransmitterSettings": {
             "description": "Transmitter Settings",
             "settings": [
+                "DynRDSPower",
                 "DynRDSFrequency",
                 "DynRDSPreemphasis"
+            ]
+        },
+        "DynRDSRDSSettings": {
+            "description": "RDS Settings",
+            "settings": [
+                "DynRDSEnableRDS",
+                "DynRDSPSUpdateRate",
+                "DynRDSPSText",
+                "DynRDSRTUpdateRate",
+                "DynRDSRTText",
+                "DynRDSPty"
             ]
         }
     },
@@ -39,10 +51,23 @@
             "type": "select",
             "options": {
                 "Plalist Stop": "PlaylistStart",
-                "Never (default)": "Never"                
+                "Never (default)": "Never"
             },
             "default": "Never"
         },
+        "DynRDSPower": {
+            "name": "DynRDSPower",
+            "description": "Power (88-115, 116-120*)",
+            "tip": "Adjust the power output from the transmitter chip",
+            "restart": 1,
+            "reboot": 0,
+            "type": "number",
+            "min": 88,
+            "max": 120,
+            "step": 1,
+            "suffix": "dB&mu;V",
+            "default": 113
+	},
         "DynRDSFrequency": {
             "name": "DynRDSFrequency",
             "description": "Frequency (76.00-108.00)",
@@ -59,7 +84,7 @@
         "DynRDSPreemphasis": {
             "name": "DynRDSPreemphasis",
             "description": "Preemphasis",
-            "tip": "...",
+            "tip": "Used in FM broadcast to improve quality of higher frequencies. Most of the world uses 50&mu;s, except the US and South Korea at 75&mu;s",
             "restart": 1,
             "reboot": 0,
             "type": "select",
@@ -68,6 +93,105 @@
                 "50 &mu;s (Europe, Australia, Japan)": "50us"
             },
             "default": "75us"
+        },
+        "DynRDSEnableRDS": {
+            "name": "DynRDSEnableRDS",
+            "description": "Enable RDS",
+            "restart": 1,
+            "reboot": 0,
+            "type": "checkbox",
+            "checkedValue": "1",
+            "uncheckedValue": "0",
+            "default": 1
+        },
+        "DynRDSPSText": {
+            "name": "DynRDSPSText",
+            "description": "PS Text (8 chars per update)",
+            "tip": "Sent 8 characters at a time. Program Service is the most commonly displayed part of RDS.",
+            "restart": 1,
+            "reboot": 0,
+            "type": "text",
+            "size": 24,
+            "maxlength": 64
+        },
+        "DynRDSPSUpdateRate": {
+            "name": "DynRDSPSUpdateRate",
+            "description": "PS Update Rate",
+            "tip": "Interval between updating the 8 characters being sent. It takes ~1 second to send the 8 characters and some radios only display the text after receiving the full group twice.",
+            "suffix": "seconds",
+            "restart": 1,
+            "reboot": 0,
+            "type": "number",
+            "min": 3,
+            "max": 60,
+            "step": 1,
+            "default": 4
+        },
+        "DynRDSRTText": {
+            "name": "DynRDSRTText",
+            "description": "RT Text (64 chars per update)",
+            "tip": "Sent 64 characters at a time. Radio Text is intended for longer message with a slower update rate.",
+            "restart": 1,
+            "reboot": 0,
+            "type": "text",
+            "size": 64,
+            "maxlength": 256
+        },
+        "DynRDSRTUpdateRate": {
+            "name": "DynRDSRTUpdateRate",
+            "description": "RT Update Rate",
+            "tip": "Interval between updating the 64 characters being sent. It takes ~4 seconds to send the 64 characters and some radios only display the text after receiving the full group twice.",
+            "suffix": "seconds",
+            "restart": 1,
+            "reboot": 0,
+            "type": "number",
+            "min": 3,
+            "max": 60,
+            "step": 1,
+            "default": 8
+        },
+        "DynRDSPty": {
+            "name": "DynRDSPty",
+            "description": "Program Type",
+            "tip": "Predefined Program Types with different assignments between North America and Europe",
+            "restart": 1,
+            "reboot": 0,
+            "type": "select",
+            "options": {
+               "0 - None / None": 0,
+               "1 - News / News": 1,
+               "2 - Information / Current Affairs": 2,
+               "3 - Sport / Information": 3,
+               "4 - Talk / Sport": 4,
+               "5 - Rock / Education": 5,
+               "6 - Classic Rock / Drama": 6,
+               "7 - Adult Hits / Culture": 7,
+               "8 - Soft Rock / Science": 8,
+               "9 - Top 40 / Varied": 9,
+               "10 - Country / Pop": 10,
+               "11 - Oldies / Rock": 11,
+               "12 - Soft Music / Easy Listening": 12,
+               "13 - Nostalgia / Light Classical": 13,
+               "14 - Jazz / Serious Classical": 14,
+               "15 - Classical / Other Music": 15,
+               "16 - R&B / Weather": 16,
+               "17 - Soft R&B / Finance": 17,
+               "18 - Language / Childrens": 18,
+               "19 - Religious Music / Social Affairs": 19,
+               "20 - Religious Talk / Religion": 20,
+               "21 - Personality / Phone-In": 21,
+               "22 - Public / Travel": 22,
+               "23 - College / Leisure": 23,
+               "24 - Spanish Talk / Jazz": 24,
+               "25 - Spanish Music / Country": 25,
+               "26 - Hip Hop / National Music": 26,
+               "27 - --- / Oldies": 27,
+               "28 - --- / Folk": 28,
+               "29 - Weather / Documentary": 29
+            },
+            "default": 2,
+            "suffix": "North America / Europe"
+            
         }
     }
 }

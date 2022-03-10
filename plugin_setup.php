@@ -14,6 +14,9 @@ PrintSettingGroup("DynRDSPluginActivation", "", "", 1, "Dynamic_RDS");
 <?
 PrintSettingGroup("DynRDSTransmitterSettings", "", "", 1, "Dynamic_RDS");
 ?>
+<?
+PrintSettingGroup("DynRDSRDSSettings", "", "", 1, "Dynamic_RDS");
+?>
 
 </div>
 
