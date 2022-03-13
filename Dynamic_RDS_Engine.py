@@ -356,21 +356,11 @@ def read_config():
 		'DynRDSPreemphasis': '75us',
 		'DynRDSAntCap': '32',
 		'DynRDSEnableRDS': 'True',
-		'DynRDSStationDelay': '4',
-		'DynRDSStationText': 'Happy   Hallo-     -ween',
-		'DynRDSStationTitle': 'True',
-		'DynRDSStationArtist': 'True',
-		'DynRDSStationTrackNumPre': '',
-		'DynRDSStationTrackNum': 'True',
-		'DynRDSStationTrackNumSuf': 'of 4',
-		'DynRDSRDSTextDelay': '7',
-		'DynRDSRDSTextText': 'Happy Halloween!!',
-		'DynRDSRDSTextTitle': 'True',
-		'DynRDSRDSTextArtist': 'True',
-		'DynRDSRDSTextTrackNumPre': 'Track ',
-		'DynRDSRDSTextTrackNum': 'True',
-		'DynRDSRDSTextTrackNumSuf': 'of 4',
 		'DynRDSPty': '2',
+		'DynRDSPSUpdateRate': '4',
+		'DynRDSPSStyle': 'Merry|Christ-|  -mas!|{T}|{A}|[{N} of 8]',
+		'DynRDSRTUpdateRate': '8',
+		'DynRDSRTStyle': 'Merry Christmas!|{T}[ by {A}]|[Track {N} of 8]',
 		'DynRDSLoggingLevel': 'DEBUG'
 	}
 
@@ -390,48 +380,52 @@ def read_config():
 # ===============================
 
 def updateRDSData():
-	# Take the data from FPP and the configuration to build the actual RDS string
-	# TODO: Maybe provide an option between strict split and smart split
-	logging.info('Updating RDS Data')
-	logging.debug('Title %s', title)
-	logging.debug('Artist %s', artist)
-	logging.debug('Tracknum %s', tracknum)
-	logging.debug('Length %s', tracklength)
+  # Take the data from FPP and the configuration to build the actual RDS string
+  logging.info('Updating RDS Data')
+  logging.debug('Title %s', title)
+  logging.debug('Artist %s', artist)
+  logging.debug('Tracknum %s', tracknum)
+  logging.debug('Length %s', tracklength)
 
-	# TODO: Add ability for transmitting tracklength
-	
-	tmp_StationTitle = title if config['DynRDSStationTitle'] == 'True' else ''
-	tmp_StationArtist = artist if config['DynRDSStationArtist'] == 'True' else ''
-	tmp_StationTrackNum = ''
-	if config['DynRDSStationTrackNum'] == 'True' and tracknum != '0' and tracknum !='':
-		tmp_StationTrackNum = '{} {} {}'.format(config['DynRDSStationTrackNumPre'], tracknum, config['DynRDSStationTrackNumSuf']).strip()
+  transmitter.updateRDSData(rdsStyleToString(config['DynRDSPSStyle'], 8), rdsStyleToString(config['DynRDSRTStyle'], 32))
 
-	tmp_RDSTextTitle = title if config['DynRDSRDSTextTitle'] == 'True' else ''
-	tmp_RDSTextArtist = artist if config['DynRDSRDSTextArtist'] == 'True' else ''
-	tmp_RDSTextTrackNum = ''
-	if config['DynRDSRDSTextTrackNum'] == 'True' and tracknum != '0' and tracknum !='':
-		tmp_RDSTextTrackNum = '{} {} {}'.format(config['DynRDSRDSTextTrackNumPre'], tracknum, config['DynRDSRDSTextTrackNumSuf']).strip()
+def rdsStyleToString(rdsStyle, groupSize):
+  outputRDS = []
+  squStart = -1
+  skip = 0
+  swapValues = {'{T}': title, '{A}': artist, '{N}': tracknum, '{L}': tracklength} # TODO: Make this global for managing RDS Values?
 
-	PSstr = '{s: <{sw}}{t: <{tw}}{a: <{aw}}{n: <{nw}}'.format( \
-		s=config['DynRDSStationText'], sw=nearest(config['DynRDSStationText'], 8), \
-		t=tmp_StationTitle, tw=nearest(tmp_StationTitle, 8), \
-		a=tmp_StationArtist, aw=nearest(tmp_StationArtist, 8), \
-		n=tmp_StationTrackNum, nw=nearest(tmp_StationTrackNum, 8))
+  try:
+    for i, v in enumerate(rdsStyle):
+      #print("i {} - v {} - squStart {} - skip {} - outputRDS {}".format(i,v,squStart,skip,outputRDS))
+      if skip:
+        skip -= 1
+      elif v == '\\' and i < len(rdsStyle) - 1:
+        skip += 1
+        outputRDS.append(rdsStyle[i+1])
+      elif v == '[': # Start of square bracket mode
+        squStart = len(outputRDS) # Track on the outputRDS where the square bracket started in case we have to clean up
+      elif v == ']' and squStart != -1: # End of square bracket mode, append to output and reset to None
+        squStart = -1
+      elif v == '|':
+        chunkLength = groupSize - sum(len(s) for s in outputRDS) % groupSize
+        if chunkLength != groupSize:
+          outputRDS.append(' ' * chunkLength)
+      elif v == '{' and i < len(rdsStyle) - 2 and rdsStyle[i+2] == '}':
+        if squStart != -1 and not swapValues.get(rdsStyle[i:i+3],''): # In square brackets and value is empty?
+          del outputRDS[squStart:] # Remove output back to start of square bracket group
+          skip += rdsStyle.index(']', i + 3) - i - 1 # Using index to throw if no ] by the end of rdsStyle - Done building in this case
+        else:
+          skip += 2
+          outputRDS.append(swapValues.get(rdsStyle[i:i+3], ''))
+      else:
+        outputRDS.append(v)
+  except ValueError:
+    pass # Expected when index doesn't find a ]
 
-	RTstr = '{s: <{sw}}{t: <{tw}}{a: <{aw}}{n: <{nw}}'.format( \
-		s=config['DynRDSRDSTextText'], sw=nearest(config['DynRDSRDSTextText'], 32), \
-		t=tmp_RDSTextTitle, tw=nearest(tmp_RDSTextTitle,32), \
-		a=tmp_RDSTextArtist, aw=nearest(tmp_RDSTextArtist,32), \
-		n=tmp_RDSTextTrackNum, nw=nearest(tmp_RDSTextTrackNum, 32))
-
-	logging.info('Updated PS Data [%s]', PSstr)
-	logging.info('Updated RT Data [%s]', RTstr)
-
-	transmitter.updateRDSData(PSstr, RTstr)
-
-def nearest(str, size):
-	# -(-X // Y) functions as ceiling division
-	return -(-len(str) // size) * size
+  outputRDS = ''.join(outputRDS)
+  logging.info('RDS Data [%s]', outputRDS)
+  return outputRDS
 
 # ===============
 # Main code start
@@ -547,7 +541,7 @@ with open(fifo_path, 'r') as fifo:
 				if config['DynRDSStop'] == "PlaylistStop":
 					transmitter.shutdown()
 					logging.info('Radio stopped')
-
+			# TODO: After checking for all control WORDS, assume the first letter is what does into the rdsValues dictionary
 			elif line[0] == 'T':
 				logging.debug('Processing title')
 				title = line[1:]
@@ -562,7 +556,7 @@ with open(fifo_path, 'r') as fifo:
 
 			elif line[0] == 'L':
 				logging.debug('Processing length')
-				tracklength = max(int(line[1:10]) - max(int(config['DynRDSStationDelay']), int(config['DynRDSRDSTextDelay'])), 1)
+				tracklength = max(int(line[1:10]) - max(int(config['DynRDSPSUpdateRate']), int(config['DynRDSRTUpdateRate'])), 1)
 				logging.debug('Length %s', int(tracklength))
 
 				# TANL is always sent together with L being last item, so we only need to update the RDS Data once with the new values

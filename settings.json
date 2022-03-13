@@ -19,11 +19,11 @@
             "description": "RDS Settings",
             "settings": [
                 "DynRDSEnableRDS",
+                "DynRDSPty",
                 "DynRDSPSUpdateRate",
-                "DynRDSPSText",
+                "DynRDSPSStyle",
                 "DynRDSRTUpdateRate",
-                "DynRDSRTText",
-                "DynRDSPty"
+                "DynRDSRTStyle"
             ]
         }
     },
@@ -104,15 +104,16 @@
             "uncheckedValue": "0",
             "default": 1
         },
-        "DynRDSPSText": {
-            "name": "DynRDSPSText",
-            "description": "PS Text (8 chars per update)",
+        "DynRDSPSStyle": {
+            "name": "DynRDSPSStyle",
+            "description": "PS Style Text (8 chars per update)",
             "tip": "Sent 8 characters at a time. Program Service is the most commonly displayed part of RDS.",
             "restart": 1,
             "reboot": 0,
             "type": "text",
-            "size": 24,
-            "maxlength": 64
+            "size": 32,
+            "maxlength": 64,
+            "default": "Merry|Christ-|  -mas!|{T}|{A}|[{N} of 8]"
         },
         "DynRDSPSUpdateRate": {
             "name": "DynRDSPSUpdateRate",
@@ -127,15 +128,16 @@
             "step": 1,
             "default": 4
         },
-        "DynRDSRTText": {
-            "name": "DynRDSRTText",
-            "description": "RT Text (64 chars per update)",
-            "tip": "Sent 64 characters at a time. Radio Text is intended for longer message with a slower update rate.",
+        "DynRDSRTStyle": {
+            "name": "DynRDSRTStyle",
+            "description": "RT Style Text (32 chars per update)",
+            "tip": "Sent up to 64 characters at a time. Radio Text is intended for longer message with a slower update rate.",
             "restart": 1,
             "reboot": 0,
             "type": "text",
             "size": 64,
-            "maxlength": 256
+            "maxlength": 256,
+            "default": "Merry Christmas!|{T}[ by {A}]|[Track {N} of 8]"
         },
         "DynRDSRTUpdateRate": {
             "name": "DynRDSRTUpdateRate",
