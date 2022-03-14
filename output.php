@@ -9,7 +9,10 @@
 <?php endif; ?>
 
 <?
-PrintSettingGroup("DynRDSPluginActivation", "", "", 1, "Dynamic_RDS");
+PrintSettingGroup("DynRDSTransmitterType", "", "", 1, "Dynamic_RDS");
+?>
+<?
+PrintSettingGroup("DynRDSPluginActivation", "", "Control when the transmitter will be active", 1, "Dynamic_RDS");
 ?>
 <?
 PrintSettingGroup("DynRDSTransmitterSettings", "", "", 1, "Dynamic_RDS");
@@ -17,20 +20,15 @@ PrintSettingGroup("DynRDSTransmitterSettings", "", "", 1, "Dynamic_RDS");
 <?
 PrintSettingGroup("DynRDSRDSSettings", "", "", 1, "Dynamic_RDS");
 ?>
+<?
+PrintSettingGroup("DynRDSDebugging", "", "", 1, "Dynamic_RDS");
+?>
 
 </div>
 
 <hr />
 <div id="Si4713Debug" class="settings">
 <fieldset>
-<legend>Debugging</legend>
-<p>Logging Level for Dynamic_RDS_Engine.log: <?php PrintSettingSelect("LoggingLevel", "LoggingLevel", 1, 0, "INFO",
-Array(
-"DEBUG"=>"DEBUG",
-"INFO"=>"INFO",
-"WARNING"=>"WARNING",
-"ERROR"=>"ERROR",
-"CRITICAL"=>"CRITICAL"), "Dynamic_RDS", ""); ?></p>
 <p>Dynamic_RDS_callbacks.log: <input onclick= "ViewFile('Logs', '../plugins/Dynamic_RDS/Dynamic_RDS_callbacks.log');" id="btnViewScript" class="buttons" type="button" value="View" /></p>
 <p>Dynamic_RDS_Engine.log: <input onclick= "ViewFile('Logs', '../plugins/Dynamic_RDS/Dynamic_RDS_Engine.log');" id="btnViewScript" class="buttons" type="button" value="View" /></p>
 </fieldset>

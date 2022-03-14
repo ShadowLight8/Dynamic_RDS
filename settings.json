@@ -1,5 +1,11 @@
 {
     "settingGroups": {
+        "DynRDSTransmitterType": {
+            "description": "Transmitter",
+            "settings": [
+                "DynRDSTransmitter"
+            ]
+        },
         "DynRDSPluginActivation": {
             "description": "Plugin Activation",
             "settings": [
@@ -25,9 +31,30 @@
                 "DynRDSRTUpdateRate",
                 "DynRDSRTStyle"
             ]
+        },
+        "DynRDSDebugging": {
+            "description": "Debugging",
+            "settings": [
+                "DynRDSCallbackLogLevel",
+                "DynRDSEngineLogLevel"
+            ]
         }
     },
     "settings": {
+        "DynRDSTransmitter": {
+            "name": "DynRDSTransmitter",
+            "description": "Transmitter Type",
+            "tip": "Select which type of transmitter you are using",
+            "restart": 1,
+            "reboot": 0,
+            "type": "select",
+            "options": {
+                "SELECT TRANSMITTER": "None",
+                "QN8066": "QN8066",
+                "Si4713": "Si4713"
+            },
+            "default": "None"
+        },
         "DynRDSStart": {
             "name": "DynRDSStart",
             "description": "Start with",
@@ -193,7 +220,32 @@
             },
             "default": 2,
             "suffix": "North America / Europe"
-            
+        },
+        "DynRDSCallbackLogLevel": {
+            "name": "DynRDSCallbackLogLevel",
+            "description": "Logging Level for Callback",
+            "type": "select",
+            "options": {
+               "Errors Only": "error",
+               "Warn": "warning",
+               "Info": "info",
+               "Debug": "debug",
+               "Excessive": "excessive"
+            },
+            "default": "info"
+        },
+        "DynRDSEngineLogLevel": {
+            "name": "DynRDSEngineLogLevel",
+            "description": "Logging Level for Engine",
+            "type": "select",
+            "options": {
+               "Errors Only": "error",
+               "Warn": "warning",
+               "Info": "info",
+               "Debug": "debug",
+               "Excessive": "excessive"
+            },
+            "default": "info"
         }
     }
 }
