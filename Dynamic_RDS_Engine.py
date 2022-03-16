@@ -404,7 +404,7 @@ def rdsStyleToString(rdsStyle, groupSize):
     pass # Expected when index doesn't find a ]
 
   outputRDS = ''.join(outputRDS)
-  logging.info('RDS Data [%s]', outputRDS)
+  logging.debug('RDS Data [%s]', outputRDS)
   return outputRDS
 
 # ===============

@@ -1,11 +1,5 @@
 {
     "settingGroups": {
-        "DynRDSTransmitterType": {
-            "description": "Transmitter",
-            "settings": [
-                "DynRDSTransmitter"
-            ]
-        },
         "DynRDSPluginActivation": {
             "description": "Plugin Activation",
             "settings": [
@@ -14,8 +8,9 @@
             ]
         },
         "DynRDSTransmitterSettings": {
-            "description": "Transmitter Settings",
+            "description": "Transmitter Type and Settings",
             "settings": [
+                "DynRDSTransmitter",
                 "DynRDSPower",
                 "DynRDSFrequency",
                 "DynRDSPreemphasis"
@@ -29,6 +24,7 @@
                 "DynRDSPSUpdateRate",
                 "DynRDSPSStyle",
                 "DynRDSRTUpdateRate",
+                "DynRDSRTSize",
                 "DynRDSRTStyle"
             ]
         },
@@ -43,15 +39,15 @@
     "settings": {
         "DynRDSTransmitter": {
             "name": "DynRDSTransmitter",
-            "description": "Transmitter Type",
-            "tip": "Select which type of transmitter you are using",
+            "description": "Transmitter Type (Auto-Selected)",
+            "tip": "When not set, will be set based on I<sup>2</sup>C detection. Can be changed manually.",
             "restart": 1,
             "reboot": 0,
             "type": "select",
             "options": {
                 "SELECT TRANSMITTER": "None",
                 "QN8066": "QN8066",
-                "Si4713": "Si4713"
+                "Si4713 (coming soon)": "Si4713"
             },
             "default": "None"
         },
@@ -157,7 +153,7 @@
         },
         "DynRDSRTStyle": {
             "name": "DynRDSRTStyle",
-            "description": "RT Style Text (32 chars per update)",
+            "description": "RT Style Text",
             "tip": "Sent up to 64 characters at a time. Radio Text is intended for longer message with a slower update rate.",
             "restart": 1,
             "reboot": 0,
@@ -178,6 +174,17 @@
             "max": 60,
             "step": 1,
             "default": 8
+        },
+        "DynRDSRTSize": {
+            "name": "DynRDSRTSize",
+            "description": "RT Update Size",
+            "tip": "While RadioText (RT) can be up to 64 characters at a time, not all radios will display everything at the same time. A smaller setting is recommended.",
+            "type": "number",
+            "min": 8,
+            "max": 64,
+            "step": 1,
+            "default": 32,
+            "suffix": "characters"
         },
         "DynRDSPty": {
             "name": "DynRDSPty",
@@ -226,26 +233,26 @@
             "description": "Logging Level for Callback",
             "type": "select",
             "options": {
-               "Errors Only": "error",
-               "Warn": "warning",
-               "Info": "info",
-               "Debug": "debug",
-               "Excessive": "excessive"
+               "Errors Only": "ERROR",
+               "Warn": "WARNING",
+               "Info": "INFO",
+               "Debug": "DEBUG",
+               "Excessive": "EXCESSIVE"
             },
-            "default": "info"
+            "default": "INFO"
         },
         "DynRDSEngineLogLevel": {
             "name": "DynRDSEngineLogLevel",
             "description": "Logging Level for Engine",
             "type": "select",
             "options": {
-               "Errors Only": "error",
-               "Warn": "warning",
-               "Info": "info",
-               "Debug": "debug",
-               "Excessive": "excessive"
+               "Errors Only": "ERROR",
+               "Warn": "WARNING",
+               "Info": "INFO",
+               "Debug": "DEBUG",
+               "Excessive": "EXCESSIVE"
             },
-            "default": "info"
+            "default": "INFO"
         }
     }
 }
