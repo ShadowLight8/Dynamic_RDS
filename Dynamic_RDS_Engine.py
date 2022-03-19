@@ -125,6 +125,9 @@ class Transmitter:
       self.frag_size = frag_size
       self.group_size = group_size
       self.delay = delay
+      self.pi_byte1 = int('0x' + config['DynRDSPICode'][0:2], 16)
+      self.pi_byte2 = int('0x' + config['DynRDSPICode'][2:4], 16)
+      self.pty = int(config['DynRDSPty'])
       self.updateData(data)
 
     def updateData(self, data):
@@ -271,7 +274,7 @@ class QN80xx(Transmitter):
         logging.debug('Send PS Fragment \'{}\''.format(self.fragments[self.currentFragment]))
 
       # TODO: Seems like this could be improved
-      rdsBytes = [pi_byte1, pi_byte2, 0b10<<2 | pty>>3, (0b00111 & pty)<<5 | self.currentGroup, pi_byte1, pi_byte2]
+      rdsBytes = [self.pi_byte1, self.pi_byte2, 0b10<<2 | self.pty>>3, (0b00111 & self.pty)<<5 | self.currentGroup, self.pi_byte1, self.pi_byte2]
       rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size]))
       rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size + 1]))
 
@@ -308,7 +311,7 @@ class QN80xx(Transmitter):
         logging.debug('Send RT Fragment \'{}\''.format(self.fragments[self.currentFragment].replace('\r','\\r')))
 
       # TODO: Seems like this could be improved
-      rdsBytes = [pi_byte1, pi_byte2, 0b1000<<2 | pty>>3, (0b00111 & pty)<<5 | self.ab<<4 | self.currentGroup]
+      rdsBytes = [self.pi_byte1, self.pi_byte2, 0b1000<<2 | self.pty>>3, (0b00111 & self.pty)<<5 | self.ab<<4 | self.currentGroup]
       rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size]))
       rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size + 1]) if len(self.fragments[self.currentFragment]) - self.currentGroup * self.group_size >= 2 else 0x20)
       rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size + 2]) if len(self.fragments[self.currentFragment]) - self.currentGroup * self.group_size >= 3 else 0x20)
@@ -326,35 +329,40 @@ class QN80xx(Transmitter):
 # TODO for PLUGIN: Clean up default values
 # TODO for PLUGIN: Make sure all defaults support working out of the box
 def read_config():
-	global config
-	config = {
-		'DynRDSStart': 'FPPDStart',
-		'DynRDSStop': 'Never',
-		'DynRDSGPIONumReset': '4',
-		'DynRDSFrequency': '100.1',
-		'DynRDSPower': '113',
-		'DynRDSPreemphasis': '75us',
-		'DynRDSAntCap': '32',
-		'DynRDSEnableRDS': 'True',
-		'DynRDSPty': '2',
-		'DynRDSPSUpdateRate': '4',
-		'DynRDSPSStyle': 'Merry|Christ-|  -mas!|{T}|{A}|[{N} of 8]',
-		'DynRDSRTUpdateRate': '8',
-		'DynRDSRTStyle': 'Merry Christmas!|{T}[ by {A}]|[Track {N} of 8]',
-		'DynRDSCallbackLogLevel': 'DEBUG',
-		'DynRDSEngineLogLevel': 'DEBUG'
-	}
+  global config
+  config = {
+    'DynRDSEnableRDS': 'True',
+    'DynRDSPSUpdateRate': '4',
+    'DynRDSPSStyle': 'Merry|Christ-|  -mas!|{T}|{A}|[{N} of 8]',
+    'DynRDSRTUpdateRate': '8',
+    'DynRDSRTSize': '32',
+    'DynRDSRTStyle': 'Merry Christmas!|{T}[ by {A}]|[Track {N} of 8]',
+    'DynRDSPty': '2',
+    'DynRDSPICode': '819b',
+    'DynRDSTransmitter': 'None',
+    'DynRDSFrequency': '100.1',
+    'DynRDSPreemphasis': '75us',
+    'DynRDSChipPower': '113',
+    'DynRDSAmpPower': '0',
+    'DynRDSStart': 'FPPDStart',
+    'DynRDSStop': 'Never',
+    'DynRDSCallbackLogLevel': 'DEBUG',
+    'DynRDSEngineLogLevel': 'DEBUG'
 
-	configfile = os.getenv('CFGDIR', '/home/fpp/media/config') + '/plugin.Dynamic_RDS'
-	try:
-		with open(configfile, 'r') as f:
-        		for line in f:
-                		(key, val) = line.split(' = ')
-	                	config[key] = val.replace('"', '').strip()
-	except IOError:
-		logging.warning('No config file found, using defaults.')
-	logging.getLogger().setLevel(config['DynRDSEngineLogLevel'])
-	logging.info('Config %s', config)
+    #'DynRDSGPIONumReset': '4',
+    #'DynRDSAntCap': '32',
+  }
+
+  configfile = os.getenv('CFGDIR', '/home/fpp/media/config') + '/plugin.Dynamic_RDS'
+  try:
+    with open(configfile, 'r') as f:
+      for line in f:
+        (key, val) = line.split(' = ')
+        config[key] = val.replace('"', '').strip()
+  except IOError:
+    logging.warning('No config file found, using defaults.')
+  logging.getLogger().setLevel(config['DynRDSEngineLogLevel'])
+  logging.info('Config %s', config)
 
 # ===============================
 # Processing FPP Data to RDS Data
@@ -434,23 +442,23 @@ logging.info('--------');
 
 # Establish lock via socket or exit if failed
 try:
-	lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-	lock_socket.bind('\0Dynamic_RDS_Engine')
-	logging.debug('Lock created')
+  lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+  lock_socket.bind('\0Dynamic_RDS_Engine')
+  logging.debug('Lock created')
 except:
-	logging.error('Unable to create lock. Another instance of Dynamic_RDS_Engine.py running?')
-	exit(1)
+  logging.error('Unable to create lock. Another instance of Dynamic_RDS_Engine.py running?')
+  exit(1)
 
 # Setup fifo
 fifo_path = script_dir + "/Dynamic_RDS_FIFO"
 try:
-	logging.debug('Setting up read side of fifo %s', fifo_path)
-	os.mkfifo(fifo_path)
+  logging.debug('Setting up read side of fifo %s', fifo_path)
+  os.mkfifo(fifo_path)
 except OSError as oe:
-	if oe.errno != errno.EEXIST:
-		raise
-	else:
-		logging.debug('Fifo already exists')
+  if oe.errno != errno.EEXIST:
+    raise
+  else:
+    logging.debug('Fifo already exists')
 
 # Global RDS Values
 title = ''
@@ -458,19 +466,11 @@ artist = ''
 tracknum = ''
 tracklength = 0
 
-# Get config populated and/or loaded
-config = {}
+# Global Transmitter Object
+transmitter = None
+
+# Load config - Mostly to set log level to target
 read_config()
-
-# RDS Global Values
-# TODO: These need to come from config
-pi_byte1 = 0x81
-pi_byte2 = 0x9b
-pty = int(config['DynRDSPty'])
-
-# TODO: Based on config init the correct transmitter
-transmitter = QN80xx()
-updateRDSData()
 
 # =========
 # Main Loop
@@ -498,6 +498,7 @@ with open(fifo_path, 'r') as fifo:
 			elif line == 'INIT':
 				logging.info('Processing init')
 				read_config()
+
 				# TODO: Setup non-transmitter items, assuming this isn't defaultly done - Don't think this will be anything yet
 				if config['DynRDSStart'] == "FPPDStart":
 					transmitter.startup()
