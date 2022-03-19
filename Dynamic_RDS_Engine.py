@@ -479,75 +479,76 @@ read_config()
 # Check if new information is in the FIFO and process accordingly
 # ?(Always or when no new info)? send the next RDS groups each loop
 with open(fifo_path, 'r') as fifo:
-	while True:
-		line = fifo.readline().rstrip()
-		if len(line) > 0:
-			logging.debug('line %s', line)
-			if line == 'EXIT':
-				logging.info('Processing exit')
-				transmitter.shutdown()
-				exit()
+  while True:
+    line = fifo.readline().rstrip()
+    if len(line) > 0:
+      logging.debug('line %s', line)
+      if line == 'EXIT':
+        logging.info('Processing exit')
+        transmitter.shutdown()
+        exit()
 
-			elif line == 'RESET':
-				logging.info('Processing reset')
-				read_config()
-				transmitter.reset()
-				if config['DynRDSStart'] == "FPPDStart":
-					transmitter.startup()
+      elif line == 'RESET':
+        logging.info('Processing reset')
+        read_config()
+        transmitter.reset()
+        if config['DynRDSStart'] == "FPPDStart":
+          transmitter.startup()
 
-			elif line == 'INIT':
-				logging.info('Processing init')
-				read_config()
+      elif line == 'INIT':
+        logging.info('Processing init')
+        read_config()
 
-				# TODO: Setup non-transmitter items, assuming this isn't defaultly done - Don't think this will be anything yet
-				if config['DynRDSStart'] == "FPPDStart":
-					transmitter.startup()
+        # TODO: Setup non-transmitter items, assuming this isn't defaultly done - Don't think this will be anything yet
+        if config['DynRDSStart'] == "FPPDStart":
+          transmitter.startup()
 
-			elif line == 'START':
-				logging.info('Processing start')
-				if config['DynRDSStart'] == "PlaylistStart":
-					transmitter.startup()
+      elif line == 'START':
+        logging.info('Processing start')
+        if config['DynRDSStart'] == "PlaylistStart":
+          transmitter.startup()
 
-			elif line == 'STOP':
-				logging.info('Processing stop')
-				# Reset RDS data to the default
-                                # TODO: Switch to using global dictionary
-				title = ''
-				artist = ''
-				tracknum = ''
-				tracklength = '0'
-				updateRDSData()
+      elif line == 'STOP':
+        logging.info('Processing stop')
+        # Reset RDS data to the default
+        # TODO: Switch to using global dictionary
+        title = ''
+        artist = ''
+        tracknum = ''
+        tracklength = '0'
+        updateRDSData()
 
-				if config['DynRDSStop'] == "PlaylistStop":
-					transmitter.shutdown()
-					logging.info('Radio stopped')
-			# TODO: After checking for all control WORDS, assume the first letter is what does into the rdsValues dictionary
-			elif line[0] == 'T':
-				logging.debug('Processing title')
-				title = line[1:]
+        if config['DynRDSStop'] == "PlaylistStop":
+          transmitter.shutdown()
+          logging.info('Radio stopped')
 
-			elif line[0] == 'A':
-				logging.debug('Processing artist')
-				artist = line[1:]
+      # TODO: After checking for all control WORDS, assume the first letter is what does into the rdsValues dictionary
+      elif line[0] == 'T':
+        logging.debug('Processing title')
+        title = line[1:]
 
-			elif line[0] == 'N':
-				logging.debug('Processing track number')
-				tracknum = line[1:]
+      elif line[0] == 'A':
+        logging.debug('Processing artist')
+        artist = line[1:]
 
-			elif line[0] == 'L':
-				logging.debug('Processing length')
-				tracklength = max(int(line[1:10]) - max(int(config['DynRDSPSUpdateRate']), int(config['DynRDSRTUpdateRate'])), 1)
-				logging.debug('Length %s', int(tracklength))
+      elif line[0] == 'N':
+        logging.debug('Processing track number')
+        tracknum = line[1:]
 
-				# TANL is always sent together with L being last item, so we only need to update the RDS Data once with the new values
-                                # TODO: This will likely change as more data is added, so a new way will have to be determined
-				updateRDSData()
-				transmitter.status()
+      elif line[0] == 'L':
+        logging.debug('Processing length')
+        tracklength = max(int(line[1:10]) - max(int(config['DynRDSPSUpdateRate']), int(config['DynRDSRTUpdateRate'])), 1)
+        logging.debug('Length %s', int(tracklength))
 
-			else:
-				logging.error('Unknown fifo input %s', line)
+        # TANL is always sent together with L being last item, so we only need to update the RDS Data once with the new values
+        # TODO: This will likely change as more data is added, so a new way will have to be determined
+        updateRDSData()
+        transmitter.status()
 
-		else:
-			transmitter.sendNextRDSGroup()
-			# TODO: Determine when track length is done to reset RDS
-			# TODO: Could add 1 sec to length, so normally track change will update data rather than time expiring. Reset should only happen when playlist is stopped?
+      else:
+        logging.error('Unknown fifo input %s', line)
+
+    else:
+      transmitter.sendNextRDSGroup()
+      # TODO: Determine when track length is done to reset RDS
+      # TODO: Could add 1 sec to length, so normally track change will update data rather than time expiring. Reset should only happen when playlist is stopped?
