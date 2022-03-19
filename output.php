@@ -12,7 +12,7 @@ $goodStatus = '';
 if ($engineRunning) {
   $goodStatus = 'Dynamic RDS Engine is running<br />';
 } else {
-  echo '<div class="callout callout-danger">Dynamic RDS Engine is not running - Restart of FPPD is recommended.</div>';
+  echo '<div class="callout callout-danger">Dynamic RDS Engine is not running - Restart of FPPD is recommended</div>';
 }
 
 $transmitterFound = false;
@@ -51,13 +51,22 @@ window.onload = function() {
 </script>
 
 <?
-PrintSettingGroup("DynRDSRDSSettings", "", "", 1, "Dynamic_RDS");
+PrintSettingGroup("DynRDSRDSSettings", "
+<div class='callout callout-warning'>
+ <h4>RDS Style Text Guide</h4>
+ {T} = Title, {A} = Artist, {N} = Track Number, {L} = Track Length</br>
+ Any static text can be used<br />
+ | will split between RDS groups, like a line break<br />
+ [ ] creates a subgroup such that if <b>ANY</b> substitution in the subgroup is emtpy, the entire subgroup is omitted</br>
+ Use a \ in front of | { } [ or ] to display those characters
+</div>
+", "", 1, "Dynamic_RDS");
 ?>
 <?
 PrintSettingGroup("DynRDSTransmitterSettings", "", "", 1, "Dynamic_RDS");
 ?>
 <?
-PrintSettingGroup("DynRDSPluginActivation", "", "Control when the transmitter will be active", 1, "Dynamic_RDS");
+PrintSettingGroup("DynRDSPluginActivation", "", "Set when the transmitter is active", 1, "Dynamic_RDS");
 ?>
 <?
 PrintSettingGroup("DynRDSDebugging", "", "", 1, "Dynamic_RDS");

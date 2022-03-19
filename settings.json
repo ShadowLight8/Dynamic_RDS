@@ -1,31 +1,33 @@
 {
     "settingGroups": {
-        "DynRDSPluginActivation": {
-            "description": "Plugin Activation",
+        "DynRDSRDSSettings": {
+            "description": "RDS Settings",
             "settings": [
-                "DynRDSStart",
-                "DynRDSStop"
+                "DynRDSEnableRDS",
+                "DynRDSPSUpdateRate",
+                "DynRDSPSStyle",
+                "DynRDSRTUpdateRate",
+                "DynRDSRTSize",
+                "DynRDSRTStyle",
+                "DynRDSPty",
+                "DynRDSPICode"
             ]
         },
         "DynRDSTransmitterSettings": {
             "description": "Transmitter Type and Settings",
             "settings": [
                 "DynRDSTransmitter",
-                "DynRDSPower",
                 "DynRDSFrequency",
-                "DynRDSPreemphasis"
+                "DynRDSPreemphasis",
+                "DynRDSChipPower",
+                "DynRDSAmpPower"
             ]
         },
-        "DynRDSRDSSettings": {
-            "description": "RDS Settings",
+        "DynRDSPluginActivation": {
+            "description": "Plugin Activation",
             "settings": [
-                "DynRDSEnableRDS",
-                "DynRDSPty",
-                "DynRDSPSUpdateRate",
-                "DynRDSPSStyle",
-                "DynRDSRTUpdateRate",
-                "DynRDSRTSize",
-                "DynRDSRTStyle"
+                "DynRDSStart",
+                "DynRDSStop"
             ]
         },
         "DynRDSDebugging": {
@@ -41,8 +43,9 @@
             "name": "DynRDSTransmitter",
             "description": "Transmitter Type (Auto-Selected)",
             "tip": "When not set, will be set based on I<sup>2</sup>C detection. Can be changed manually.",
-            "restart": 1,
+            "restart": 2,
             "reboot": 0,
+            "reloadUI": 1,
             "type": "select",
             "options": {
                 "SELECT TRANSMITTER": "None",
@@ -78,9 +81,9 @@
             },
             "default": "Never"
         },
-        "DynRDSPower": {
-            "name": "DynRDSPower",
-            "description": "Power (88-115, 116-120*)",
+        "DynRDSChipPower": {
+            "name": "DynRDSChipPower",
+            "description": "Chip Power (88-115, 116-120*)",
             "tip": "Adjust the power output from the transmitter chip",
             "restart": 1,
             "reboot": 0,
@@ -90,6 +93,18 @@
             "step": 1,
             "suffix": "dB&mu;V",
             "default": 113
+	},
+        "DynRDSAmpPower": {
+            "name": "DynRDSAmpPower",
+            "description": "Amp Power (0-300)",
+            "tip": "Adjust the power output from amplifier after the transmitter chip",
+            "restart": 1,
+            "reboot": 0,
+            "type": "number",
+            "min": 0,
+            "max": 300,
+            "step": 1,
+            "default": 0
 	},
         "DynRDSFrequency": {
             "name": "DynRDSFrequency",
@@ -125,7 +140,18 @@
             "type": "checkbox",
             "checkedValue": "1",
             "uncheckedValue": "0",
-            "default": 1
+            "default": 1,
+            "children": {
+                "1": [
+                    "DynRDSPICode",
+                    "DynRDSPty",
+                    "DynRDSPSUpdateRate",
+                    "DynRDSPSStyle",
+                    "DynRDSRTUpdateRate",
+                    "DynRDSRTSize",
+                    "DynRDSRTStyle"
+                ]
+            }
         },
         "DynRDSPSStyle": {
             "name": "DynRDSPSStyle",
@@ -227,6 +253,15 @@
             },
             "default": 2,
             "suffix": "North America / Europe"
+        },
+        "DynRDSPICode": {
+            "name": "DynRDSPICode",
+            "description": "PI Code",
+            "tip": "Unique program indentification code. While no longer the standard in the US, some older recievers will attempt to translate the PI code to a callsign. Can use 819b for WRAP or 5F64 for WEBS. You can search at http://picodes.nrscstandards.org for unused codes or calculate your own at http://audemat-radio.com/popup/picode.php. First character of callsign is limited to W or K.",
+            "type": "text",
+            "size": 4,
+            "maxlength": 4,
+            "default": "819b"
         },
         "DynRDSCallbackLogLevel": {
             "name": "DynRDSCallbackLogLevel",

@@ -497,6 +497,7 @@ with open(fifo_path, 'r') as fifo:
 
 			elif line == 'INIT':
 				logging.info('Processing init')
+				read_config()
 				# TODO: Setup non-transmitter items, assuming this isn't defaultly done - Don't think this will be anything yet
 				if config['DynRDSStart'] == "FPPDStart":
 					transmitter.startup()
