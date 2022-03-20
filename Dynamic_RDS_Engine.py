@@ -147,8 +147,8 @@ class QN80xx(Transmitter):
   def __init__(self):
     super().__init__()
     self.I2C = basicI2C(0x21)
-    self.PS = self.PSBuffer(self, ' ', 4)
-    self.RT = self.RTBuffer(self, ' ', 7)
+    self.PS = self.PSBuffer(self, ' ', int(config['DynRDSPSUpdateRate']))
+    self.RT = self.RTBuffer(self, ' ', int(config['DynRDSRTUpdateRate']))
 
   def startup(self):
     logging.info('Starting QN80xx transmitter')
@@ -216,7 +216,7 @@ class QN80xx(Transmitter):
     self.fsm = self.I2C.read(0x0a,1)[0]>>4
     # Check frequency? 0x19 1:0 + 0x1b
 
-    logging.info('Status - State {} (expect 10) - Audio Peak {} (target <= 8)'.format(self.fsm, self.aud_pk))
+    logging.info('Status - State {} (expect 10) - Audio Peak {} (target <= 14?)'.format(self.fsm, self.aud_pk))
 
     # Reset aud_pk
     self.I2C.write(0x24, [0b11111111]);
@@ -284,10 +284,9 @@ class QN80xx(Transmitter):
   class RTBuffer(Transmitter.RDSBuffer):
     # Sends RDS type 2A groups - RadioText
     # Max fragment size of 64, Groups send 4 characters at a time
-    # TODO: Possible to change fragment size from ~24-64?
     def __init__(self, outer, data, delay=7):
       self.ab = 0
-      super().__init__(data, 32, 4, delay)
+      super().__init__(data, int(config['DynRDSRTSize']), 4, delay)
       self.outer = outer
 
     def updateData(self, data):
@@ -326,8 +325,6 @@ class QN80xx(Transmitter):
 # Configuration defaults and loading
 # ==================================
 
-# TODO for PLUGIN: Clean up default values
-# TODO for PLUGIN: Make sure all defaults support working out of the box
 def read_config():
   global config
   config = {
@@ -371,17 +368,15 @@ def read_config():
 def updateRDSData():
   # Take the data from FPP and the configuration to build the actual RDS string
   logging.info('Updating RDS Data')
-  logging.debug('Title %s', title)
-  logging.debug('Artist %s', artist)
-  logging.debug('Tracknum %s', tracknum)
-  logging.debug('Length %s', tracklength)
-  transmitter.updateRDSData(rdsStyleToString(config['DynRDSPSStyle'], 8), rdsStyleToString(config['DynRDSRTStyle'], 32))
+  logging.debug('RDS Values %s', rdsValues)
+
+  # TODO: DynRDSRTSize functionally works, but I think this should source from the RTBuffer class post initialization
+  transmitter.updateRDSData(rdsStyleToString(config['DynRDSPSStyle'], 8), rdsStyleToString(config['DynRDSRTStyle'], int(config['DynRDSRTSize'])))
 
 def rdsStyleToString(rdsStyle, groupSize):
   outputRDS = []
   squStart = -1
   skip = 0
-  swapValues = {'{T}': title, '{A}': artist, '{N}': tracknum, '{L}': tracklength} # TODO: Make this global for managing RDS Values?
 
   try:
     for i, v in enumerate(rdsStyle):
@@ -391,21 +386,21 @@ def rdsStyleToString(rdsStyle, groupSize):
       elif v == '\\' and i < len(rdsStyle) - 1:
         skip += 1
         outputRDS.append(rdsStyle[i+1])
-      elif v == '[': # Start of square bracket mode
+      elif v == '[':
         squStart = len(outputRDS) # Track on the outputRDS where the square bracket started in case we have to clean up
-      elif v == ']' and squStart != -1: # End of square bracket mode, append to output and reset to None
+      elif v == ']' and squStart != -1: # End of square bracket mode, append to output and reset
         squStart = -1
       elif v == '|':
         chunkLength = groupSize - sum(len(s) for s in outputRDS) % groupSize
         if chunkLength != groupSize:
           outputRDS.append(' ' * chunkLength)
       elif v == '{' and i < len(rdsStyle) - 2 and rdsStyle[i+2] == '}':
-        if squStart != -1 and not swapValues.get(rdsStyle[i:i+3],''): # In square brackets and value is empty?
+        if squStart != -1 and not rdsValues.get(rdsStyle[i:i+3],''): # In square brackets and value is empty?
           del outputRDS[squStart:] # Remove output back to start of square bracket group
           skip += rdsStyle.index(']', i + 3) - i - 1 # Using index to throw if no ] by the end of rdsStyle - Done building in this case
         else:
           skip += 2
-          outputRDS.append(swapValues.get(rdsStyle[i:i+3], ''))
+          outputRDS.append(rdsValues.get(rdsStyle[i:i+3], ''))
       else:
         outputRDS.append(v)
   except ValueError:
@@ -461,23 +456,16 @@ except OSError as oe:
     logging.debug('Fifo already exists')
 
 # Global RDS Values
-title = ''
-artist = ''
-tracknum = ''
-tracklength = 0
-
-# Global Transmitter Object
-transmitter = None
+rdsValues = {'{T}': '', '{A}': '', '{N}': '', '{L}': ''}
 
 # Load config - Mostly to set log level to target
-read_config()
+#read_config()
 
 # =========
 # Main Loop
 # =========
 
 # Check if new information is in the FIFO and process accordingly
-# ?(Always or when no new info)? send the next RDS groups each loop
 with open(fifo_path, 'r') as fifo:
   while True:
     line = fifo.readline().rstrip()
@@ -495,60 +483,61 @@ with open(fifo_path, 'r') as fifo:
         if config['DynRDSStart'] == "FPPDStart":
           transmitter.startup()
 
-      elif line == 'INIT':
+      elif line == 'INIT': # From --list with callback.py
         logging.info('Processing init')
         read_config()
 
-        # TODO: Setup non-transmitter items, assuming this isn't defaultly done - Don't think this will be anything yet
+        transmitter = None
+        if config['DynRDSTransmitter'] == "QN8066":
+          transmitter = QN80xx()
+        elif config['DynRDSTransmitter'] == "Si4713":
+          transmitter = None; # To be implemented later
+
+        if transmitter == None:
+          logger.error('Transmitter not set. Check Transmitter Type.')
+          continue;
+
+        updateRDSData()
+
         if config['DynRDSStart'] == "FPPDStart":
           transmitter.startup()
 
       elif line == 'START':
         logging.info('Processing start')
-        if config['DynRDSStart'] == "PlaylistStart":
+        if config['DynRDSStart'] == "PlaylistStart" or config['DynRDSStart'] == "FPPDStart":
           transmitter.startup()
 
       elif line == 'STOP':
         logging.info('Processing stop')
-        # Reset RDS data to the default
-        # TODO: Switch to using global dictionary
-        title = ''
-        artist = ''
-        tracknum = ''
-        tracklength = '0'
+        for key in rdsValues:
+          rdsValues[key] = ''
         updateRDSData()
 
         if config['DynRDSStop'] == "PlaylistStop":
           transmitter.shutdown()
-          logging.info('Radio stopped')
+          logging.info('Transmitter stopped')
 
-      # TODO: After checking for all control WORDS, assume the first letter is what does into the rdsValues dictionary
-      elif line[0] == 'T':
-        logging.debug('Processing title')
-        title = line[1:]
-
-      elif line[0] == 'A':
-        logging.debug('Processing artist')
-        artist = line[1:]
-
-      elif line[0] == 'N':
-        logging.debug('Processing track number')
-        tracknum = line[1:]
-
+      # rdsValues that need additional parsing
       elif line[0] == 'L':
         logging.debug('Processing length')
-        tracklength = max(int(line[1:10]) - max(int(config['DynRDSPSUpdateRate']), int(config['DynRDSRTUpdateRate'])), 1)
-        logging.debug('Length %s', int(tracklength))
+        rdsValues['{'+line[0]+'}'] = '{}:{:02d}'.format(int(line[1:])//60, int(line[1:])%60)
+        #tracklength = max(int(line[1:10]) - max(int(config['DynRDSPSUpdateRate']), int(config['DynRDSRTUpdateRate'])), 1)
+        #logging.debug('Length %s', int(tracklength))
 
         # TANL is always sent together with L being last item, so we only need to update the RDS Data once with the new values
         # TODO: This will likely change as more data is added, so a new way will have to be determined
         updateRDSData()
         transmitter.status()
 
+      # All of the rdsValues that are stored as is
       else:
-        logging.error('Unknown fifo input %s', line)
+        rdsValues['{'+line[0]+'}'] = line[1:]
 
-    else:
+    elif transmitter != None and transmitter.active:
       transmitter.sendNextRDSGroup()
       # TODO: Determine when track length is done to reset RDS
       # TODO: Could add 1 sec to length, so normally track change will update data rather than time expiring. Reset should only happen when playlist is stopped?
+
+    else:
+      logging.debug('Sleeping...')
+      sleep(3)

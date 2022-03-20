@@ -63,7 +63,7 @@
             "type": "select",
             "options": {
                 "FPPD Start (default)": "FPPDStart",
-                "Plalist Start": "PlaylistStart",
+                "Playlist Start": "PlaylistStart",
                 "Never": "Never"
             },
             "default": "FPPDStart"
@@ -76,7 +76,7 @@
             "reboot": 0,
             "type": "select",
             "options": {
-                "Plalist Stop": "PlaylistStart",
+                "Playlist Stop": "PlaylistStop",
                 "Never (default)": "Never"
             },
             "default": "Never"
