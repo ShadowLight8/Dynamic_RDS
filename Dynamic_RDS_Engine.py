@@ -32,6 +32,7 @@ class basicI2C(object):
     if os.path.isfile('/dev/ic2-0'):
       bus = 0
     self.bus = smbus.SMBus(bus)
+    sleep(1)
 
   def write(self, address, values):
     # Simple i2c write - Always takes an list, even for 1 byte
@@ -194,10 +195,12 @@ class QN80xx(Transmitter):
     self.I2C.write(0x27, [0b00111001])
 
     # Stop Auto Gain Correction (AGC), which introduces obvious poor sounding audio changes
-    self.I2C.write(0x6e, [0b10110111])
+    if config['DynRDSQN8066AGC'] == '0':
+      self.I2C.write(0x6e, [0b10110111])
 
     # TX gain changes and input impedance
-    self.I2C.write(0x28, [0b01011011])
+    self.I2C.write(0x28, [int(config['DynRDSQN8066SoftClipping'])<<7 | int(config['DynRDSQN8066BufferGain'])<<4 | int(config['DynRDSQN8066DigitalGain'])<<2 | int(config['DynRDSQN8066InputImpedance'])])
+    #self.I2C.write(0x28, [0b01011011])
 
     # Reset aud_pk
     self.I2C.write(0x24, [0b11111111]);
@@ -341,6 +344,11 @@ def read_config():
     'DynRDSPreemphasis': '75us',
     'DynRDSChipPower': '113',
     'DynRDSAmpPower': '0',
+    'DynRDSQN8066InputImpedance': '0',
+    'DynRDSQN8066DigitalGain': '0',
+    'DynRDSQN8066BufferGain': '0',
+    'DynRDSQN8066SoftClipping': '0',
+    'DynRDSQN8066AGC': '0',
     'DynRDSStart': 'FPPDStart',
     'DynRDSStop': 'Never',
     'DynRDSCallbackLogLevel': 'DEBUG',
@@ -358,6 +366,7 @@ def read_config():
         config[key] = val.replace('"', '').strip()
   except IOError:
     logging.warning('No config file found, using defaults.')
+ 
   logging.getLogger().setLevel(config['DynRDSEngineLogLevel'])
   logging.info('Config %s', config)
 
@@ -416,7 +425,7 @@ def rdsStyleToString(rdsStyle, groupSize):
 
 # Setup logging
 script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-#logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+#logging.basicConfig(stream=sys.stderr, level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
 logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
 
 # Adding in excessive log level below debug for very noisy items
@@ -428,7 +437,7 @@ def excessive(msg, *args, **kwargs):
   if logging.getLogger().isEnabledFor(EXCESSIVE):
     logging.log(EXCESSIVE, msg, *args, **kwargs)
 
-logging.addLevelName(15, 'EXCESSIVE')
+logging.addLevelName(5, 'EXCESSIVE')
 logging.EXCESSIVE = EXCESSIVE
 logging.excessive = excessive
 logging.Logger.excessive = excessive
@@ -504,7 +513,7 @@ with open(fifo_path, 'r') as fifo:
 
       elif line == 'START':
         logging.info('Processing start')
-        if config['DynRDSStart'] == "PlaylistStart" or config['DynRDSStart'] == "FPPDStart":
+        if config['DynRDSStart'] == "PlaylistStart" or not transmitter.active:
           transmitter.startup()
 
       elif line == 'STOP':

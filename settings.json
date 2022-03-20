@@ -23,6 +23,16 @@
                 "DynRDSAmpPower"
             ]
         },
+        "DynRDSAudioSettings": {
+            "description": "Audio Settings (QN8066)",
+            "settings": [
+                "DynRDSQN8066InputImpedance",
+                "DynRDSQN8066DigitalGain",
+                "DynRDSQN8066BufferGain",
+                "DynRDSQN8066SoftClipping",
+                "DynRDSQN8066AGC"
+            ]
+        },
         "DynRDSPluginActivation": {
             "description": "Plugin Activation",
             "settings": [
@@ -131,6 +141,72 @@
                 "50 &mu;s (Europe, Australia, Japan)": "50us"
             },
             "default": "75us"
+        },
+        "DynRDSQN8066InputImpedance": {
+            "name": "DynRDSQN8066InputImpedance",
+            "description": "Input Impedance",
+            "tip": "",
+            "restart": 1,
+            "reboot": 0,
+            "type": "select",
+            "options": {
+                "10 k&ohm;": "0",
+                "20 k&ohm;": "1",
+                "40 k&ohm;": "2",
+                "80 k&ohm;": "3"
+            },
+            "default": "0"
+        },
+        "DynRDSQN8066DigitalGain": {
+            "name": "DynRDSQN8066DigitalGain",
+            "description": "Digital Gain",
+            "tip": "",
+            "restart": 1,
+            "reboot": 0,
+            "type": "select",
+            "options": {
+                "+0 dB": "0",
+                "+1 dB": "1",
+                "+2 dB": "2"
+            },
+            "default": "0"
+        },
+        "DynRDSQN8066BufferGain": {
+            "name": "DynRDSQN8066BufferGain",
+            "description": "Buffer Gain (at 10/20/40/80 k&ohm;)",
+            "tip": "",
+            "restart": 1,
+            "reboot": 0,
+            "type": "select",
+            "options": {
+                "+3 / -3 / -9 / -15 dB": "0",
+                "+6 / 0 / -6 / -12 dB": "1",
+                "+9 / +3 / -3 / -9 dB": "2",
+                "+12 / +6 / 0 / -6 dB": "3",
+                "+15 / +9 / +3 / -3 dB": "4",
+                "+18 / +12 / +6 / 0 dB": "5"
+            },
+            "default": "0"
+        },
+        "DynRDSQN8066SoftClipping": {
+            "name": "DynRDSQN8066SoftClipping",
+            "description": "Enable Soft Clipping",
+            "restart": 1,
+            "reboot": 0,
+            "type": "checkbox",
+            "checkedValue": "1",
+            "uncheckedValue": "0",
+            "default": 0
+        },
+        "DynRDSQN8066AGC": {
+            "name": "DynRDSQN8066AGC",
+            "description": "Enable AGC (not recommended)",
+            "restart": 1,
+            "reboot": 0,
+            "type": "checkbox",
+            "checkedValue": "1",
+            "uncheckedValue": "0",
+            "default": 0
         },
         "DynRDSEnableRDS": {
             "name": "DynRDSEnableRDS",

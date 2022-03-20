@@ -53,17 +53,19 @@ window.onload = function() {
 <?
 PrintSettingGroup("DynRDSRDSSettings", "
 <div class='callout callout-warning'>
- <h4>RDS Style Text Guide</h4>
- {T} = Title, {A} = Artist, {N} = Track Number, {L} = Track Length</br>
- Any static text can be used<br />
- | will split between RDS groups, like a line break<br />
- [ ] creates a subgroup such that if <b>ANY</b> substitution in the subgroup is emtpy, the entire subgroup is omitted</br>
- Use a \ in front of | { } [ or ] to display those characters
-</div>
+<h4>RDS Style Text Guide</h4>
+Available Values: {T} = Title, {A} = Artist, {N} = Track Number, {L} = Track Length as 0:00</br>
+Any static text can be used<br />
+| (pipe) will split between RDS groups, like a line break<br />
+[ ] creates a subgroup such that if <b>ANY</b> substitution in the subgroup is emtpy, the entire subgroup is omitted</br>
+Use a \ in front of | { } [ or ] to display those characters</div>
 ", "", 1, "Dynamic_RDS");
 ?>
 <?
 PrintSettingGroup("DynRDSTransmitterSettings", "", "", 1, "Dynamic_RDS");
+?>
+<?
+PrintSettingGroup("DynRDSAudioSettings", "", "", 1, "Dynamic_RDS");
 ?>
 <?
 PrintSettingGroup("DynRDSPluginActivation", "", "Set when the transmitter is active", 1, "Dynamic_RDS");
