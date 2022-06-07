@@ -34,37 +34,42 @@ class basicI2C(object):
     self.bus = smbus.SMBus(bus)
     sleep(1)
 
-  def write(self, address, values):
+  def write(self, address, values, isFatal = False):
     # Simple i2c write - Always takes an list, even for 1 byte
     logging.excessive('I2C write at 0x{0:02x} of {1}'.format(address, ' '.join('0x{:02x}'.format(a) for a in values)))
-    for _ in range(3):
+    for i in range(8):
       try:
         self.bus.write_i2c_block_data(self.address, address, values)
       except Exception:
         logging.exception("write_i2c_block_data error")
+        if i >= 1:
+          sleep(i * .25)
         continue
       else:
         break
     else:
-      logging.error("failed to write after 3 attempts")
-      # TODO: What if we get here?
-      # exit(-1)
+      logging.error("failed to write after multiple attempts")
+      if isFatal:
+        exit(-1)
 
-  def read(self, address, num_bytes):
+  def read(self, address, num_bytes, isFatal = False):
     # Simple i2c read - Always returns a list
-    for _ in range(3):
+    for i in range(8):
       try:
         retVal = self.bus.read_i2c_block_data(self.address, address, num_bytes)
         logging.excessive('I2C read at 0x{0:02x} of {1} byte(s) returned {2}'.format(address, num_bytes, ' '.join('0x{:02x}'.format(a) for a in retVal)))
         return retVal
       except Exception:
         logging.exception("read_i2c_block_data error")
+        if i >= 1:
+          sleep(i * .25)
         continue
       else:
         break
     else:
-      logging.error("failed to read after 3 attempts")
-      # exit(-1)
+      logging.error("failed to read after multiple attempts")
+      if isFatal:
+        exit(-1)
 
 # ===================
 # Transmitter Classes
@@ -164,27 +169,27 @@ class QN80xx(Transmitter):
     #  logging.warning('Chip state is {} instead of 0 (Standby). Was startup already run?'.format(tempReadValue))
 
     # Reset everything
-    self.I2C.write(0x00, [0b11100011])
+    self.I2C.write(0x00, [0b11100011], True)
     sleep(0.2)
 
     # Setup expected clock source and div
-    self.I2C.write(0x02, [0b00010000])
-    self.I2C.write(0x07, [0b11101000, 0b00001011])
+    self.I2C.write(0x02, [0b00010000], True)
+    self.I2C.write(0x07, [0b11101000, 0b00001011], True)
 
     # Set frequency from config
     # (Frequency - 60) / 0.05
     tempFreq = int((float(config['DynRDSFrequency'])-60)/0.05)
-    self.I2C.write(0x19, [0b00100000 | tempFreq>>8])
-    self.I2C.write(0x1b, [0b11111111 & tempFreq])
+    self.I2C.write(0x19, [0b00100000 | tempFreq>>8], True)
+    self.I2C.write(0x1b, [0b11111111 & tempFreq], True)
 
     # Enable RDS TX and set pre-emphasis
     if config['DynRDSPreemphasis'] == "50us":
-      self.I2C.write(0x01, [0b01000000])
+      self.I2C.write(0x01, [0b00000000 | int(config['DynRDSEnableRDS'])<<6])
     else:
-      self.I2C.write(0x01, [0b01000001])
+      self.I2C.write(0x01, [0b00000001 | int(config['DynRDSEnableRDS'])<<6])
 
     # Exit standby, enter TX
-    self.I2C.write(0x00, [0b00001011])
+    self.I2C.write(0x00, [0b00001011], True)
     sleep(0.2)
 
     # Try without 0x25 0b01111101 - TX Freq Dev of 86.25KHz
@@ -192,17 +197,18 @@ class QN80xx(Transmitter):
 
     # TODO: Try disable timer for PA off when no audio to see if this is useful - Does it auto power back up? RDS stalled?
     # TODO: Pull in soft clip from config
-    self.I2C.write(0x27, [0b00111001])
+    self.I2C.write(0x27, [0b00111010], True)
 
     # Stop Auto Gain Correction (AGC), which introduces obvious poor sounding audio changes
     if config['DynRDSQN8066AGC'] == '0':
-      self.I2C.write(0x6e, [0b10110111])
+      self.I2C.write(0x6e, [0b10110111], True)
 
     # TX gain changes and input impedance
-    self.I2C.write(0x28, [int(config['DynRDSQN8066SoftClipping'])<<7 | int(config['DynRDSQN8066BufferGain'])<<4 | int(config['DynRDSQN8066DigitalGain'])<<2 | int(config['DynRDSQN8066InputImpedance'])])
+    self.I2C.write(0x28, [int(config['DynRDSQN8066SoftClipping'])<<7 | int(config['DynRDSQN8066BufferGain'])<<4 | int(config['DynRDSQN8066DigitalGain'])<<2 | int(config['DynRDSQN8066InputImpedance'])], True)
     #self.I2C.write(0x28, [0b01011011])
 
     # Reset aud_pk
+    # TODO: Add support for DynRDSQN8066ChipPower
     self.I2C.write(0x24, [0b11111111]);
     self.I2C.write(0x24, [0b01111111]);
 
@@ -351,8 +357,8 @@ def read_config():
     'DynRDSQN8066AGC': '0',
     'DynRDSStart': 'FPPDStart',
     'DynRDSStop': 'Never',
-    'DynRDSCallbackLogLevel': 'DEBUG',
-    'DynRDSEngineLogLevel': 'DEBUG'
+    'DynRDSCallbackLogLevel': 'INFO',
+    'DynRDSEngineLogLevel': 'INFO'
 
     #'DynRDSGPIONumReset': '4',
     #'DynRDSAntCap': '32',
@@ -542,7 +548,7 @@ with open(fifo_path, 'r') as fifo:
       else:
         rdsValues['{'+line[0]+'}'] = line[1:]
 
-    elif transmitter != None and transmitter.active:
+    elif transmitter != None and transmitter.active and config['DynRDSEnableRDS'] == "1":
       transmitter.sendNextRDSGroup()
       # TODO: Determine when track length is done to reset RDS
       # TODO: Could add 1 sec to length, so normally track change will update data rather than time expiring. Reset should only happen when playlist is stopped?

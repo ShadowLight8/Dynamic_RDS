@@ -14,23 +14,29 @@
             ]
         },
         "DynRDSTransmitterSettings": {
-            "description": "Transmitter Type and Settings",
+            "description": "Transmitter Type and Common Settings",
             "settings": [
                 "DynRDSTransmitter",
                 "DynRDSFrequency",
-                "DynRDSPreemphasis",
-                "DynRDSChipPower",
-                "DynRDSAmpPower"
+                "DynRDSPreemphasis"
             ]
         },
         "DynRDSAudioSettings": {
-            "description": "Audio Settings (QN8066)",
+            "description": "Audio Settings",
             "settings": [
                 "DynRDSQN8066InputImpedance",
                 "DynRDSQN8066DigitalGain",
                 "DynRDSQN8066BufferGain",
                 "DynRDSQN8066SoftClipping",
-                "DynRDSQN8066AGC"
+                "DynRDSQN8066AGC",
+                "DynRDSSi4713TestAudio"
+            ]
+        },
+        "DynRDSPowerSettings": {
+            "description": "Power Settings",
+            "settings": [
+                "DynRDSQN8066ChipPower",
+                "DynRDSQN8066AmpPower"
             ]
         },
         "DynRDSPluginActivation": {
@@ -53,16 +59,29 @@
             "name": "DynRDSTransmitter",
             "description": "Transmitter Type (Auto-Selected)",
             "tip": "When not set, will be set based on I<sup>2</sup>C detection. Can be changed manually.",
-            "restart": 2,
+            "restart": 1,
             "reboot": 0,
-            "reloadUI": 1,
             "type": "select",
             "options": {
                 "SELECT TRANSMITTER": "None",
                 "QN8066": "QN8066",
                 "Si4713 (coming soon)": "Si4713"
             },
-            "default": "None"
+            "default": "None",
+            "children": {
+                "QN8066": [
+                  "DynRDSQN8066InputImpedance",
+                  "DynRDSQN8066DigitalGain",
+                  "DynRDSQN8066BufferGain",
+                  "DynRDSQN8066SoftClipping",
+                  "DynRDSQN8066AGC",
+                  "DynRDSQN8066ChipPower",
+                  "DynRDSQN8066AmpPower"
+                ],
+                "Si4713": [
+                  "DynRDSSi4713TestAudio"
+                ]
+            }
         },
         "DynRDSStart": {
             "name": "DynRDSStart",
@@ -91,21 +110,21 @@
             },
             "default": "Never"
         },
-        "DynRDSChipPower": {
-            "name": "DynRDSChipPower",
-            "description": "Chip Power (88-115, 116-120*)",
+        "DynRDSQN8066ChipPower": {
+            "name": "DynRDSQN8066ChipPower",
+            "description": "Chip Power (92-122)",
             "tip": "Adjust the power output from the transmitter chip",
             "restart": 1,
             "reboot": 0,
             "type": "number",
-            "min": 88,
-            "max": 120,
+            "min": 92,
+            "max": 122,
             "step": 1,
             "suffix": "dB&mu;V",
-            "default": 113
+            "default": 122
 	},
-        "DynRDSAmpPower": {
-            "name": "DynRDSAmpPower",
+        "DynRDSQN8066AmpPower": {
+            "name": "DynRDSQN8066AmpPower",
             "description": "Amp Power (0-300)",
             "tip": "Adjust the power output from amplifier after the transmitter chip",
             "restart": 1,
@@ -118,12 +137,12 @@
 	},
         "DynRDSFrequency": {
             "name": "DynRDSFrequency",
-            "description": "Frequency (76.00-108.00)",
+            "description": "Frequency (60.00-108.00)",
             "tip": "Broadcast frequency of the transmitter",
             "restart": 1,
             "reboot": 0,
             "type": "number",
-            "min": 76.00,
+            "min": 60.00,
             "max": 108.00,
             "step": 0.05,
             "suffix": "MHz",
@@ -207,6 +226,11 @@
             "checkedValue": "1",
             "uncheckedValue": "0",
             "default": 0
+        },
+        "DynRDSSi4713TestAudio": {
+            "name": "DynRDSSi4713TestAudio",
+            "description": "Test Si4713 Setting",
+            "type": "text"
         },
         "DynRDSEnableRDS": {
             "name": "DynRDSEnableRDS",

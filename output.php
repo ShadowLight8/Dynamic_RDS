@@ -12,7 +12,7 @@ $goodStatus = '';
 if ($engineRunning) {
   $goodStatus = 'Dynamic RDS Engine is running<br />';
 } else {
-  echo '<div class="callout callout-danger">Dynamic RDS Engine is not running - Restart of FPPD is recommended</div>';
+  echo '<div class="callout callout-danger">Dynamic RDS Engine is not running - Check logs for errors - Restart of FPPD is recommended</div>';
 }
 
 $transmitterFound = false;
@@ -66,6 +66,9 @@ PrintSettingGroup("DynRDSTransmitterSettings", "", "", 1, "Dynamic_RDS");
 ?>
 <?
 PrintSettingGroup("DynRDSAudioSettings", "", "", 1, "Dynamic_RDS");
+?>
+<?
+PrintSettingGroup("DynRDSPowerSettings", "", "", 1, "Dynamic_RDS");
 ?>
 <?
 PrintSettingGroup("DynRDSPluginActivation", "", "Set when the transmitter is active", 1, "Dynamic_RDS");
