@@ -127,6 +127,7 @@
             "name": "DynRDSQN8066AmpPower",
             "description": "Amp Power (0-300)",
             "tip": "Adjust the power output from amplifier after the transmitter chip",
+            "suffix": "- Controlled by Hardware PWM",
             "restart": 1,
             "reboot": 0,
             "type": "number",

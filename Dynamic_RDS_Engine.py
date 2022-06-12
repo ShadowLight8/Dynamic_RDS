@@ -16,9 +16,20 @@ def cleanup():
   try:
     logging.debug('Cleaning up fifo')
     os.unlink(fifo_path)
-    logging.info('Exiting')
   except:
     pass
+  try:
+    # TODO: Do we need to set both to fully turn off?
+    # TODO: Handle case where PWM isn't being used cleanly
+    logging.debug('Stopping PWM')
+    with open("/sys/class/pwm/pwmchip0/pwm0/duty_cycle", 'w') as p:
+      p.write("0\n")
+    logging.info('Disabling PWM')
+    with open("/sys/class/pwm/pwmchip0/pwm0/enable", 'w') as p:
+      p.write("0\n")
+  except:
+    pass
+  logging.info('Exiting')
 
 # ===============
 # Basic I2C Class
@@ -209,10 +220,33 @@ class QN80xx(Transmitter):
 
     # Reset aud_pk
     # TODO: Add support for DynRDSQN8066ChipPower
-    self.I2C.write(0x24, [0b11111111]);
-    self.I2C.write(0x24, [0b01111111]);
+    self.I2C.write(0x24, [0b11111111])
+    self.I2C.write(0x24, [0b01111111])
 
     super().startup()
+
+    # With everything started up, enable PWM
+
+    # Check that PWM configured in /boot/config.txt and can be written to
+    if os.path.isdir('/sys/class/pwm/pwmchip0') and os.access('/sys/class/pwm/pwmchip0/export', os.W_OK):
+      logging.debug('Setting up PWM')
+      # Export PWM commands if needed
+      if not os.path.isdir('/sys/class/pwm/pwmchip0/pwm0'):
+        logging.debug('Exporting PWM')
+        with open('/sys/class/pwm/pwmchip0/export', 'w') as p:
+          p.write('0\n')
+
+      logging.debug('Setting PWM period')
+      with open('/sys/class/pwm/pwmchip0/pwm0/period', 'w') as p:
+        p.write('18300\n')
+
+      logging.debug('Setting PWM duty cycle')
+      with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w') as p:
+        p.write('{0}\n'.format(int(config['DynRDSQN8066AmpPower']) * 61))
+
+      logging.info('Enabling PWM')
+      with open('/sys/class/pwm/pwmchip0/pwm0/enable', 'w') as p:
+        p.write('1\n')
 
   def shutdown(self):
     logging.info('Stopping QN80xx transmitter')
@@ -220,12 +254,22 @@ class QN80xx(Transmitter):
     self.I2C.write(0x00, [0b00100011])
     super().shutdown()
 
+    # With everything stopped, disable PWM
+    logging.debug('Stopping PWM')
+    with open("/sys/class/pwm/pwmchip0/pwm0/duty_cycle", 'w') as p:
+      p.write("0\n")
+
+    logging.info('Disabling PWM')
+    with open("/sys/class/pwm/pwmchip0/pwm0/enable", 'w') as p:
+      p.write("0\n")
+
   def status(self):
     self.aud_pk = self.I2C.read(0x1a, 1)[0]>>3 & 0b1111
     self.fsm = self.I2C.read(0x0a,1)[0]>>4
     # Check frequency? 0x19 1:0 + 0x1b
+    # TODO: Add PWM status if active
 
-    logging.info('Status - State {} (expect 10) - Audio Peak {} (target <= 14?)'.format(self.fsm, self.aud_pk))
+    logging.info('Status - State {} (expect 10) - Audio Peak {} (target <= 14)'.format(self.fsm, self.aud_pk))
 
     # Reset aud_pk
     self.I2C.write(0x24, [0b11111111]);
@@ -348,8 +392,8 @@ def read_config():
     'DynRDSTransmitter': 'None',
     'DynRDSFrequency': '100.1',
     'DynRDSPreemphasis': '75us',
-    'DynRDSChipPower': '113',
-    'DynRDSAmpPower': '0',
+    'DynRDSQN8066ChipPower': '113',
+    'DynRDSQN8066AmpPower': '0',
     'DynRDSQN8066InputImpedance': '0',
     'DynRDSQN8066DigitalGain': '0',
     'DynRDSQN8066BufferGain': '0',
@@ -473,12 +517,10 @@ except OSError as oe:
 # Global RDS Values
 rdsValues = {'{T}': '', '{A}': '', '{N}': '', '{L}': ''}
 
-# Load config - Mostly to set log level to target
-#read_config()
-
 # =========
 # Main Loop
 # =========
+transmitter = None
 
 # Check if new information is in the FIFO and process accordingly
 with open(fifo_path, 'r') as fifo:

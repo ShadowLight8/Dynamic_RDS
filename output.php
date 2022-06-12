@@ -68,6 +68,9 @@ PrintSettingGroup("DynRDSTransmitterSettings", "", "", 1, "Dynamic_RDS");
 PrintSettingGroup("DynRDSAudioSettings", "", "", 1, "Dynamic_RDS");
 ?>
 <?
+if (!is_dir('/sys/class/pwm/pwmchip0')) {
+  echo '<div class="callout callout-warning">Hardware PWM not detected. QN8066 amp power output limited to 0</div>';
+}
 PrintSettingGroup("DynRDSPowerSettings", "", "", 1, "Dynamic_RDS");
 ?>
 <?
@@ -76,37 +79,4 @@ PrintSettingGroup("DynRDSPluginActivation", "", "Set when the transmitter is act
 <?
 PrintSettingGroup("DynRDSDebugging", "", "", 1, "Dynamic_RDS");
 ?>
-
 </div>
-
-<hr />
-<div id="Si4713Debug" class="settings">
-<fieldset>
-<p>Dynamic_RDS_callbacks.log: <input onclick= "ViewFile('Logs', '../plugins/Dynamic_RDS/Dynamic_RDS_callbacks.log');" id="btnViewScript" class="buttons" type="button" value="View" /></p>
-<p>Dynamic_RDS_Engine.log: <input onclick= "ViewFile('Logs', '../plugins/Dynamic_RDS/Dynamic_RDS_Engine.log');" id="btnViewScript" class="buttons" type="button" value="View" /></p>
-</fieldset>
-</div>
-
-<div id='fileViewer' title='File Viewer' style="display: none">
-  <div id='fileText'>
-  </div>
-</div>
-
-<br />
-
-<div id="Info" class="settings">
-<fieldset>
-<legend>Additional Si4713 Information</legend>
-<p>Physical connection from Pi -&gt; Si4713<br />
-Pin 3 (SDA1) -&gt; SDA<br />
-Pin 4 (+5v) -&gt; Vin<br />
-Pin 5 (SCL1) -&gt; SCL<br />
-Pin 6 (GND) -&gt; GND<br />
-Pin 7 (GPIO4) -&gt; RST<br />
-USB sound card and a short audio cable to go from the Pi to the Si4713</p>
-<p><a href="https://www.adafruit.com/product/1958">Adafruit Si4713 Breakout Board</a></p>
-<p><a href="https://www.silabs.com/documents/public/data-sheets/Si4712-13-B30.pdf">Si4713 Datasheet</a></p>
-<p><a href="https://www.silabs.com/documents/public/application-notes/AN332.pdf">Si4713 Programming Guide</a></p>
-<p><a href="https://www.silabs.com/documents/public/user-guides/Si47xxEVB.pdf">Si4713 Evaluation Board Guide</a></p>
-</fieldset>
-<!-- last div intentionally skipped to fix footer background -->
