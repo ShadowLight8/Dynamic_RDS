@@ -65,7 +65,7 @@
             "options": {
                 "SELECT TRANSMITTER": "None",
                 "QN8066": "QN8066",
-                "Si4713 (coming soon)": "Si4713"
+                "Si4713 (planned for future release)": "zzSi4713"
             },
             "default": "None",
             "children": {
@@ -125,14 +125,14 @@
 	},
         "DynRDSQN8066AmpPower": {
             "name": "DynRDSQN8066AmpPower",
-            "description": "Amp Power (0-300)",
-            "tip": "Adjust the power output from amplifier after the transmitter chip",
+            "description": "Amp Power (0-100)",
+            "tip": "Adjust the power output for the amplifier after the transmitter chip. This is controlled by the Pi's hardware pwm, hence an USB Audio Card is required.",
             "suffix": "- Controlled by Hardware PWM",
             "restart": 1,
             "reboot": 0,
             "type": "number",
             "min": 0,
-            "max": 300,
+            "max": 100,
             "step": 1,
             "default": 0
 	},
@@ -165,7 +165,6 @@
         "DynRDSQN8066InputImpedance": {
             "name": "DynRDSQN8066InputImpedance",
             "description": "Input Impedance",
-            "tip": "",
             "restart": 1,
             "reboot": 0,
             "type": "select",
@@ -180,7 +179,6 @@
         "DynRDSQN8066DigitalGain": {
             "name": "DynRDSQN8066DigitalGain",
             "description": "Digital Gain",
-            "tip": "",
             "restart": 1,
             "reboot": 0,
             "type": "select",
@@ -194,7 +192,6 @@
         "DynRDSQN8066BufferGain": {
             "name": "DynRDSQN8066BufferGain",
             "description": "Buffer Gain (at 10/20/40/80 k&ohm;)",
-            "tip": "",
             "restart": 1,
             "reboot": 0,
             "type": "select",
@@ -306,6 +303,8 @@
             "name": "DynRDSRTSize",
             "description": "RT Update Size",
             "tip": "While RadioText (RT) can be up to 64 characters at a time, not all radios will display everything at the same time. A smaller setting is recommended.",
+            "restart": 1,
+            "reboot": 0,
             "type": "number",
             "min": 8,
             "max": 64,
@@ -359,6 +358,8 @@
             "name": "DynRDSPICode",
             "description": "PI Code",
             "tip": "Unique program indentification code. While no longer the standard in the US, some older recievers will attempt to translate the PI code to a callsign. Can use 819b for WRAP or 5F64 for WEBS. You can search at http://picodes.nrscstandards.org for unused codes or calculate your own at http://audemat-radio.com/popup/picode.php. First character of callsign is limited to W or K.",
+            "restart": 1,
+            "reboot": 0,
             "type": "text",
             "size": 4,
             "maxlength": 4,
@@ -367,6 +368,8 @@
         "DynRDSCallbackLogLevel": {
             "name": "DynRDSCallbackLogLevel",
             "description": "Logging Level for Callback",
+            "restart": 1,
+            "reboot": 0,
             "type": "select",
             "options": {
                "Errors Only": "ERROR",
@@ -380,6 +383,8 @@
         "DynRDSEngineLogLevel": {
             "name": "DynRDSEngineLogLevel",
             "description": "Logging Level for Engine",
+            "restart": 1,
+            "reboot": 0,
             "type": "select",
             "options": {
                "Errors Only": "ERROR",
