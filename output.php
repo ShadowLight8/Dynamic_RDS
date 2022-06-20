@@ -69,7 +69,7 @@ PrintSettingGroup("DynRDSAudioSettings", "", "", 1, "Dynamic_RDS");
 ?>
 <?
 if (!is_dir('/sys/class/pwm/pwmchip0')) {
-  echo '<div class="callout callout-warning">Hardware PWM not detected. QN8066 amp power output limited to 0</div>';
+  echo '<div class="callout callout-warning">Hardware PWM not available. See bottom of this page for instructions. QN8066 amp power output limited to 0</div>';
 }
 PrintSettingGroup("DynRDSPowerSettings", "", "", 1, "Dynamic_RDS");
 ?>
@@ -79,4 +79,15 @@ PrintSettingGroup("DynRDSPluginActivation", "", "Set when the transmitter is act
 <?
 PrintSettingGroup("DynRDSDebugging", "", "", 1, "Dynamic_RDS");
 ?>
+<h2>QN8066 and Hardware PWM Setup</h2>
+<div class="container-fluid settingsTable settingsGroupTable">
+In order to use Hardware PWM to control the QN8066 amp power, the following are required:
+<ul>
+<li>An external, USB sound card must be used as the internal audio must be disabled</li>
+<li>Modify the /boot/config.txt file by doing the following</li>
+<ul>
+<li>Comment out dtparam=audio=on with a #</li>
+<li>Add the line dtoverlay=pwm</li>
+</ul>
+</div>
 </div>
