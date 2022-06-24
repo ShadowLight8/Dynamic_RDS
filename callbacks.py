@@ -11,6 +11,7 @@ from sys import argv
 if len(argv) <= 1:
 	print('Usage:')
 	print('   --list     | Used by fppd at startup. Used to start up the Dynamic_RDS_Engine.py script')
+	print('   --update   | Function by plugin_setup.php to apply dynamic settings to the transmitter')
 	print('   --reset    | Function by plugin_setup.php to reset the GPIO pin')
 	print('   --exit     | Function used to shutdown the Dynamic_RDS_Engine.py script')
 	print('   --type media --data \'{..json..}\'    | Used by fppd when a new items starts in a playlist')
@@ -59,6 +60,10 @@ with open(fifo_path, 'w') as fifo:
 		fifo.write('INIT\n') 
 		print('media,playlist')
 
+	elif argv[1] == '--update':
+		# Not used by FPPD, but used by plugin_setup.php
+		fifo.write('UPDATE\n')
+
 	elif argv[1] == '--reset':
 		# Not used by FPPD, but used by plugin_setup.php
 		fifo.write('RESET\n')
@@ -69,10 +74,12 @@ with open(fifo_path, 'w') as fifo:
 
 	elif argv[1] == '--type' and argv[2] == 'media':
 		logging.info('Type media')
-		
-		# TODO: Exception handling for json?
-		# TODO: Deal with Michael Buble with the accented e character \xe9
-		j = json.loads(argv[4])
+		try:
+			# Python 2 case
+			j = json.loads(argv[4].decode('latin-1').encode('ascii', 'replace'))
+		except AttributeError:
+			# Python 3 case
+			j = json.loads(argv[4])
 
 		# When default values are sent over fifo, other side more or less ignores them
 		media_type = j['type'] if 'type' in j else 'pause'
