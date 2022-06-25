@@ -21,6 +21,7 @@ if len(argv) <= 1:
 
 script_dir = os.path.dirname(os.path.abspath(argv[0]))
 
+# TODO: Pull logging level from plugin settings
 logging.basicConfig(filename=script_dir + '/Dynamic_RDS_callbacks.log', level=logging.INFO, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
 logging.info('----------')
 logging.debug('Arguments %s', argv[1:])
@@ -76,7 +77,7 @@ with open(fifo_path, 'w') as fifo:
 		logging.info('Type media')
 		try:
 			# Python 2 case
-			j = json.loads(argv[4].decode('latin-1').encode('ascii', 'replace'))
+			j = json.loads(argv[4].decode('latin-1').encode('ascii', 'ignore'))
 		except AttributeError:
 			# Python 3 case
 			j = json.loads(argv[4])
