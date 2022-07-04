@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# -*- coding: latin-1 -*-
 
 import logging
 import json
@@ -77,10 +78,12 @@ with open(fifo_path, 'w') as fifo:
 		logging.info('Type media')
 		try:
 			# Python 2 case
-			j = json.loads(argv[4].decode('latin-1').encode('ascii', 'ignore'))
+			j = json.loads(argv[4].decode('latin-1'))
 		except AttributeError:
 			# Python 3 case
 			j = json.loads(argv[4])
+		except Exception as e:
+			logging.error(e)
 
 		# When default values are sent over fifo, other side more or less ignores them
 		media_type = j['type'] if 'type' in j else 'pause'
@@ -100,8 +103,10 @@ with open(fifo_path, 'w') as fifo:
 			fifo.write('T\n') # Blank Title
 			fifo.write('A\n') # Blank Artist
 		else:
-			fifo.write('T' + media_title + '\n')
-			fifo.write('A' + media_artist + '\n')
+			#fifo.write('T' + media_title + '\n')
+			fifo.write('T%s\n' % media_title.encode('latin-1'))
+			#fifo.write('A' + media_artist + '\n')
+			fifo.write('A%s\n' % media_artist.encode('latin-1'))
 		fifo.write('N' + media_tracknum + '\n')
 		fifo.write('L' + media_length + '\n')
 

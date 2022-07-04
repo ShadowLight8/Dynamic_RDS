@@ -112,7 +112,7 @@ class Transmitter:
   def reset(self, resetdelay=1):
     # Used to restart the transmitter
     self.shutdown()
-    sleep(resetdelay * 1000)
+    sleep(resetdelay)
     self.startup()
 
   def status(self):
@@ -297,12 +297,18 @@ class QN80xx(Transmitter):
     self.I2C.write(0x01, [rdsStatusByte ^ 0b10])
     # RDS specifications indicate 87.6ms to send a group
     # sleep is a bit less, plus time to read the status toggle bit
-    # In testing, loop is only executed once about every 30 seconds
-    sleep(0.0865)
-    while (self.I2C.read(0x1a, 1)[0] >> 2 & 1) == rdsSentStatusToggleBit:
-      logging.excessive('Waiting for rdsSentStatusToggleBit to flip')
-      sleep(0.001)
-      # TODO: If we hit this more than a few times, something is wrong....how to reset? Maybe a max number of tries, then move on?
+    sleep(0.087)
+    if (self.I2C.read(0x1a, 1)[0] >> 2 & 1) == rdsSentStatusToggleBit:
+      i = 0
+      while (self.I2C.read(0x1a, 1)[0] >> 2 & 1) == rdsSentStatusToggleBit:
+        logging.excessive('Waiting for rdsSentStatusToggleBit to flip')
+        sleep(0.01)
+        i += 1
+        if i > 50:
+          logging.error('rdsSentStatusToggleBit failed to flip')
+          # RDS has failed to update, reset the QN8066
+          self.reset()
+          break;
 
   class PSBuffer(Transmitter.RDSBuffer):
     # Sends RDS type 0B groups - Program Service
@@ -360,7 +366,8 @@ class QN80xx(Transmitter):
         self.currentFragment = (self.currentFragment + 1) % len(self.fragments)
         self.lastFragmentTime = datetime.now()
         self.ab = not self.ab
-        logging.debug('Send RT Fragment \'{}\''.format(self.fragments[self.currentFragment].replace('\r','\\r')))
+        # Change \r (0x0d) to be [0d] for logging so it is visible in case of debugging
+        logging.debug('Send RT Fragment \'{}\''.format(self.fragments[self.currentFragment].replace('\r','<0d>')))
 
       # TODO: Seems like this could be improved
       rdsBytes = [self.pi_byte1, self.pi_byte2, 0b1000<<2 | self.pty>>3, (0b00111 & self.pty)<<5 | self.ab<<4 | self.currentGroup]
@@ -517,13 +524,16 @@ except OSError as oe:
 # Global RDS Values
 rdsValues = {'{T}': '', '{A}': '', '{N}': '', '{L}': ''}
 
+# TODO: Check for existance of After Hours plugin by dir
+# TODO: Check for existance of mpc program to get status
+
 # =========
 # Main Loop
 # =========
 transmitter = None
 
 # Check if new information is in the FIFO and process accordingly
-with open(fifo_path, 'r') as fifo:
+with open(fifo_path, 'r', encoding='latin-1') as fifo:
   while True:
     line = fifo.readline().rstrip()
     if len(line) > 0:
@@ -559,6 +569,10 @@ with open(fifo_path, 'r') as fifo:
         if config['DynRDSStart'] == "FPPDStart":
           transmitter.startup()
 
+      elif line == 'UPDATE':
+        read_config()
+        # TODO: transmitter.update() - Push values to transmitter that can be updated dynamically, gain for example
+
       elif line == 'START':
         logging.info('Processing start')
         if config['DynRDSStart'] == "PlaylistStart" or not transmitter.active:
@@ -569,6 +583,7 @@ with open(fifo_path, 'r') as fifo:
         for key in rdsValues:
           rdsValues[key] = ''
         updateRDSData()
+        # TODO: Where to check for After Hours playing? mpc current pulls the song info
 
         if config['DynRDSStop'] == "PlaylistStop":
           transmitter.shutdown()
@@ -594,6 +609,10 @@ with open(fifo_path, 'r') as fifo:
       transmitter.sendNextRDSGroup()
       # TODO: Determine when track length is done to reset RDS
       # TODO: Could add 1 sec to length, so normally track change will update data rather than time expiring. Reset should only happen when playlist is stopped?
+
+    # TODO: Determine when to poll After Hours / mpc current for information
+    # Returns empty when nothing is playing
+    # First version - Push mpc current info into Title value
 
     else:
       logging.debug('Sleeping...')
