@@ -14,8 +14,8 @@
 $menuEntries = Array(
 	Array(
 		'text' => 'Dynamic RDS',
-		'type' => 'output',
-		'page' => 'output.php',
+		'type' => 'status',
+		'page' => 'Dynamic_RDS.php',
 		'wrap' => 1
 	)
 );
