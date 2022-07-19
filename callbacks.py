@@ -103,10 +103,10 @@ with open(fifo_path, 'w') as fifo:
 			fifo.write('T\n') # Blank Title
 			fifo.write('A\n') # Blank Artist
 		else:
-			#fifo.write('T' + media_title + '\n')
-			fifo.write('T%s\n' % media_title.encode('latin-1'))
-			#fifo.write('A' + media_artist + '\n')
-			fifo.write('A%s\n' % media_artist.encode('latin-1'))
+			fifo.write('T' + media_title + '\n')
+			#fifo.write('T%s\n' % media_title.encode('latin-1'))
+			fifo.write('A' + media_artist + '\n')
+			#fifo.write('A%s\n' % media_artist.encode('latin-1'))
 		fifo.write('N' + media_tracknum + '\n')
 		fifo.write('L' + media_length + '\n')
 
