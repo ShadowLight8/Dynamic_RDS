@@ -12,8 +12,8 @@ from sys import argv
 if len(argv) <= 1:
 	print('Usage:')
 	print('   --list     | Used by fppd at startup. Used to start up the Dynamic_RDS_Engine.py script')
-	print('   --update   | Function by plugin_setup.php to apply dynamic settings to the transmitter')
-	print('   --reset    | Function by plugin_setup.php to reset the GPIO pin')
+	print('   --update   | Function by Dynamic_RDS.php to apply dynamic settings to the transmitter')
+	print('   --reset    | Function by Dynamic_RDS.php to reset the GPIO pin')
 	print('   --exit     | Function used to shutdown the Dynamic_RDS_Engine.py script')
 	print('   --type media --data \'{..json..}\'    | Used by fppd when a new items starts in a playlist')
 	print('   --type playlist --data \'{..json..}\' | Used by fppd when a playlist starts or stops')
@@ -63,11 +63,11 @@ with open(fifo_path, 'w') as fifo:
 		print('media,playlist')
 
 	elif argv[1] == '--update':
-		# Not used by FPPD, but used by plugin_setup.php
+		# Not used by FPPD, but used by Dynamic_RDS.php
 		fifo.write('UPDATE\n')
 
 	elif argv[1] == '--reset':
-		# Not used by FPPD, but used by plugin_setup.php
+		# Not used by FPPD, but used by Dynamic_RDS.php
 		fifo.write('RESET\n')
 
 	elif argv[1] == '--exit':
@@ -78,7 +78,7 @@ with open(fifo_path, 'w') as fifo:
 		logging.info('Type media')
 		try:
 			# Python 2 case
-			j = json.loads(argv[4].decode('latin-1'))
+			j = json.loads(argv[4].decode('latin-1').encode('ascii', 'ignore'))
 		except AttributeError:
 			# Python 3 case
 			j = json.loads(argv[4])

@@ -105,6 +105,10 @@ class Transmitter:
     # Common elements for starting up the transmitter for broadcast
     self.active = True
 
+  def update(self):
+    # For settings that can be updated dynamically
+    pass
+
   def shutdown(self):
     # Common elements for shutting down the transmitter from broadcast
     self.active = False
@@ -203,26 +207,12 @@ class QN80xx(Transmitter):
     self.I2C.write(0x00, [0b00001011], True)
     sleep(0.2)
 
-    # Try without 0x25 0b01111101 - TX Freq Dev of 86.25KHz
-    # Try without 0x26 0b00111100 - RDS Freq Dev of 21KHz
-
-    # TODO: Try disable timer for PA off when no audio to see if this is useful - Does it auto power back up? RDS stalled?
-    # TODO: Pull in soft clip from config
-    self.I2C.write(0x27, [0b00111010], True)
-
-    # Stop Auto Gain Correction (AGC), which introduces obvious poor sounding audio changes
-    if config['DynRDSQN8066AGC'] == '0':
-      self.I2C.write(0x6e, [0b10110111], True)
-
-    # TX gain changes and input impedance
-    self.I2C.write(0x28, [int(config['DynRDSQN8066SoftClipping'])<<7 | int(config['DynRDSQN8066BufferGain'])<<4 | int(config['DynRDSQN8066DigitalGain'])<<2 | int(config['DynRDSQN8066InputImpedance'])], True)
-    #self.I2C.write(0x28, [0b01011011])
-
     # Reset aud_pk
     # TODO: Add support for DynRDSQN8066ChipPower
     self.I2C.write(0x24, [0b11111111])
     self.I2C.write(0x24, [0b01111111])
 
+    self.update()
     super().startup()
 
     # With everything started up, enable PWM
@@ -247,6 +237,23 @@ class QN80xx(Transmitter):
       logging.info('Enabling PWM')
       with open('/sys/class/pwm/pwmchip0/pwm0/enable', 'w') as p:
         p.write('1\n')
+
+  def update(self):
+    # Try without 0x25 0b01111101 - TX Freq Dev of 86.25KHz
+    # Try without 0x26 0b00111100 - RDS Freq Dev of 21KHz
+
+    # TODO: Try disable timer for PA off when no audio to see if this is useful - Does it auto power back up? RDS stalled?
+    # TODO: Pull in soft clip from config
+    self.I2C.write(0x27, [0b00111010], True)
+
+    # Stop Auto Gain Correction (AGC), which introduces obvious poor sounding audio changes
+    if config['DynRDSQN8066AGC'] == '0':
+      self.I2C.write(0x6e, [0b10110111], True)
+    # TODO: Else?
+
+    # TX gain changes and input impedance
+    self.I2C.write(0x28, [int(config['DynRDSQN8066SoftClipping'])<<7 | int(config['DynRDSQN8066BufferGain'])<<4 | int(config['DynRDSQN8066DigitalGain'])<<2 | int(config['DynRDSQN8066InputImpedance'])], True)
+    #self.I2C.write(0x28, [0b01011011])
 
   def shutdown(self):
     logging.info('Stopping QN80xx transmitter')
@@ -401,9 +408,7 @@ def read_config():
     'DynRDSPreemphasis': '75us',
     'DynRDSQN8066ChipPower': '113',
     'DynRDSQN8066AmpPower': '0',
-    'DynRDSQN8066InputImpedance': '0',
-    'DynRDSQN8066DigitalGain': '0',
-    'DynRDSQN8066BufferGain': '0',
+    'DynRDSQN8066Gain': '0',
     'DynRDSQN8066SoftClipping': '0',
     'DynRDSQN8066AGC': '0',
     'DynRDSStart': 'FPPDStart',
@@ -424,6 +429,17 @@ def read_config():
   except IOError:
     logging.warning('No config file found, using defaults.')
  
+  # Convert DynRDSQN8066Gain into DynRDSQN8066InputImpedance, DynRDSQN8066DigitalGain, and DynRDSQN8066BufferGain
+  totalGain = (int(config['DynRDSQN8066Gain']) + 15)
+  config['DynRDSQN8066DigitalGain'] = totalGain % 3
+
+  if (totalGain < 24):
+    config['DynRDSQN8066InputImpedance'] = 3 - totalGain // 6
+    config['DynRDSQN8066BufferGain'] = totalGain % 6 // 3
+  else:
+    config['DynRDSQN8066InputImpedance'] = 0
+    config['DynRDSQN8066BufferGain'] = totalGain % 18 // 3
+
   logging.getLogger().setLevel(config['DynRDSEngineLogLevel'])
   logging.info('Config %s', config)
 
@@ -571,7 +587,8 @@ with open(fifo_path, 'r', encoding='latin-1') as fifo:
 
       elif line == 'UPDATE':
         read_config()
-        # TODO: transmitter.update() - Push values to transmitter that can be updated dynamically, gain for example
+        if (transmitter != None and transmitter.active):
+          transmitter.update()
 
       elif line == 'START':
         logging.info('Processing start')

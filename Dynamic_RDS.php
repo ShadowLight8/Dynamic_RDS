@@ -48,6 +48,10 @@ window.onload = function() {
     transmitterSelect.onchange();
   }
 };
+
+function DynRDSFastUpdate() {
+  $.get('api/plugin/Dynamic_RDS/FastUpdate');
+}
 </script>
 
 <?
@@ -65,7 +69,7 @@ Use a \ in front of | { } [ or ] to display those characters</div>
 PrintSettingGroup("DynRDSTransmitterSettings", "", "", 1, "Dynamic_RDS");
 ?>
 <?
-PrintSettingGroup("DynRDSAudioSettings", "", "", 1, "Dynamic_RDS");
+PrintSettingGroup("DynRDSAudioSettings", "", "Auto-updates the transmitter, no FPP restart required", 1, "Dynamic_RDS", "DynRDSFastUpdate");
 ?>
 <?
 if (!is_dir('/sys/class/pwm/pwmchip0')) {

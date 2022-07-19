@@ -24,9 +24,7 @@
         "DynRDSAudioSettings": {
             "description": "Audio Settings",
             "settings": [
-                "DynRDSQN8066InputImpedance",
-                "DynRDSQN8066DigitalGain",
-                "DynRDSQN8066BufferGain",
+                "DynRDSQN8066Gain",
                 "DynRDSQN8066SoftClipping",
                 "DynRDSQN8066AGC",
                 "DynRDSSi4713TestAudio"
@@ -70,9 +68,7 @@
             "default": "None",
             "children": {
                 "QN8066": [
-                  "DynRDSQN8066InputImpedance",
-                  "DynRDSQN8066DigitalGain",
-                  "DynRDSQN8066BufferGain",
+                  "DynRDSQN8066Gain",
                   "DynRDSQN8066SoftClipping",
                   "DynRDSQN8066AGC",
                   "DynRDSQN8066ChipPower",
@@ -162,6 +158,18 @@
             },
             "default": "75us"
         },
+        "DynRDSQN8066Gain": {
+            "name": "DynRDSQN8066Gain",
+            "description": "Gain Adjustment (-15 to +20)",
+            "tip": "Adjust volume of broadcast audio. In testing, if this is too high or low the audio will be distorted, cut out randomly, or no audio will be heard.",
+            "restart": 0,
+            "reboot": 0,
+            "type": "number",
+            "min": -15,
+            "max": 20,
+            "step": 1,
+            "default": 0
+        },
         "DynRDSQN8066InputImpedance": {
             "name": "DynRDSQN8066InputImpedance",
             "description": "Input Impedance",
@@ -208,17 +216,17 @@
         "DynRDSQN8066SoftClipping": {
             "name": "DynRDSQN8066SoftClipping",
             "description": "Enable Soft Clipping",
-            "restart": 1,
+            "restart": 0,
             "reboot": 0,
             "type": "checkbox",
             "checkedValue": "1",
             "uncheckedValue": "0",
-            "default": 0
+            "default": 1
         },
         "DynRDSQN8066AGC": {
             "name": "DynRDSQN8066AGC",
             "description": "Enable AGC (not recommended)",
-            "restart": 1,
+            "restart": 0,
             "reboot": 0,
             "type": "checkbox",
             "checkedValue": "1",
