@@ -13,9 +13,7 @@
 			"maxFPPVersion": "0",
 			"branch": "main",
 			"sha": "",
-			"platforms": [
-			"Raspberry Pi"
-			]
+			
 		}
 	]
 }
