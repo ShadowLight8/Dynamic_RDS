@@ -39,8 +39,10 @@ def cleanup():
 class basicI2C(object):
   def __init__(self, address, bus=1):
     self.address = address
-    # TODO: Need to test this
-    if os.path.isfile('/dev/i2c-0'):
+    # Bus 1 is Modern RPis, Bus 2 is BBB, Bus 0 is older RPis
+    if os.path.isfile('/dev/i2c-2'):
+      bus = 2
+    elif os.path.isfile('/dev/i2c-0'):
       bus = 0
     self.bus = smbus.SMBus(bus)
     sleep(1)

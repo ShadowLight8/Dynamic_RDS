@@ -2,8 +2,12 @@
 
 <h2>Status</h2>
 <?
-$i2cbus = 0;
-if (file_exists('/dev/i2c-1')) { $i2cbus = 1; }
+$i2cbus = 1;
+if (file_exists('/dev/i2c-2')) {
+ $i2cbus = 2;
+} elseif (file_exists('/dev/i2c-0')) {
+ $i2cbus = 0;
+}
 $engineRunning = true;
 if (empty(trim(shell_exec("ps -ef | grep Dynamic_RDS_Engine.py | grep -v grep")))) {
  $engineRunning = false;
