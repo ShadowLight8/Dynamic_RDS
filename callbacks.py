@@ -22,8 +22,22 @@ if len(argv) <= 1:
 
 script_dir = os.path.dirname(os.path.abspath(argv[0]))
 
-# TODO: Pull logging level from plugin settings
 logging.basicConfig(filename=script_dir + '/Dynamic_RDS_callbacks.log', level=logging.INFO, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+
+configfile = os.getenv('CFGDIR', '/home/fpp/media/config') + '/plugin.Dynamic_RDS'
+
+config = {'DynRDSCallbackLogLevel': 'INFO'}
+
+try:
+	with open(configfile, 'r') as f:
+		for line in f:
+			(key, val) = line.split(' = ')
+			config[key] = val.replace('"', '').strip()
+except IOError:
+	logging.warning('No config file found, using defaults.')
+
+logging.getLogger().setLevel(config['DynRDSCallbackLogLevel'])
+
 logging.info('----------')
 logging.debug('Arguments %s', argv[1:])
 

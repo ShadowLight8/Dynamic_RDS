@@ -85,7 +85,7 @@ PrintSettingGroup("DynRDSPowerSettings", "", "", 1, "Dynamic_RDS");
 PrintSettingGroup("DynRDSPluginActivation", "", "Set when the transmitter is active", 1, "Dynamic_RDS");
 ?>
 <?
-PrintSettingGroup("DynRDSDebugging", "", "", 1, "Dynamic_RDS");
+PrintSettingGroup("DynRDSDebugging", "", "", 1, "Dynamic_RDS", "DynRDSFastUpdate");
 ?>
 <h2>QN8066 and Hardware PWM Setup</h2>
 <div class="container-fluid settingsTable settingsGroupTable">

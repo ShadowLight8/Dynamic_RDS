@@ -376,22 +376,21 @@
         "DynRDSCallbackLogLevel": {
             "name": "DynRDSCallbackLogLevel",
             "description": "Logging Level for Callback",
-            "restart": 1,
+            "restart": 0,
             "reboot": 0,
             "type": "select",
             "options": {
                "Errors Only": "ERROR",
                "Warn": "WARNING",
                "Info": "INFO",
-               "Debug": "DEBUG",
-               "Excessive": "EXCESSIVE"
+               "Debug": "DEBUG"
             },
             "default": "INFO"
         },
         "DynRDSEngineLogLevel": {
             "name": "DynRDSEngineLogLevel",
             "description": "Logging Level for Engine",
-            "restart": 1,
+            "restart": 0,
             "reboot": 0,
             "type": "select",
             "options": {
