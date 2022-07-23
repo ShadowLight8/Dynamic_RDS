@@ -160,7 +160,7 @@
         },
         "DynRDSQN8066Gain": {
             "name": "DynRDSQN8066Gain",
-            "description": "Gain Adjustment (-15 to +20)",
+            "description": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i>Gain Adjustment (-15 to +20)",
             "tip": "Adjust volume of broadcast audio. In testing, if this is too high or low the audio will be distorted, cut out randomly, or no audio will be heard.",
             "restart": 0,
             "reboot": 0,
@@ -170,52 +170,9 @@
             "step": 1,
             "default": 0
         },
-        "DynRDSQN8066InputImpedance": {
-            "name": "DynRDSQN8066InputImpedance",
-            "description": "Input Impedance",
-            "restart": 1,
-            "reboot": 0,
-            "type": "select",
-            "options": {
-                "10 k&ohm;": "0",
-                "20 k&ohm;": "1",
-                "40 k&ohm;": "2",
-                "80 k&ohm;": "3"
-            },
-            "default": "0"
-        },
-        "DynRDSQN8066DigitalGain": {
-            "name": "DynRDSQN8066DigitalGain",
-            "description": "Digital Gain",
-            "restart": 1,
-            "reboot": 0,
-            "type": "select",
-            "options": {
-                "+0 dB": "0",
-                "+1 dB": "1",
-                "+2 dB": "2"
-            },
-            "default": "0"
-        },
-        "DynRDSQN8066BufferGain": {
-            "name": "DynRDSQN8066BufferGain",
-            "description": "Buffer Gain (at 10/20/40/80 k&ohm;)",
-            "restart": 1,
-            "reboot": 0,
-            "type": "select",
-            "options": {
-                "+3 / -3 / -9 / -15 dB": "0",
-                "+6 / 0 / -6 / -12 dB": "1",
-                "+9 / +3 / -3 / -9 dB": "2",
-                "+12 / +6 / 0 / -6 dB": "3",
-                "+15 / +9 / +3 / -3 dB": "4",
-                "+18 / +12 / +6 / 0 dB": "5"
-            },
-            "default": "0"
-        },
         "DynRDSQN8066SoftClipping": {
             "name": "DynRDSQN8066SoftClipping",
-            "description": "Enable Soft Clipping",
+            "description": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i>Enable Soft Clipping",
             "restart": 0,
             "reboot": 0,
             "type": "checkbox",

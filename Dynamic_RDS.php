@@ -73,7 +73,8 @@ Use a \ in front of | { } [ or ] to display those characters</div>
 PrintSettingGroup("DynRDSTransmitterSettings", "", "", 1, "Dynamic_RDS");
 ?>
 <?
-PrintSettingGroup("DynRDSAudioSettings", "", "Auto-updates the transmitter, no FPP restart required", 1, "Dynamic_RDS", "DynRDSFastUpdate");
+//PrintSettingGroup("DynRDSAudioSettings", "", "Auto-updates the transmitter, no FPP restart required", 1, "Dynamic_RDS", "DynRDSFastUpdate");
+PrintSettingGroup("DynRDSAudioSettings", "", " <i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i>indicates a live change to transmitter, no FPP restart required", 1, "Dynamic_RDS", "DynRDSFastUpdate");
 ?>
 <?
 if (!is_dir('/sys/class/pwm/pwmchip0')) {
