@@ -44,8 +44,12 @@ class basicI2C(object):
       bus = 2
     elif os.path.isfile('/dev/i2c-0'):
       bus = 0
-    self.bus = smbus.SMBus(bus)
-    sleep(1)
+    logging.info('Using i2c bus {}'.format(bus))
+    try:
+      self.bus = smbus.SMBus(bus)
+    except Exception:
+        logging.exception("SMBus Init Error")
+    sleep(2)
 
   def write(self, address, values, isFatal = False):
     # Simple i2c write - Always takes an list, even for 1 byte
