@@ -41,9 +41,9 @@ class basicI2C(object):
   def __init__(self, address, bus=1):
     self.address = address
     # Bus 1 is Modern RPis, Bus 2 is BBB, Bus 0 is older RPis
-    if os.path.isfile('/dev/i2c-2') or os.path.isdir('/dev/i2c-2'):
+    if os.path.isfile('/dev/i2c-2') or os.path.isfile('/sys/class/i2c-2'):
       bus = 2
-    elif os.path.isfile('/dev/i2c-0') or os.path.isdir('/dev/i2c-0'):
+    elif os.path.isfile('/dev/i2c-0') or os.path.isfile('/sys/class/i2c-0'):
       bus = 0
     logging.info('Using i2c bus {}'.format(bus))
     try:
