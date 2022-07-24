@@ -22,12 +22,12 @@ def cleanup():
   try:
     # TODO: Do we need to set both to fully turn off?
     # TODO: Handle case where PWM isn't being used cleanly
-    logging.debug('Stopping PWM')
     with open("/sys/class/pwm/pwmchip0/pwm0/duty_cycle", 'w') as p:
       p.write("0\n")
-    logging.info('Disabling PWM')
+    logging.debug('Stopped PWM')
     with open("/sys/class/pwm/pwmchip0/pwm0/enable", 'w') as p:
       p.write("0\n")
+    logging.info('Disabled PWM')
   except:
     pass
   logging.info('Exiting')
@@ -41,9 +41,9 @@ class basicI2C(object):
   def __init__(self, address, bus=1):
     self.address = address
     # Bus 1 is Modern RPis, Bus 2 is BBB, Bus 0 is older RPis
-    if os.path.isfile('/dev/i2c-2'):
+    if os.path.isfile('/dev/i2c-2') or os.path.isdir('/dev/i2c-2'):
       bus = 2
-    elif os.path.isfile('/dev/i2c-0'):
+    elif os.path.isfile('/dev/i2c-0') or os.path.isdir('/dev/i2c-0'):
       bus = 0
     logging.info('Using i2c bus {}'.format(bus))
     try:
@@ -233,11 +233,11 @@ class QN80xx(Transmitter):
         with open('/sys/class/pwm/pwmchip0/export', 'w') as p:
           p.write('0\n')
 
-      logging.debug('Setting PWM period')
+      logging.debug('Setting PWM period to 18300')
       with open('/sys/class/pwm/pwmchip0/pwm0/period', 'w') as p:
         p.write('18300\n')
 
-      logging.debug('Setting PWM duty cycle')
+      logging.debug('Setting PWM duty cycle to {}'.format(int(config['DynRDSQN8066AmpPower']) * 61))
       with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w') as p:
         p.write('{0}\n'.format(int(config['DynRDSQN8066AmpPower']) * 61))
 
