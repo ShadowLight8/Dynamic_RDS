@@ -8,8 +8,9 @@ import atexit
 import socket
 import sys
 import smbus
+import subprocess
 from time import sleep
-from datetime import datetime
+from datetime import datetime, timedelta
 
 @atexit.register
 def cleanup():
@@ -420,7 +421,8 @@ def read_config():
     'DynRDSStart': 'FPPDStart',
     'DynRDSStop': 'Never',
     'DynRDSCallbackLogLevel': 'INFO',
-    'DynRDSEngineLogLevel': 'INFO'
+    'DynRDSEngineLogLevel': 'INFO',
+    'DynRDSmpcEnable': '0'
 
     #'DynRDSGPIONumReset': '4',
     #'DynRDSAntCap': '32',
@@ -445,6 +447,9 @@ def read_config():
   else:
     config['DynRDSQN8066InputImpedance'] = 0
     config['DynRDSQN8066BufferGain'] = totalGain % 18 // 3
+
+  if not os.path.isfile('/bin/mpc'):
+    config['DynRDSmpcEnable'] = 0
 
   logging.getLogger().setLevel(config['DynRDSEngineLogLevel'])
   logging.info('Config %s', config)
@@ -553,6 +558,8 @@ rdsValues = {'{T}': '', '{A}': '', '{N}': '', '{L}': ''}
 # Main Loop
 # =========
 transmitter = None
+activePlaylist = False
+nextMPCUpdate = datetime.now()
 
 # Check if new information is in the FIFO and process accordingly
 with open(fifo_path, 'r', encoding='latin-1') as fifo:
@@ -600,13 +607,14 @@ with open(fifo_path, 'r', encoding='latin-1') as fifo:
         logging.info('Processing start')
         if config['DynRDSStart'] == "PlaylistStart" or not transmitter.active:
           transmitter.startup()
+        activePlaylist = True
 
       elif line == 'STOP':
         logging.info('Processing stop')
         for key in rdsValues:
           rdsValues[key] = ''
         updateRDSData()
-        # TODO: Where to check for After Hours playing? mpc current pulls the song info
+        activePlaylist = False
 
         if config['DynRDSStop'] == "PlaylistStop":
           transmitter.shutdown()
@@ -633,10 +641,15 @@ with open(fifo_path, 'r', encoding='latin-1') as fifo:
       # TODO: Determine when track length is done to reset RDS
       # TODO: Could add 1 sec to length, so normally track change will update data rather than time expiring. Reset should only happen when playlist is stopped?
 
-    # TODO: Determine when to poll After Hours / mpc current for information
-    # Returns empty when nothing is playing
-    # First version - Push mpc current info into Title value
+    if not activePlaylist and transmitter != None and transmitter.active and config['DynRDSmpcEnable'] == "1" and datetime.now() > nextMPCUpdate:
+      logging.debug('Processing mpc')
+      nextMPCUpdate = datetime.now() + timedelta(seconds=12)
+      # TODO: Error handling might be needed here if the mpc execution has an issue
+      mpcLatest = subprocess.run(['mpc', 'current', '-f', '%title%'], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
+      if rdsValues['{T}'] != mpcLatest:
+        rdsValues['{T}'] = mpcLatest
+        updateRDSData()
 
-    else:
+    if transmitter == None or not transmitter.active:
       logging.debug('Sleeping...')
       sleep(3)

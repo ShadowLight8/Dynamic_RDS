@@ -50,6 +50,12 @@
                 "DynRDSCallbackLogLevel",
                 "DynRDSEngineLogLevel"
             ]
+        },
+        "DynRDSmpc": {
+            "description": "MPC / After Hours Music",
+            "settings": [
+                "DynRDSmpcEnable"
+            ]
         }
     },
     "settings": {
@@ -358,6 +364,16 @@
                "Excessive": "EXCESSIVE"
             },
             "default": "INFO"
+        },
+        "DynRDSmpcEnable": {
+            "name": "DynRDSmpcEnable",
+            "description": "Enable MPC support",
+            "restart": 0,
+            "reboot": 0,
+            "type": "checkbox",
+            "checkedValue": "1",
+            "uncheckedValue": "0",
+            "default": 0
         }
     }
 }
