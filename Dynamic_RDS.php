@@ -86,7 +86,7 @@ PrintSettingGroup("DynRDSPowerSettings", "", "", 1, "Dynamic_RDS");
 PrintSettingGroup("DynRDSPluginActivation", "", "Set when the transmitter is active", 1, "Dynamic_RDS");
 ?>
 <?
-if (!is_file('/bin/mpc')) {
+if (!(is_file('/bin/mpc') || is_file('/usr/bin/mpc'))) {
   echo '<div class="callout callout-warning">MPC not detected. Functionality not available.</div>';
 }
 PrintSettingGroup("DynRDSmpc", "", "Pull RDS data from MPC / After Hours Music plugin when idle", 1, "Dynamic_RDS", "DynRDSFastUpdate");

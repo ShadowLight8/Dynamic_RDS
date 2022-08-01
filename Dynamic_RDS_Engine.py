@@ -448,7 +448,7 @@ def read_config():
     config['DynRDSQN8066InputImpedance'] = 0
     config['DynRDSQN8066BufferGain'] = totalGain % 18 // 3
 
-  if not os.path.isfile('/bin/mpc'):
+  if not (os.path.exists('/bin/mpc') or os.path.exists('/usr/bin/mpc')):
     config['DynRDSmpcEnable'] = 0
 
   logging.getLogger().setLevel(config['DynRDSEngineLogLevel'])
@@ -590,7 +590,7 @@ with open(fifo_path, 'r', encoding='latin-1') as fifo:
           transmitter = None; # To be implemented later
 
         if transmitter == None:
-          logger.error('Transmitter not set. Check Transmitter Type.')
+          logging.error('Transmitter not set. Check Transmitter Type.')
           continue;
 
         updateRDSData()
