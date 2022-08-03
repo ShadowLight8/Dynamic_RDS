@@ -368,6 +368,7 @@
         "DynRDSmpcEnable": {
             "name": "DynRDSmpcEnable",
             "description": "Enable MPC support",
+            "tip": "Pulls %title% from mpc and displays it as {T} in the RDS Style Text",
             "restart": 0,
             "reboot": 0,
             "type": "checkbox",
