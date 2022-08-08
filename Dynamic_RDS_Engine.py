@@ -11,6 +11,7 @@ import smbus
 import subprocess
 from time import sleep
 from datetime import datetime, timedelta
+from urllib.request import urlopen
 
 @atexit.register
 def cleanup():
@@ -549,7 +550,7 @@ except OSError as oe:
     logging.debug('Fifo already exists')
 
 # Global RDS Values
-rdsValues = {'{T}': '', '{A}': '', '{N}': '', '{L}': ''}
+rdsValues = {'{T}': '', '{A}': '', '{N}': '', '{L}': '', '{C}': ''}
 
 # TODO: Check for existance of After Hours plugin by dir
 # TODO: Check for existance of mpc program to get status
@@ -620,6 +621,18 @@ with open(fifo_path, 'r', encoding='latin-1') as fifo:
           transmitter.shutdown()
           logging.info('Transmitter stopped')
 
+      elif line.startswith('MAINLIST'):
+        logging.info('Processing MainPlaylist')
+        playlist_name = line[8:]
+        logging.debug('Playlist Name: {0}'.format(playlist_name))
+        response = urlopen('http://localhost/api/playlist/{0}'.format(playlist_name))
+        data = response.read()
+        playlist_length = len(json.loads(data)['mainPlaylist'])
+        logging.debug('Playlist Length: {0}'.format(playlist_length))
+        if rdsValues['{C}'] != str(playlist_length):
+          rdsValues['{C}'] = str(playlist_length)
+          updateRDSData()
+
       # rdsValues that need additional parsing
       elif line[0] == 'L':
         logging.debug('Processing length')
@@ -645,6 +658,7 @@ with open(fifo_path, 'r', encoding='latin-1') as fifo:
       logging.debug('Processing mpc')
       nextMPCUpdate = datetime.now() + timedelta(seconds=12)
       # TODO: Error handling might be needed here if the mpc execution has an issue
+      # TODO: Future idea to handle multiple fields from mpc, but I've not seen them used yet. [{A}%artist%][{T}%title%][{N}%track%]
       mpcLatest = subprocess.run(['mpc', 'current', '-f', '%title%'], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
       if rdsValues['{T}'] != mpcLatest:
         rdsValues['{T}'] = mpcLatest

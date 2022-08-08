@@ -62,7 +62,7 @@ function DynRDSFastUpdate() {
 PrintSettingGroup("DynRDSRDSSettings", "
 <div class='callout callout-warning'>
 <h4>RDS Style Text Guide</h4>
-Available Values: {T} = Title, {A} = Artist, {N} = Track Number, {L} = Track Length as 0:00</br>
+Available Values: {T} = Title, {A} = Artist, {N} = Track Number, {L} = Track Length as 0:00, {C} = Item count in Main Playlist section</br>
 Any static text can be used<br />
 | (pipe) will split between RDS groups, like a line break<br />
 [ ] creates a subgroup such that if <b>ANY</b> substitution in the subgroup is emtpy, the entire subgroup is omitted</br>

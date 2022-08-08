@@ -134,9 +134,10 @@ with open(fifo_path, 'w') as fifo:
 
 		logging.info('Playlist action %s', j['Action'])
 
-                # TODO: Might need to pull another action to get playlist track count to send a 'C'
 		if playlist_action == 'start': # or playlist_action == 'playing':
 			fifo.write('START\n')
 		elif playlist_action == 'stop':
 			fifo.write('STOP\n')
+		if j['Section'] == 'MainPlaylist':
+			fifo.write('MAINLIST' + j['name'] + '\n')
 	logging.debug('Processing done')
