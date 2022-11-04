@@ -46,6 +46,7 @@ logging.debug('Arguments %s', argv[1:])
 
 # Always start the Engine since it does the real work for all command
 updater_path = script_dir + '/Dynamic_RDS_Engine.py'
+engineStarted = False
 try:
 	logging.debug('Checking for socket lock by %s', updater_path)
 	lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
@@ -55,6 +56,7 @@ try:
 	logging.info('Starting %s', updater_path)
 	devnull = open(os.devnull, 'w')
 	subprocess.Popen(['python3', updater_path], stdin=devnull, stdout=devnull, stderr=devnull, close_fds=True)
+	engineStarted = True
 except socket.error:
 	logging.debug('Lock found - %s is running', updater_path)
 
@@ -71,6 +73,12 @@ except OSError as oe:
 
 with open(fifo_path, 'w') as fifo:
 	logging.info('Processing %s', argv[1])
+
+	# If Engine was started AND the argument isn't --list, INIT must be sent to Engine before the requested argument
+	if engineStarted and argv[1] != '--list':
+		logging.info('Engine restart detected, sending INIT');
+		fifo.write('INIT\n')
+
 	if argv[1] == '--list':
                 # Typically called first and will block if read side isn't open
 		fifo.write('INIT\n') 
