@@ -16,7 +16,11 @@ $goodStatus = '';
 if ($engineRunning) {
   $goodStatus = 'Dynamic RDS Engine is running<br />';
 } else {
-  echo '<div class="callout callout-danger">Dynamic RDS Engine is not running - Check logs for errors - Restart of FPPD is recommended</div>';
+  if (empty(trim(shell_exec("dpkg -s python3-smbus | grep installed")))) {
+    echo '<div class="callout callout-danger">Dynamic RDS Engine is not running - python3-smbus is missing - Uninstall and reinstall from Plugin Manager</div>';
+  } else {
+    echo '<div class="callout callout-danger">Dynamic RDS Engine is not running - Check logs for errors - Restart of FPPD is recommended</div>';
+  }
 }
 
 $transmitterFound = false;
@@ -35,7 +39,8 @@ if (!$transmitterFound) {
   }
 }
 if (!$transmitterFound) {
-  echo '<div class="callout callout-danger">No transmitter detected on I<sup>2</sup>C bus ' . $i2cbus . ' at addresses 0x21 or 0x63</div>';
+  echo '<div class="callout callout-danger">No transmitter detected on I<sup>2</sup>C bus ' . $i2cbus . ' at addresses 0x21 or 0x63<br />';
+  echo 'Power cycle or reset of transmitter is recommended. SSH into FPP and run <b>i2cdetect -y ' . $i2cbus . '</b> to check I<sup>2</sup>C status</div>';
 }
 if ($goodStatus != '') {
   $goodStatus = '<div class="callout callout-success">' . $goodStatus . '</div>';
