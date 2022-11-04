@@ -53,6 +53,12 @@ try:
 	lock_socket.bind('\0Dynamic_RDS_Engine')
 	lock_socket.close()
 	logging.debug('Lock not found')
+
+	# Short circuit if Engine isn't running and command is to shut it down
+	if argv[1] == '--exit':
+		logging.info('Exit, but not running')
+		exit()
+
 	logging.info('Starting %s', updater_path)
 	devnull = open(os.devnull, 'w')
 	subprocess.Popen(['python3', updater_path], stdin=devnull, stdout=devnull, stderr=devnull, close_fds=True)

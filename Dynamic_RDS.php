@@ -9,7 +9,7 @@ if (file_exists('/dev/i2c-2')) {
  $i2cbus = 0;
 }
 $engineRunning = true;
-if (empty(trim(shell_exec("ps -ef | grep Dynamic_RDS_Engine.py | grep -v grep")))) {
+if (empty(trim(shell_exec("ps -ef | grep python.*Dynamic_RDS_Engine.py | grep -v grep")))) {
  $engineRunning = false;
 }
 $goodStatus = '';
