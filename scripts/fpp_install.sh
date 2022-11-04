@@ -3,8 +3,8 @@
 echo Installing python3-smbus...
 sudo apt-get install -y python3-smbus
 
-echo ========================================
-echo === REBOOT OF FPP HIGHLY RECOMMENDED ===
-echo ========================================
+echo Restarting FPP...
+curl http://localhost/api/system/fppd/restart
+echo ...Done
 
 #TODO: Disable onboard audio to use pwm hardware
