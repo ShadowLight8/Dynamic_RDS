@@ -12,6 +12,7 @@ import subprocess
 from time import sleep
 from datetime import datetime, timedelta
 from urllib.request import urlopen
+from urllib.parse import quote
 
 @atexit.register
 def cleanup():
@@ -625,7 +626,7 @@ with open(fifo_path, 'r', encoding='latin-1') as fifo:
         logging.info('Processing MainPlaylist')
         playlist_name = line[8:]
         logging.debug('Playlist Name: {0}'.format(playlist_name))
-        response = urlopen('http://localhost/api/playlist/{0}'.format(playlist_name))
+        response = urlopen('http://localhost/api/playlist/{0}'.format(quote(playlist_name)))
         data = response.read()
         playlist_length = len(json.loads(data)['mainPlaylist'])
         logging.debug('Playlist Length: {0}'.format(playlist_length))
