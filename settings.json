@@ -231,7 +231,7 @@
             "type": "text",
             "size": 32,
             "maxlength": 64,
-            "default": "Merry|Christ-|  -mas!|{T}|{A}|[{N} of 8]"
+            "default": "Merry|Christ-|  -mas!|{T}|{A}|[{N} of {C}]"
         },
         "DynRDSPSUpdateRate": {
             "name": "DynRDSPSUpdateRate",
@@ -255,7 +255,7 @@
             "type": "text",
             "size": 64,
             "maxlength": 256,
-            "default": "Merry Christmas!|{T}[ by {A}]|[Track {N} of 8]"
+            "default": "Merry Christmas!|{T}[ by {A}]|[Track {N} of {C}]"
         },
         "DynRDSRTUpdateRate": {
             "name": "DynRDSRTUpdateRate",
