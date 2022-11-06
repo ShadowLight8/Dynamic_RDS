@@ -24,12 +24,13 @@ def cleanup():
   try:
     # TODO: Do we need to set both to fully turn off?
     # TODO: Handle case where PWM isn't being used cleanly
-    with open("/sys/class/pwm/pwmchip0/pwm0/duty_cycle", 'w') as p:
-      p.write("0\n")
-    logging.debug('Stopped PWM')
-    with open("/sys/class/pwm/pwmchip0/pwm0/enable", 'w') as p:
-      p.write("0\n")
-    logging.info('Disabled PWM')
+    if os.path.isdir('/sys/class/pwm/pwmchip0') and os.access('/sys/class/pwm/pwmchip0/export', os.W_OK):
+      with open("/sys/class/pwm/pwmchip0/pwm0/duty_cycle", 'w') as p:
+        p.write("0\n")
+      logging.debug('Stopped PWM')
+      with open("/sys/class/pwm/pwmchip0/pwm0/enable", 'w') as p:
+        p.write("0\n")
+      logging.info('Disabled PWM')
   except:
     pass
   logging.info('Exiting')
@@ -179,6 +180,7 @@ class QN80xx(Transmitter):
     self.I2C = basicI2C(0x21)
     self.PS = self.PSBuffer(self, ' ', int(config['DynRDSPSUpdateRate']))
     self.RT = self.RTBuffer(self, ' ', int(config['DynRDSRTUpdateRate']))
+    self.activePWM = False
 
   def startup(self):
     logging.info('Starting QN80xx transmitter')
@@ -246,6 +248,7 @@ class QN80xx(Transmitter):
       logging.info('Enabling PWM')
       with open('/sys/class/pwm/pwmchip0/pwm0/enable', 'w') as p:
         p.write('1\n')
+      self.activePWM = True
 
   def update(self):
     # Try without 0x25 0b01111101 - TX Freq Dev of 86.25KHz
@@ -271,13 +274,23 @@ class QN80xx(Transmitter):
     super().shutdown()
 
     # With everything stopped, disable PWM
-    logging.debug('Stopping PWM')
-    with open("/sys/class/pwm/pwmchip0/pwm0/duty_cycle", 'w') as p:
-      p.write("0\n")
+    if self.activePWM:
+      logging.debug('Stopping PWM')
+      with open("/sys/class/pwm/pwmchip0/pwm0/duty_cycle", 'w') as p:
+        p.write("0\n")
 
-    logging.info('Disabling PWM')
-    with open("/sys/class/pwm/pwmchip0/pwm0/enable", 'w') as p:
-      p.write("0\n")
+      logging.info('Disabling PWM')
+      with open("/sys/class/pwm/pwmchip0/pwm0/enable", 'w') as p:
+        p.write("0\n")
+      self.activePWM = False
+
+  def reset(self, resetdelay=1):
+    # Used to restart the transmitter
+    self.shutdown()
+    del self.I2C
+    self.I2C = basicI2C(0x21)
+    sleep(resetdelay)
+    self.startup()
 
   def status(self):
     self.aud_pk = self.I2C.read(0x1a, 1)[0]>>3 & 0b1111
@@ -406,10 +419,10 @@ def read_config():
   config = {
     'DynRDSEnableRDS': 'True',
     'DynRDSPSUpdateRate': '4',
-    'DynRDSPSStyle': 'Merry|Christ-|  -mas!|{T}|{A}|[{N} of 8]',
+    'DynRDSPSStyle': 'Merry|Christ-|  -mas!|{T}|{A}|[{N} of {C}]',
     'DynRDSRTUpdateRate': '8',
     'DynRDSRTSize': '32',
-    'DynRDSRTStyle': 'Merry Christmas!|{T}[ by {A}]|[Track {N} of 8]',
+    'DynRDSRTStyle': 'Merry Christmas!|{T}[ by {A}]|[Track {N} of {C}]',
     'DynRDSPty': '2',
     'DynRDSPICode': '819b',
     'DynRDSTransmitter': 'None',
