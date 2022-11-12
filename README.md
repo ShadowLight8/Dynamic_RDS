@@ -1,9 +1,9 @@
 # Dynamic_RDS
 
-An in-development plugin for Falcon Player (FPP) to generate RDS messages similar to what is seen by typical FM stations. Initial support for the QN8066 chip, with plans to add others in the future.
+A plugin for Falcon Player 6.0+ (FPP) to generate RDS (radio data system) messages similar to what is seen from typical FM stations. The RDS messages are fully customizable with static text, breaks, and grouping along with the supported data fields of title, artist, track number, track length, and main playlist item count. Currently, the plugin supports the QN8066 chip and there are plans to add the Si4173 in the future.
 
 ## Recommended QN8066 transmitter board
-**There are other similar looking boards, so double check for the QN8066 chip.** Spectraman details how to [identify the correct board in his video](https://www.youtube.com/watch?v=i8re0nc_FdY&t=1017s).
+```CAUTION: There are other similar looking boards, so double check for the QN8066 chip.``` For a detailed look at identifying QN8066 boards, check out [Spectraman's video](https://www.youtube.com/watch?v=i8re0nc_FdY&t=1017s).
 
 [Aliexpress link to purchase QN8066 FM Transmitter](https://a.aliexpress.com/_mLTpVqO)
 
@@ -13,7 +13,7 @@ An in-development plugin for Falcon Player (FPP) to generate RDS messages simila
 ![Radio Board](images/radio_board.jpeg)
 
 ## Cable and Connectors
-```CRITICAL NOTE - Do not run the PWM wire along side the I2C wires. During testing this caused failures in the I2C commands as soon as PWM was enabled.```
+```CAUTION: Do not run the PWM wire along side the I2C wires.``` During testing this caused failures in the I2C commands as soon as PWM was enabled.
 
 Pin configuration for a Raspberry Pi
 
@@ -24,9 +24,9 @@ Pin configuration for the Transmitter
 ![Transmitter Connection](images/radio_board_pinout.jpeg)
 
 ## Using Hardware PWM
-The recommended QN8066 transmitter board can take a PWM signal to increase its power output. Be sure to comply with all local laws related to FM broadcasts.
+The recommended QN8066 transmitter board can take a PWM signal to increase its power output. Be sure to comply with all applicable laws related to FM broadcasts.
 
-On the Raspberry Pi, in order to use the hardware PWM, the built in analog audio must be disabled and an external USB sound card is required. The short answer is the built in audio uses both PWM channels to generate the audio.
+On the Raspberry Pi, in order to use the hardware PWM, the built-in analog audio must be disabled and an external USB sound card is required. The built-in audio uses both hardware PWM channels to generate the audio, so PWM cannot be used for other purposes when enabled.
 
 Modify the /boot/config.txt by by doing the following, then rebooting:
 1. Comment out ```dtparm=audio=on``` with a #
