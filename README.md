@@ -19,7 +19,7 @@ Pin configuration for a Raspberry Pi
 
 ![Raspberry Pi Connection](images/raspberry_pi_connection.jpeg)
 
-Pin configuration for the Transmitter
+Pin configuration for the Transmitter - Connector is a 5-pin JST-XH type
 
 ![Transmitter Connection](images/radio_board_pinout.jpeg)
 
