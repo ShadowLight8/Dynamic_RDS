@@ -44,3 +44,4 @@ https://github.com/jcrossbdn/fpp-after-hours
 
 Then activate its use in Dynamic RDS Plugin.
 
+![MPC-After-Hours](https://user-images.githubusercontent.com/23623446/201971100-7a213ef5-a22d-4e76-a545-8c8c9724a9e0.JPG)
