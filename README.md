@@ -26,6 +26,8 @@ Pin configuration for the Transmitter - Connector is a 5-pin JST-XH type
 ## Using Hardware PWM
 The recommended QN8066 transmitter board can take a PWM signal to increase its power output. Be sure to comply with all applicable laws related to FM broadcasts.
 
+```CAUTION: Do not run the PWM wire along side the I2C wires.``` During testing this caused failures in the I2C commands as soon as PWM was enabled.
+
 On the Raspberry Pi, in order to use the hardware PWM, the built-in analog audio must be disabled and an external USB sound card is required. The built-in audio uses both hardware PWM channels to generate the audio, so PWM cannot be used for other purposes when enabled.
 
 Modify the /boot/config.txt by by doing the following, then rebooting:
