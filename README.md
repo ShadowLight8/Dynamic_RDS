@@ -34,3 +34,13 @@ Modify the /boot/config.txt by by doing the following, then rebooting:
 2. Add the line ```dtoverlay=pwm```
 
 Don't forget to change the Audio Output Device in the FPP Settings to use the USB sound card.
+
+## FPP After Hours Music Plugin
+The Dynamic RDS Plugin has the ability to work in conjunction with the FPP Aftyer Hours Music Plugin to provide RDS Data from an internet stream of music.
+
+Just install the After Hours Music Plugin located here:
+
+https://github.com/jcrossbdn/fpp-after-hours
+
+Then activate its use in Dynamic RDS Plugin.
+
