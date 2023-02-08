@@ -1,8 +1,6 @@
 import os
 import logging
 
-import RPi.GPIO as GPIO
-
 class basicPWM:
   def __init__(self):
     self.active = False
@@ -61,6 +59,7 @@ class hardwarePWM(basicPWM):
 
 class softwarePWM(basicPWM):
   def __init__(self, pinToUse=7):
+    import RPi.GPIO as GPIO
     self.pinToUse = pinToUse
     self.pwm = None
     # TODO: Ponder if import RPi.GPIO as GPIO is a good idea

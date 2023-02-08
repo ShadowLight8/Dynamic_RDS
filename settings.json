@@ -62,7 +62,8 @@
             "description": "Advanced Options",
             "settings": [
                 "DynRDSAdvPISoftwareI2C",
-                "DynRDSAdvPIPWMPin"
+                "DynRDSAdvPIPWMPin",
+                "DynRDSAdvBBBPWMPin"
             ]
         }
     },
@@ -455,6 +456,34 @@
             "default": "18,2",
             "platforms": [
                 "Raspberry Pi"
+            ]
+        },
+        "DynRDSAdvBBBPWMPin": {
+            "name": "DynRDSAdvBBBPWMPin",
+            "description": "BBB PWM Pin",
+            "tip": "Select which Pin has the PWM output.",
+            "restart": 1,
+            "reboot": 0,
+            "type": "select",
+            "options": {
+               "PWM0A - Pin P9.22": "P9.22",
+               "PWM0A - Pin P9.31": "P9.31",
+               "PWM0B - Pin P9.21": "P9.21",
+               "PWM0B - Pin P9.29": "P9.29",
+               "PWM0 - Pin P9.42": "P9.42",
+               "PWM1A - Pin P9.14": "P9.14",
+               "PWM1A - Pin P8.36": "P8.36",
+               "PWM1B - Pin P9.16 (default)": "P9.16",
+               "PWM1B - Pin P8.34": "P8.34",
+               "PWM2A - Pin P8.19": "P8.19",
+               "PWM2A - Pin P8.45": "P8.45",
+               "PWM2B - Pin P8.13": "P8.13",
+               "PWM2B - Pin P8.46": "P8.46",
+               "PWM2 - Pin P9.28": "P9.28"
+            },
+            "default": "P9.16",
+            "platforms": [
+                "BeagleBone Black"
             ]
         }
     }
