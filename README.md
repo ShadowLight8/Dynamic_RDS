@@ -23,6 +23,11 @@ Pin configuration for the Transmitter - Connector is a 5-pin JST-XH type
 
 ![Transmitter Connection](images/radio_board_pinout.jpeg)
 
+Custom cable from RPi to QN8066. Green PWM wire runs next to yellow GND wire until right before the end to eliminate issue with interference.
+```Note: Wire colors differ from above images```
+
+![Custom RPi to QN8066 Cable](images/RPi_to_QN8066_cable.jpeg)
+
 ## Using Hardware PWM on Raspberry Pi
 The recommended QN8066 transmitter board can take a PWM signal to increase its power output. Be sure to comply with all applicable laws related to FM broadcasts.
 
