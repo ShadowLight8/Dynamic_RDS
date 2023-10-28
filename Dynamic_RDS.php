@@ -1,7 +1,19 @@
+<?
+$outputReinstallScript = '';
+if (isset($_POST["ReinstallScript"]))
+{
+ $outputReinstallScript = shell_exec(escapeshellcmd("sudo ".$pluginDirectory."/".$_GET['plugin']."/scripts/fpp_install.sh"));
+}
+?>
 <div id="global" class="settings">
 
 <h2>Status</h2>
 <?
+if ($outputReinstallScript != '') {  
+ echo '<div class="callout callout-default"><b>Reinstall Script Output</b><br />';
+ echo $outputReinstallScript;
+ echo '</div>';
+}
 $i2cbus = 1;
 if (file_exists('/dev/i2c-2')) {
  $i2cbus = 2;
@@ -12,15 +24,17 @@ $engineRunning = true;
 if (empty(trim(shell_exec("ps -ef | grep python.*Dynamic_RDS_Engine.py | grep -v grep")))) {
  $engineRunning = false;
 }
+
+if (empty(trim(shell_exec("dpkg -s python3-smbus | grep installed")))) {
+  echo '<div class="callout callout-danger">python3-smbus is missing - Uninstall and reinstall from Plugin Manager';
+  echo '<br /><form method="post"><button name="ReinstallScript">Try re-running install script</button> It may take up to 1 minute to return.</form></div>';
+}
+
 $goodStatus = '';
 if ($engineRunning) {
   $goodStatus = 'Dynamic RDS Engine is running<br />';
 } else {
-  if (empty(trim(shell_exec("dpkg -s python3-smbus | grep installed")))) {
-    echo '<div class="callout callout-danger">Dynamic RDS Engine is not running - python3-smbus is missing - Uninstall and reinstall from Plugin Manager</div>';
-  } else {
     echo '<div class="callout callout-danger">Dynamic RDS Engine is not running - Check logs for errors - Restart of FPPD is recommended</div>';
-  }
 }
 
 $transmitterFound = false;
@@ -65,7 +79,7 @@ function DynRDSFastUpdate() {
 
 <?
 PrintSettingGroup("DynRDSRDSSettings", "
-<div class='callout callout-warning'>
+<div class='callout callout-default'>
 <h4>RDS Style Text Guide</h4>
 Available Values: {T} = Title, {A} = Artist, {N} = Track Number, {L} = Track Length as 0:00, {C} = Item count in Main Playlist section</br>
 Any static text can be used<br />
@@ -99,6 +113,14 @@ PrintSettingGroup("DynRDSmpc", "", "Pull RDS data from MPC / After Hours Music p
 <?
 PrintSettingGroup("DynRDSDebugging", "", "", 1, "Dynamic_RDS", "DynRDSFastUpdate");
 ?>
+<h2>Logs</h2>
+<div class="container-fluid settingsTable settingsGroupTable">
+<p>Dynamic_RDS_callbacks.log: <input onclick= "ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_callbacks.log', 'Dynamic_RDS/Dynamic_RDS_callbacks.log');" id="btnViewScript" class="buttons" type="button" value="View All" />
+<input onclick= "ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_callbacks.log?tail=1', 'Dynamic_RDS/Dynamic_RDS_callbacks.log');" id="btnViewScript" class="buttons" type="button" value="View Recent" /></p>
+<p>Dynamic_RDS_Engine.log: <input onclick= "ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_Engine.log', 'Dynamic_RDS/Dynamic_RDS_Engine.log');" id="btnViewScript" class="buttons" type="button" value="View All" />
+<input onclick= "ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_Engine.log?tail=1', 'Dynamic_RDS/Dynamic_RDS_Engine.log');" id="btnViewScript" class="buttons" type="button" value="View Recent" /></p>
+<br />
+</div>
 <h2>QN8066 and Hardware PWM Setup</h2>
 <div class="container-fluid settingsTable settingsGroupTable">
 In order to use Hardware PWM to control the QN8066 amp power, the following are required:

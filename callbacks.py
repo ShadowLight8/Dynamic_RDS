@@ -7,6 +7,7 @@ import os
 import errno
 import subprocess
 import socket
+import sys
 from sys import argv
 
 if len(argv) <= 1:
@@ -40,6 +41,13 @@ logging.getLogger().setLevel(config['DynRDSCallbackLogLevel'])
 
 logging.info('----------')
 logging.debug('Arguments %s', argv[1:])
+
+# If smbus is missing, don't try to start up the Engine as it will fail and cause FPP to hang
+try:
+	import smbus
+except ImportError as impErr:
+	logging.error("Failed to import {}.".format(impErr.args[0]))
+	sys.exit(1)
 
 # Environ has a few useful items when FPPD runs callbacks.py, but logging it all the time, even at debug, is too much
 #logging.debug('Environ %s', os.environ)
