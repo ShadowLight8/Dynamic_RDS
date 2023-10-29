@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-# -*- coding: latin-1 -*-
 
 import logging
 import json
@@ -8,6 +7,7 @@ import errno
 import subprocess
 import socket
 import sys
+import unicodedata
 from sys import argv
 
 if len(argv) <= 1:
@@ -113,10 +113,6 @@ with open(fifo_path, 'w') as fifo:
 	elif argv[1] == '--type' and argv[2] == 'media':
 		logging.info('Type media')
 		try:
-			# Python 2 case
-			j = json.loads(argv[4].decode('latin-1').encode('ascii', 'ignore'))
-		except AttributeError:
-			# Python 3 case
 			j = json.loads(argv[4])
 		except Exception as e:
 			logging.error(e)
@@ -127,6 +123,9 @@ with open(fifo_path, 'w') as fifo:
 		media_artist = j['artist'] if 'artist' in j else ''
 		media_tracknum = str(j['track']) if 'track' in j else '0'
 		media_length = str(j['length']) if 'length' in j else '0'
+
+		media_title = unicodedata.normalize('NFKD', media_title).encode('ascii', 'ignore').decode()
+		media_artist = unicodedata.normalize('NFKD', media_artist).encode('ascii', 'ignore').decode()
 
 		logging.debug('Type is %s', media_type)
 		logging.debug('Title is %s', media_title)
