@@ -7,7 +7,6 @@ import errno
 import subprocess
 import socket
 import sys
-import unicodedata
 from sys import argv
 
 if len(argv) <= 1:
@@ -124,9 +123,6 @@ with open(fifo_path, 'w') as fifo:
 		media_tracknum = str(j['track']) if 'track' in j else '0'
 		media_length = str(j['length']) if 'length' in j else '0'
 
-		media_title = unicodedata.normalize('NFKD', media_title).encode('ascii', 'ignore').decode()
-		media_artist = unicodedata.normalize('NFKD', media_artist).encode('ascii', 'ignore').decode()
-
 		logging.debug('Type is %s', media_type)
 		logging.debug('Title is %s', media_title)
 		logging.debug('Artist is %s', media_artist)
@@ -139,11 +135,9 @@ with open(fifo_path, 'w') as fifo:
 			fifo.write('A\n') # Blank Artist
 		else:
 			fifo.write('T' + media_title + '\n')
-			#fifo.write('T%s\n' % media_title.encode('latin-1'))
 			fifo.write('A' + media_artist + '\n')
-			#fifo.write('A%s\n' % media_artist.encode('latin-1'))
 		fifo.write('N' + media_tracknum + '\n')
-		fifo.write('L' + media_length + '\n')
+		fifo.write('L' + media_length + '\n') # Length is always sent last to optimize when the Engine has to update the RDS Data
 
 	elif argv[1] == '--type' and argv[2] == 'playlist':
 		logging.info('Type playlist')
@@ -162,3 +156,4 @@ with open(fifo_path, 'w') as fifo:
 		if j['Section'] == 'MainPlaylist':
 			fifo.write('MAINLIST' + j['name'] + '\n')
 	logging.debug('Processing done')
+

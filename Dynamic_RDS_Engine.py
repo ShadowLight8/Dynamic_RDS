@@ -509,7 +509,9 @@ def rdsStyleToString(rdsStyle, groupSize):
           skip += rdsStyle.index(']', i + 3) - i - 1 # Using index to throw if no ] by the end of rdsStyle - Done building in this case
         else:
           skip += 2
-          outputRDS.append(rdsValues.get(rdsStyle[i:i+3], ''))
+          # Normalize Unicode characters to their nearest ascii characters
+          # TODO: Other character substitutions could be done here
+          outputRDS.append(unicodedata.normalize('NFKD', rdsValues.get(rdsStyle[i:i+3], '')).encode('ascii', 'ignore').decode())
       else:
         outputRDS.append(v)
   except ValueError:
@@ -675,7 +677,6 @@ with open(fifo_path, 'r') as fifo:
       # TODO: Error handling might be needed here if the mpc execution has an issue
       # TODO: Future idea to handle multiple fields from mpc, but I've not seen them used yet. [{A}%artist%][{T}%title%][{N}%track%]
       mpcLatest = subprocess.run(['mpc', 'current', '-f', '%title%'], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
-      mpcLatest = unicodedata.normalize('NFKD', mpcLatest).encode('ascii', 'ignore').decode()
       if rdsValues['{T}'] != mpcLatest:
         rdsValues['{T}'] = mpcLatest
         updateRDSData()
