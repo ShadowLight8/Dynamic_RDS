@@ -9,6 +9,7 @@ import socket
 import sys
 import smbus
 import subprocess
+import unicodedata
 from time import sleep
 from datetime import datetime, timedelta
 from urllib.request import urlopen
@@ -417,7 +418,7 @@ class QN80xx(Transmitter):
 def read_config():
   global config
   config = {
-    'DynRDSEnableRDS': 'True',
+    'DynRDSEnableRDS': '1',
     'DynRDSPSUpdateRate': '4',
     'DynRDSPSStyle': 'Merry|Christ-|  -mas!|{T}|{A}|[{N} of {C}]',
     'DynRDSRTUpdateRate': '8',
@@ -577,7 +578,7 @@ activePlaylist = False
 nextMPCUpdate = datetime.now()
 
 # Check if new information is in the FIFO and process accordingly
-with open(fifo_path, 'r', encoding='latin-1') as fifo:
+with open(fifo_path, 'r') as fifo:
   while True:
     line = fifo.readline().rstrip()
     if len(line) > 0:
@@ -674,6 +675,7 @@ with open(fifo_path, 'r', encoding='latin-1') as fifo:
       # TODO: Error handling might be needed here if the mpc execution has an issue
       # TODO: Future idea to handle multiple fields from mpc, but I've not seen them used yet. [{A}%artist%][{T}%title%][{N}%track%]
       mpcLatest = subprocess.run(['mpc', 'current', '-f', '%title%'], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
+      mpcLatest = unicodedata.normalize('NFKD', mpcLatest).encode('ascii', 'ignore').decode()
       if rdsValues['{T}'] != mpcLatest:
         rdsValues['{T}'] = mpcLatest
         updateRDSData()
