@@ -6,13 +6,22 @@
 	"homeURL": "https://github.com/ShadowLight8/Dynamic_RDS",
 	"srcURL": "https://github.com/ShadowLight8/Dynamic_RDS.git",
 	"bugURL": "https://github.com/ShadowLight8/Dynamic_RDS/issues",
-	"allowUpdates": 1,
 	"versions": [
 		{
 			"minFPPVersion": "6.0",
+			"maxFPPVersion": "7.2",
+			"branch": "main",
+			"sha": "d06b4e623afc1f083036277c248012e4f8f29d38",
+			"platforms": [
+				"Raspberry Pi"
+			]
+		},
+		{
+			"minFPPVersion": "7.21",
 			"maxFPPVersion": "0",
 			"branch": "main",
 			"sha": ""
+			"allowUpdates": 1
 		}
 	]
 }
