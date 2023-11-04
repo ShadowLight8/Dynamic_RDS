@@ -353,7 +353,7 @@ class QN80xx(Transmitter):
       super().updateData(data)
       # Adjust last fragment to make all 8 characters long
       self.fragments[-1] = self.fragments[-1].ljust(self.frag_size)
-      logging.info('Updated PS Fragments {}'.format(self.fragments))
+      logging.info('PS {}'.format(self.fragments))
 
     def sendNextGroup(self):
       #logging.debug('PSBuffer sendNextGroup')
@@ -385,7 +385,7 @@ class QN80xx(Transmitter):
       if len(self.fragments[-1]) < self.frag_size:
         self.fragments[-1] += chr(0x0d)
       self.ab = not self.ab
-      logging.info('Updated RT Fragments {}'.format(self.fragments))
+      logging.info('RT {}'.format(self.fragments))
 
     def sendNextGroup(self):
       # Will block for ~80-90ms for RDS Group to be sent
@@ -476,7 +476,7 @@ def read_config():
 
 def updateRDSData():
   # Take the data from FPP and the configuration to build the actual RDS string
-  logging.info('Updating RDS Data')
+  logging.info('New RDS Data')
   logging.debug('RDS Values %s', rdsValues)
 
   # TODO: DynRDSRTSize functionally works, but I think this should source from the RTBuffer class post initialization
@@ -528,7 +528,7 @@ def rdsStyleToString(rdsStyle, groupSize):
 # Setup logging
 script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
 #logging.basicConfig(stream=sys.stderr, level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
-logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.DEBUG, format='%(asctime)s:%(levelname)s: %(message)s')
 
 # Adding in excessive log level below debug for very noisy items
 # Allow for debug to be reasonable
@@ -544,7 +544,7 @@ logging.EXCESSIVE = EXCESSIVE
 logging.excessive = excessive
 logging.Logger.excessive = excessive
 
-logging.info('--------');
+logging.info('---');
 
 # Establish lock via socket or exit if failed
 try:
