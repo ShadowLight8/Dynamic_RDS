@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-# -*- coding: latin-1 -*-
 
 import logging
 import json
@@ -7,6 +6,8 @@ import os
 import errno
 import subprocess
 import socket
+import sys
+from datetime import date
 from sys import argv
 
 if len(argv) <= 1:
@@ -22,7 +23,7 @@ if len(argv) <= 1:
 
 script_dir = os.path.dirname(os.path.abspath(argv[0]))
 
-logging.basicConfig(filename=script_dir + '/Dynamic_RDS_callbacks.log', level=logging.INFO, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+logging.basicConfig(filename=script_dir + '/Dynamic_RDS_callbacks.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
 
 configfile = os.getenv('CFGDIR', '/home/fpp/media/config') + '/plugin.Dynamic_RDS'
 
@@ -38,8 +39,15 @@ except IOError:
 
 logging.getLogger().setLevel(config['DynRDSCallbackLogLevel'])
 
-logging.info('----------')
+logging.info('--- %s', date.today())
 logging.debug('Arguments %s', argv[1:])
+
+# If smbus is missing, don't try to start up the Engine as it will fail and cause FPP to hang
+try:
+	import smbus
+except ImportError as impErr:
+	logging.error("Failed to import {}.".format(impErr.args[0]))
+	sys.exit(1)
 
 # Environ has a few useful items when FPPD runs callbacks.py, but logging it all the time, even at debug, is too much
 #logging.debug('Environ %s', os.environ)
@@ -105,10 +113,6 @@ with open(fifo_path, 'w') as fifo:
 	elif argv[1] == '--type' and argv[2] == 'media':
 		logging.info('Type media')
 		try:
-			# Python 2 case
-			j = json.loads(argv[4].decode('latin-1').encode('ascii', 'ignore'))
-		except AttributeError:
-			# Python 3 case
 			j = json.loads(argv[4])
 		except Exception as e:
 			logging.error(e)
@@ -132,11 +136,9 @@ with open(fifo_path, 'w') as fifo:
 			fifo.write('A\n') # Blank Artist
 		else:
 			fifo.write('T' + media_title + '\n')
-			#fifo.write('T%s\n' % media_title.encode('latin-1'))
 			fifo.write('A' + media_artist + '\n')
-			#fifo.write('A%s\n' % media_artist.encode('latin-1'))
 		fifo.write('N' + media_tracknum + '\n')
-		fifo.write('L' + media_length + '\n')
+		fifo.write('L' + media_length + '\n') # Length is always sent last to optimize when the Engine has to update the RDS Data
 
 	elif argv[1] == '--type' and argv[2] == 'playlist':
 		logging.info('Type playlist')
@@ -155,3 +157,4 @@ with open(fifo_path, 'w') as fifo:
 		if j['Section'] == 'MainPlaylist':
 			fifo.write('MAINLIST' + j['name'] + '\n')
 	logging.debug('Processing done')
+
