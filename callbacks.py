@@ -7,6 +7,7 @@ import errno
 import subprocess
 import socket
 import sys
+from datetime import date
 from sys import argv
 
 if len(argv) <= 1:
@@ -22,7 +23,7 @@ if len(argv) <= 1:
 
 script_dir = os.path.dirname(os.path.abspath(argv[0]))
 
-logging.basicConfig(filename=script_dir + '/Dynamic_RDS_callbacks.log', level=logging.INFO, format='%(asctime)s:%(levelname)s: %(message)s')
+logging.basicConfig(filename=script_dir + '/Dynamic_RDS_callbacks.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
 
 configfile = os.getenv('CFGDIR', '/home/fpp/media/config') + '/plugin.Dynamic_RDS'
 
@@ -38,7 +39,7 @@ except IOError:
 
 logging.getLogger().setLevel(config['DynRDSCallbackLogLevel'])
 
-logging.info('---')
+logging.info('--- %s', date.today())
 logging.debug('Arguments %s', argv[1:])
 
 # If smbus is missing, don't try to start up the Engine as it will fail and cause FPP to hang

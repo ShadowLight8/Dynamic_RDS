@@ -17,10 +17,10 @@
 			]
 		},
 		{
-			"minFPPVersion": "7.21",
+			"minFPPVersion": "7.3",
 			"maxFPPVersion": "0",
 			"branch": "main",
-			"sha": ""
+			"sha": "",
 			"allowUpdates": 1
 		}
 	]

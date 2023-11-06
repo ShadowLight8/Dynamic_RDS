@@ -11,7 +11,7 @@ import smbus
 import subprocess
 import unicodedata
 from time import sleep
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from urllib.request import urlopen
 from urllib.parse import quote
 
@@ -528,7 +528,7 @@ def rdsStyleToString(rdsStyle, groupSize):
 # Setup logging
 script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
 #logging.basicConfig(stream=sys.stderr, level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
-logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.DEBUG, format='%(asctime)s:%(levelname)s: %(message)s')
+logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
 
 # Adding in excessive log level below debug for very noisy items
 # Allow for debug to be reasonable
@@ -544,7 +544,7 @@ logging.EXCESSIVE = EXCESSIVE
 logging.excessive = excessive
 logging.Logger.excessive = excessive
 
-logging.info('---');
+logging.info('--- %s', date.today());
 
 # Establish lock via socket or exit if failed
 try:
