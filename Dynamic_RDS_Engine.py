@@ -646,9 +646,14 @@ with open(fifo_path, 'r') as fifo:
         logging.info('Processing MainPlaylist')
         playlist_name = line[8:]
         logging.debug('Playlist Name: {0}'.format(playlist_name))
-        response = urlopen('http://localhost/api/playlist/{0}'.format(quote(playlist_name)))
-        data = response.read()
-        playlist_length = len(json.loads(data)['mainPlaylist'])
+        playlist_length = 1
+        if '.' not in playlist_name: # Case where a sequence is directly run from the scheduler or status page, it ends in .fseq and . is not allowed in regular playlist names
+          try:
+            response = urlopen('http://localhost/api/playlist/{0}'.format(quote(playlist_name)))
+            data = response.read()
+            playlist_length = len(json.loads(data)['mainPlaylist'])
+          except Exception:
+            logging.exception("Playlist Length")
         logging.debug('Playlist Length: {0}'.format(playlist_length))
         if rdsValues['{C}'] != str(playlist_length):
           rdsValues['{C}'] = str(playlist_length)
