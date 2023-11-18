@@ -452,6 +452,8 @@ def read_config():
         config[key] = val.replace('"', '').strip()
   except IOError:
     logging.warning('No config file found, using defaults.')
+  except Exception:
+    logging.exception('read_config')
  
   # Convert DynRDSQN8066Gain into DynRDSQN8066InputImpedance, DynRDSQN8066DigitalGain, and DynRDSQN8066BufferGain
   totalGain = (int(config['DynRDSQN8066Gain']) + 15)
@@ -516,6 +518,8 @@ def rdsStyleToString(rdsStyle, groupSize):
         outputRDS.append(v)
   except ValueError:
     pass # Expected when index doesn't find a ]
+  except Exception:
+    logging.exception('rdsStyleToString')
 
   outputRDS = ''.join(outputRDS)
   logging.debug('RDS Data [%s]', outputRDS)
@@ -660,6 +664,7 @@ with open(fifo_path, 'r') as fifo:
         # TANL is always sent together with L being last item, so we only need to update the RDS Data once with the new values
         # TODO: This will likely change as more data is added, so a new way will have to be determined
         updateRDSData()
+        activePlaylist = True
         transmitter.status()
 
       # All of the rdsValues that are stored as is
