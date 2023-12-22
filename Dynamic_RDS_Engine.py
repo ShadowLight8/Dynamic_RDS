@@ -452,6 +452,8 @@ def read_config():
         config[key] = val.replace('"', '').strip()
   except IOError:
     logging.warning('No config file found, using defaults.')
+  except Exception:
+    logging.exception('read_config')
  
   # Convert DynRDSQN8066Gain into DynRDSQN8066InputImpedance, DynRDSQN8066DigitalGain, and DynRDSQN8066BufferGain
   totalGain = (int(config['DynRDSQN8066Gain']) + 15)
@@ -516,6 +518,8 @@ def rdsStyleToString(rdsStyle, groupSize):
         outputRDS.append(v)
   except ValueError:
     pass # Expected when index doesn't find a ]
+  except Exception:
+    logging.exception('rdsStyleToString')
 
   outputRDS = ''.join(outputRDS)
   logging.debug('RDS Data [%s]', outputRDS)
@@ -642,9 +646,14 @@ with open(fifo_path, 'r') as fifo:
         logging.info('Processing MainPlaylist')
         playlist_name = line[8:]
         logging.debug('Playlist Name: {0}'.format(playlist_name))
-        response = urlopen('http://localhost/api/playlist/{0}'.format(quote(playlist_name)))
-        data = response.read()
-        playlist_length = len(json.loads(data)['mainPlaylist'])
+        playlist_length = 1
+        if '.' not in playlist_name: # Case where a sequence is directly run from the scheduler or status page, it ends in .fseq and . is not allowed in regular playlist names
+          try:
+            response = urlopen('http://localhost/api/playlist/{0}'.format(quote(playlist_name)))
+            data = response.read()
+            playlist_length = len(json.loads(data)['mainPlaylist'])
+          except Exception:
+            logging.exception("Playlist Length")
         logging.debug('Playlist Length: {0}'.format(playlist_length))
         if rdsValues['{C}'] != str(playlist_length):
           rdsValues['{C}'] = str(playlist_length)
@@ -660,6 +669,7 @@ with open(fifo_path, 'r') as fifo:
         # TANL is always sent together with L being last item, so we only need to update the RDS Data once with the new values
         # TODO: This will likely change as more data is added, so a new way will have to be determined
         updateRDSData()
+        activePlaylist = True
         transmitter.status()
 
       # All of the rdsValues that are stored as is
