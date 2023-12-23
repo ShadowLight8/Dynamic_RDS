@@ -12,6 +12,15 @@ A plugin for Falcon Player 6.0+ (FPP) to generate RDS (radio data system) messag
 ![Radio Board](images/radio_board.jpeg)
 ![Radio Board Pinout](images/radio_board_pinout.jpeg)
 
+## Antenna
+The QN8066 transmitter board needs an antenna for safe operations.
+
+Small bench testing option - https://www.amazon.com/gp/product/B07K7DBVX9
+
+Show ready option 1/4 wave - https://www.amazon.com/Transmitter-Professional-87-108mhz-0-5w-100w-Waterproof/dp/B09NDPY4JG
+
+(More info needed)
+
 ## Cable and Connectors
 > [!CAUTION]
 > Do not run the PWM wire along side the I<sup>2</sup>C wires. During testing this caused failures in the I<sup>2</sup>C commands as soon as PWM was enabled.
@@ -97,3 +106,4 @@ Then activate its use in Dynamic RDS Plugin.
     - Disconnect transmitter 12v power if connected and check I<sup>2</sup>C bus
   - If errors happen at random
     - Make sure the PWM wire does NOT along side the I<sup>2</sup>C wires
+    - Lower Chip Power and Amp Power
