@@ -19,7 +19,7 @@ Small bench testing option - https://www.amazon.com/gp/product/B07K7DBVX9
 
 Show ready option 1/4 wave - https://www.amazon.com/Transmitter-Professional-87-108mhz-0-5w-100w-Waterproof/dp/B09NDPY4JG
 
-(More info needed)
+(More detail to be added)
 
 ## Cable and Connectors
 > [!CAUTION]
@@ -101,9 +101,10 @@ Then activate its use in Dynamic RDS Plugin.
 ### Transmitter's RDS not working well
 - Enable Debug logging for the Engine
 - Check for read and/or write errors in Dynamic_RDS_Engine.log
-  - If errors happen, then I<sup>2</sup>C fails and the Engine exits
+  - If too many errors happen, then I<sup>2</sup>C fails and the Engine exits
     - Check connection and wire continuity between RPi/BBB
-    - Disconnect transmitter 12v power if connected and check I<sup>2</sup>C bus
+    - Disconnect transmitter 12v power if connected and check I<sup>2</sup>C bus with `i2cdetect -y 1`
   - If errors happen at random
-    - Make sure the PWM wire does NOT along side the I<sup>2</sup>C wires
-    - Lower Chip Power and Amp Power
+    - Make sure the PWM wire does NOT run along side the I<sup>2</sup>C wires, interference can occur
+    - Try to lower the Chip Power and Amp Power, RF interference can impact I<sup>2</sup>C
+    - Move the antenna further away from the transmitter board and Raspberry Pi / BBB
