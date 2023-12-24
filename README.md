@@ -1,37 +1,60 @@
-# Dynamic_RDS
+# Dynamic_RDS - FM Transmitter Plugin for Falcon Player
 
-A plugin for Falcon Player 6.0+ (FPP) to generate RDS (radio data system) messages similar to what is seen from typical FM stations. The RDS messages are fully customizable with static text, breaks, and grouping along with the supported data fields of title, artist, track number, track length, and main playlist item count. Currently, the plugin supportsthe QN8066 chip and there are plans to add the Si4173 in the future. The chips are controlled via the I<sup>2</sup>C bus.
+Created for Falcon Player 6.0+ (FPP) as a plugin to generate RDS (radio data system) messages similar to what is seen from typical FM stations. The RDS messages are fully customizable with static text, breaks, and grouping along with the supported data fields of title, artist, track number, track length, and main playlist item count. Currently, the plugin supports the QN8066 chip and there are plans to add the Si4173 in the future. The chips are controlled via the I<sup>2</sup>C bus.
 
 ## Recommended QN8066 transmitter board
-```CAUTION: There are other similar looking boards, so double check for the QN8066 chip.``` For a detailed look at identifying QN8066 boards, check out [Spectraman's video](https://www.youtube.com/watch?v=i8re0nc_FdY&t=1017s).
+> [!IMPORTANT]
+> There are other similar looking boards, so double check for the QN8066 chip. For a detailed look at identifying QN8066 boards, check out [Spectraman's video](https://www.youtube.com/watch?v=i8re0nc_FdY&t=1017s).
 
 [Aliexpress link to purchase QN8066 FM Transmitter](https://a.aliexpress.com/_mLTpVqO)
 
-[EBay link to purchase QN8066 FM Transmitter](https://www.ebay.com/itm/275031067583?mkcid=16&mkevt=1&mkrid=711-127632-2357-0&ssspo=PB6d-PpwRGC&sssrc=2349624&ssuid=rZ11O1LCRam&var=&widget_ver=artemis&media=COPY)
-
 ![Radio Board with Screen](images/radio_board_w_screen.jpeg)
 ![Radio Board](images/radio_board.jpeg)
+![Radio Board Pinout](images/radio_board_pinout.jpeg)
+
+## Antenna
+The QN8066 transmitter board needs an antenna for safe operations.
+
+Small bench testing option - https://www.amazon.com/gp/product/B07K7DBVX9
+
+Show ready option 1/4 wave - https://www.amazon.com/Transmitter-Professional-87-108mhz-0-5w-100w-Waterproof/dp/B09NDPY4JG
+
+(More detail to be added)
 
 ## Cable and Connectors
-```CAUTION: Do not run the PWM wire along side the I<sup>2</sup>C wires.``` During testing this caused failures in the I<sup>2</sup>C commands as soon as PWM was enabled.
+> [!CAUTION]
+> Do not run the PWM wire along side the I<sup>2</sup>C wires. During testing this caused failures in the I<sup>2</sup>C commands as soon as PWM was enabled.
 
-Pin configuration for a Raspberry Pi
+### Connector info
+* The connection on the transmitter board is a 5-pin JST-XH type connector, 2.54mm.
+* The Raspberry Pis use a female Dupont connector and we recommended using a 2 x 6 block connector.
+* The BeagleBone Blacks (BBB) use a male Dupont connector (recommendation pending BBB support work in progress).
+
+If you are comfortable with crimping and making connectors, here are examples of what to use
+* JST-XH connectors - https://www.amazon.com/dp/B015Y6JOUG
+* Dupont connectors - https://www.amazon.com/dp/B0774NMT1S
+* Single kit with both JST-XH and Dupont connectors - https://www.amazon.com/dp/B09Q5MPM7H/
+
+Pre-crimped wires are also an options
+* JST-XH Pre-crimped wires - https://www.amazon.com/dp/B0BW9TJN21
+* Dupont Pre-crimped wires - https://www.amazon.com/dp/B07GD1W1VL
+
+### Cable for a Raspberry Pi
 
 ![Raspberry Pi Connection](images/raspberry_pi_connection.jpeg)
-
-Pin configuration for the Transmitter - Connector is a 5-pin JST-XH type
-
-![Transmitter Connection](images/radio_board_pinout.jpeg)
-
-Custom cable from RPi to QN8066. Green PWM wire runs next to yellow GND wire until right before the end to eliminate issue with interference.
-```Note: Wire colors differ from above images```
-
+![Raspberry Pi to Radio](images/radio_board_and_pi_pinout.jpeg)
 ![Custom RPi to QN8066 Cable](images/RPi_to_QN8066_cable.jpeg)
+
+The green PWM wire runs next to yellow 3.3V and orange GND wire until right before the end to eliminate issue with interference. (Still testing this, but...) Keep the cable as short as possible as well to reduce interference.
+
+### Cable for a BeagleBone Black (BBB)
+(Work in progress)
 
 ## Using Hardware PWM on Raspberry Pi
 The recommended QN8066 transmitter board can take a PWM signal to increase its power output. Be sure to comply with all applicable laws related to FM broadcasts.
 
-```CAUTION: Do not run the PWM wire along side the I<sup>2</sup>C wires.``` During testing this caused failures in the I<sup>2</sup>C commands as soon as PWM was enabled.
+> [!CAUTION]
+> Do not run the PWM wire along side the I<sup>2</sup>C wires. During testing this caused failures in the I<sup>2</sup>C commands as soon as PWM was enabled.
 
 On the Raspberry Pi, in order to use the hardware PWM, the built-in analog audio must be disabled and an external USB sound card is required. The built-in audio uses both hardware PWM channels to generate the audio, so PWM cannot be used for other purposes when enabled.
 
@@ -42,7 +65,7 @@ Modify the /boot/config.txt by by doing the following, then rebooting:
 
 Don't forget to change the Audio Output Device in the FPP Settings to use the USB sound card.
 
-## FPP After Hours Music Plugin
+## Integration with FPP After Hours Music Plugin
 The Dynamic RDS Plugin has the ability to work in conjunction with the FPP After Hours Music Plugin to provide RDS Data from an internet stream of music.
 
 Just install the After Hours Music Plugin located here:
@@ -78,8 +101,10 @@ Then activate its use in Dynamic RDS Plugin.
 ### Transmitter's RDS not working well
 - Enable Debug logging for the Engine
 - Check for read and/or write errors in Dynamic_RDS_Engine.log
-  - If errors happen, then I<sup>2</sup>C fails and the Engine exits
+  - If too many errors happen, then I<sup>2</sup>C fails and the Engine exits
     - Check connection and wire continuity between RPi/BBB
-    - Disconnect transmitter 12v power if connected and check I<sup>2</sup>C bus
+    - Disconnect transmitter 12v power if connected and check I<sup>2</sup>C bus with `i2cdetect -y 1`
   - If errors happen at random
-    - Make sure the PWM wire does NOT along side the I<sup>2</sup>C wires
+    - Make sure the PWM wire does NOT run along side the I<sup>2</sup>C wires, interference can occur
+    - Try to lower the Chip Power and Amp Power, RF interference can impact I<sup>2</sup>C
+    - Move the antenna further away from the transmitter board and Raspberry Pi / BBB
