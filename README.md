@@ -1,6 +1,6 @@
-# Dynamic_RDS
+# Dynamic_RDS - FM Transmitter Plugin for Falcon Player
 
-A plugin for Falcon Player 6.0+ (FPP) to generate RDS (radio data system) messages similar to what is seen from typical FM stations. The RDS messages are fully customizable with static text, breaks, and grouping along with the supported data fields of title, artist, track number, track length, and main playlist item count. Currently, the plugin supportsthe QN8066 chip and there are plans to add the Si4173 in the future. The chips are controlled via the I<sup>2</sup>C bus.
+Created for Falcon Player 6.0+ (FPP) as a plugin to generate RDS (radio data system) messages similar to what is seen from typical FM stations. The RDS messages are fully customizable with static text, breaks, and grouping along with the supported data fields of title, artist, track number, track length, and main playlist item count. Currently, the plugin supports the QN8066 chip and there are plans to add the Si4173 in the future. The chips are controlled via the I<sup>2</sup>C bus.
 
 ## Recommended QN8066 transmitter board
 > [!IMPORTANT]
@@ -65,7 +65,7 @@ Modify the /boot/config.txt by by doing the following, then rebooting:
 
 Don't forget to change the Audio Output Device in the FPP Settings to use the USB sound card.
 
-## FPP After Hours Music Plugin
+## Integration with FPP After Hours Music Plugin
 The Dynamic RDS Plugin has the ability to work in conjunction with the FPP After Hours Music Plugin to provide RDS Data from an internet stream of music.
 
 Just install the After Hours Music Plugin located here:
