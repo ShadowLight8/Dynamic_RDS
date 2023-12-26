@@ -77,12 +77,7 @@ function DynRDSFastUpdate() {
 }
 
 function DynRDSPiBootUpdate(key) {
-  switch (key) {
-    case 'DynRDSAdvSoftwareI2C':
-      value = $('#' + key).is(':checked');
-      break;
-  }
-  $.post('api/plugin/Dynamic_RDS/PiBootChange/' + key, JSON.stringify(value));
+  $.post('api/plugin/Dynamic_RDS/PiBootChange/' + key, JSON.stringify(pluginSettings[key]));
 }
 </script>
 
