@@ -34,6 +34,7 @@
             "description": "Power Settings",
             "settings": [
                 "DynRDSQN8066ChipPower",
+                "DynRDSQN8066HardwarePWM",
                 "DynRDSQN8066AmpPower"
             ]
         },
@@ -55,6 +56,12 @@
             "description": "MPC / After Hours Music",
             "settings": [
                 "DynRDSmpcEnable"
+            ]
+        },
+        "DynRDSAdv": {
+            "description": "Advanced Options",
+            "settings": [
+                "DynRDSAdvSoftwareI2C"
             ]
         }
     },
@@ -125,10 +132,28 @@
             "suffix": "dB&mu;V",
             "default": 122
 	},
+        "DynRDSQN8066HardwarePWM": {
+            "name": "DynRDSQN8066HardwarePWM",
+            "description": "Enable Hardware PWM /<br/>Disable On-Board Audio",
+            "tip": "Enables Raspberry Pi hardware PWM, but has to disable the on-board audio",
+            "reboot": 1,
+            "platforms": [
+                "Raspberry Pi"
+            ],
+            "type": "checkbox",
+            "checkedValue": "1",
+            "uncheckedValue": "0",
+            "default": 0,
+            "children": {
+                "1": [
+                    "DynRDSQN8066AmpPower"
+                     ]
+            }
+        },
         "DynRDSQN8066AmpPower": {
             "name": "DynRDSQN8066AmpPower",
             "description": "Amp Power (0-100)",
-            "tip": "Adjust the power output for the amplifier after the transmitter chip. This is controlled by the Pi's hardware pwm, hence an USB Audio Card is required.",
+            "tip": "Adjust the power output for the amplifier after the transmitter chip. This is controlled by the Pis hardware pwm, hence an USB Audio Card is required.",
             "suffix": "- Controlled by Hardware PWM",
             "restart": 1,
             "reboot": 0,
@@ -374,6 +399,17 @@
             "tip": "Pulls %title% from mpc and displays it as {T} in the RDS Style Text",
             "restart": 0,
             "reboot": 0,
+            "type": "checkbox",
+            "checkedValue": "1",
+            "uncheckedValue": "0",
+            "default": 0
+        },
+        "DynRDSAdvSoftwareI2C": {
+            "name": "DynRDSAdvSoftwareI2C",
+            "description": "Use Software I2C",
+            "tip": "Switches from hardware I2C to software I2C",
+            "restart": 0,
+            "reboot": 1,
             "type": "checkbox",
             "checkedValue": "1",
             "uncheckedValue": "0",

@@ -21,6 +21,7 @@ if (file_exists('/dev/i2c-2')) {
 }
 $engineRunning = true;
 if (empty(trim(shell_exec("ps -ef | grep python.*Dynamic_RDS_Engine.py | grep -v grep")))) {
+ // Recheck after a few seconds?
  $engineRunning = false;
 }
 
@@ -74,6 +75,15 @@ window.onload = function() {
 function DynRDSFastUpdate() {
   $.get('api/plugin/Dynamic_RDS/FastUpdate');
 }
+
+function DynRDSPiBootUpdate(key) {
+  switch (key) {
+    case 'DynRDSAdvSoftwareI2C':
+      value = $('#' + key).is(':checked');
+      break;
+  }
+  $.post('api/plugin/Dynamic_RDS/PiBootChange/' + key, JSON.stringify(value));
+}
 </script>
 
 <?
@@ -113,6 +123,9 @@ PrintSettingGroup("DynRDSDebugging", "", "", 1, "Dynamic_RDS", "DynRDSFastUpdate
 <input onclick= "ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_Engine.log?tail=100', 'Dynamic_RDS/Dynamic_RDS_Engine.log');" id="btnViewScript" class="buttons" type="button" value="View Recent" /></p>
 </div>
 <br />
+<?
+PrintSettingGroup("DynRDSAdv", "", "", 1, "Dynamic_RDS", "DynRDSPiBootUpdate");
+?>
 <h2>QN8066 and Hardware PWM Setup</h2>
 <div class="container-fluid settingsTable settingsGroupTable">
 In order to use Hardware PWM to control the QN8066 amp power, the following are required
