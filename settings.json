@@ -34,7 +34,7 @@
             "description": "Power Settings",
             "settings": [
                 "DynRDSQN8066ChipPower",
-                "DynRDSQN8066HardwarePWM",
+                "DynRDSQN8066PIHardwarePWM",
                 "DynRDSQN8066AmpPower"
             ]
         },
@@ -61,7 +61,7 @@
         "DynRDSAdv": {
             "description": "Advanced Options",
             "settings": [
-                "DynRDSAdvSoftwareI2C"
+                "DynRDSAdvPISoftwareI2C"
             ]
         }
     },
@@ -85,6 +85,7 @@
                   "DynRDSQN8066SoftClipping",
                   "DynRDSQN8066AGC",
                   "DynRDSQN8066ChipPower",
+                  "DynRDSQN8066PIHardwarePWM",
                   "DynRDSQN8066AmpPower"
                 ],
                 "Si4713": [
@@ -132,10 +133,11 @@
             "suffix": "dB&mu;V",
             "default": 122
 	},
-        "DynRDSQN8066HardwarePWM": {
-            "name": "DynRDSQN8066HardwarePWM",
-            "description": "Enable Hardware PWM /<br/>Disable On-Board Audio",
-            "tip": "Enables Raspberry Pi hardware PWM, but has to disable the on-board audio",
+        "DynRDSQN8066PIHardwarePWM": {
+            "name": "DynRDSQN8066PIHardwarePWM",
+            "description": "Enable PI Hardware PWM",
+            "tip": "Enables Raspberry Pi hardware PWM, but has to disable the on-board audio since it would otherwise use the hardward PWM",
+            "suffix": "- Disables on-board audio",
             "reboot": 1,
             "platforms": [
                 "Raspberry Pi"
@@ -404,16 +406,19 @@
             "uncheckedValue": "0",
             "default": 0
         },
-        "DynRDSAdvSoftwareI2C": {
-            "name": "DynRDSAdvSoftwareI2C",
-            "description": "Use Software I2C",
-            "tip": "Switches from hardware I2C to software I2C",
+        "DynRDSAdvPISoftwareI2C": {
+            "name": "DynRDSAdvPISoftwareI2C",
+            "description": "Use PI Software I2C",
+            "tip": "Switches PI from hardware I2C to software I2C in /boot/config.txt",
             "restart": 0,
             "reboot": 1,
             "type": "checkbox",
             "checkedValue": "1",
             "uncheckedValue": "0",
-            "default": 0
+            "default": 0,
+            "platforms": [
+                "Raspberry Pi"
+            ]
         }
     }
 }

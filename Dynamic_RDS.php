@@ -102,7 +102,7 @@ PrintSettingGroup("DynRDSAudioSettings", "", " <i class='fas fa-fw fa-bolt fa-nb
 if (!is_dir('/sys/class/pwm/pwmchip0')) {
   echo '<div class="callout callout-warning">Hardware PWM not available. See bottom of this page for instructions. QN8066 amp power output limited to 0</div>';
 }
-PrintSettingGroup("DynRDSPowerSettings", "", "", 1, "Dynamic_RDS");
+PrintSettingGroup("DynRDSPowerSettings", "", "", 1, "Dynamic_RDS", "DynRDSPiBootUpdate");
 PrintSettingGroup("DynRDSPluginActivation", "", "Set when the transmitter is active", 1, "Dynamic_RDS");
 if (!(is_file('/bin/mpc') || is_file('/usr/bin/mpc'))) {
   echo '<div class="callout callout-warning">MPC not detected. Functionality not available.</div>';
