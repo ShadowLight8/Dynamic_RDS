@@ -99,9 +99,9 @@ Use a \ in front of | { } [ or ] to display those characters</div>
 ", "", 1, "Dynamic_RDS");
 PrintSettingGroup("DynRDSTransmitterSettings", "", "", 1, "Dynamic_RDS");
 PrintSettingGroup("DynRDSAudioSettings", "", " <i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i>indicates a live change to transmitter, no FPP restart required", 1, "Dynamic_RDS", "DynRDSFastUpdate");
-if (!is_dir('/sys/class/pwm/pwmchip0')) {
-  echo '<div class="callout callout-warning">Hardware PWM not available. See bottom of this page for instructions. QN8066 amp power output limited to 0</div>';
-}
+//if (!is_dir('/sys/class/pwm/pwmchip0')) {
+//  echo '<div class="callout callout-warning">Hardware PWM not available. See bottom of this page for instructions. QN8066 amp power output limited to 0</div>';
+//}
 PrintSettingGroup("DynRDSPowerSettings", "", "", 1, "Dynamic_RDS", "DynRDSPiBootUpdate");
 PrintSettingGroup("DynRDSPluginActivation", "", "Set when the transmitter is active", 1, "Dynamic_RDS");
 if (!(is_file('/bin/mpc') || is_file('/usr/bin/mpc'))) {

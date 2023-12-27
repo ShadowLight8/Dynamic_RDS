@@ -31,7 +31,7 @@ function DynRDSPiBootChange() {
     shell_exec("echo " . $value . " >> ~/test.txt");
 
     switch ($settingName) {
-        case 'DynRDSAdvSoftwareI2C':
+        case 'DynRDSAdvPISoftwareI2C':
            if (strcmp($value,'1') == 0) {
               exec("sudo sed -i -e 's/^dtparam=i2c_arm=on/#dtparam=i2c_arm=on/' /boot/config.txt");
               exec("sudo sed -i -e '/^#dtparam=i2c_arm=on/a dtoverlay=i2c-gpio,i2c_gpio_sda=2,i2c_gpio_scl=3,i2c_gpio_delay_us=4,bus=1' /boot/config.txt");
