@@ -34,6 +34,7 @@
             "description": "Power Settings",
             "settings": [
                 "DynRDSQN8066ChipPower",
+                "DynRDSQN8066PIHardwarePWM",
                 "DynRDSQN8066AmpPower"
             ]
         },
@@ -44,8 +45,8 @@
                 "DynRDSStop"
             ]
         },
-        "DynRDSDebugging": {
-            "description": "Debugging",
+        "DynRDSLogLevel": {
+            "description": "Log Levels",
             "settings": [
                 "DynRDSCallbackLogLevel",
                 "DynRDSEngineLogLevel"
@@ -55,6 +56,12 @@
             "description": "MPC / After Hours Music",
             "settings": [
                 "DynRDSmpcEnable"
+            ]
+        },
+        "DynRDSAdv": {
+            "description": "Advanced Options",
+            "settings": [
+                "DynRDSAdvPISoftwareI2C"
             ]
         }
     },
@@ -78,6 +85,7 @@
                   "DynRDSQN8066SoftClipping",
                   "DynRDSQN8066AGC",
                   "DynRDSQN8066ChipPower",
+                  "DynRDSQN8066PIHardwarePWM",
                   "DynRDSQN8066AmpPower"
                 ],
                 "Si4713": [
@@ -125,10 +133,29 @@
             "suffix": "dB&mu;V",
             "default": 122
 	},
+        "DynRDSQN8066PIHardwarePWM": {
+            "name": "DynRDSQN8066PIHardwarePWM",
+            "description": "Enable PI Hardware PWM",
+            "tip": "Enables Raspberry Pi hardware PWM, but has to disable the on-board audio since it would otherwise use the hardware PWM",
+            "suffix": "- Disables on-board audio",
+            "reboot": 1,
+            "platforms": [
+                "Raspberry Pi"
+            ],
+            "type": "checkbox",
+            "checkedValue": "1",
+            "uncheckedValue": "0",
+            "default": 0,
+            "children": {
+                "1": [
+                    "DynRDSQN8066AmpPower"
+                     ]
+            }
+        },
         "DynRDSQN8066AmpPower": {
             "name": "DynRDSQN8066AmpPower",
             "description": "Amp Power (0-100)",
-            "tip": "Adjust the power output for the amplifier after the transmitter chip. This is controlled by the Pi's hardware pwm, hence an USB Audio Card is required.",
+            "tip": "Adjust the power output for the amplifier after the transmitter chip. This is controlled by the Pis hardware pwm, hence an USB Audio Card is required.",
             "suffix": "- Controlled by Hardware PWM",
             "restart": 1,
             "reboot": 0,
@@ -378,6 +405,20 @@
             "checkedValue": "1",
             "uncheckedValue": "0",
             "default": 0
+        },
+        "DynRDSAdvPISoftwareI2C": {
+            "name": "DynRDSAdvPISoftwareI2C",
+            "description": "Use PI Software I2C",
+            "tip": "Switches PI from hardware I2C to software I2C in /boot/config.txt",
+            "restart": 0,
+            "reboot": 1,
+            "type": "checkbox",
+            "checkedValue": "1",
+            "uncheckedValue": "0",
+            "default": 0,
+            "platforms": [
+                "Raspberry Pi"
+            ]
         }
     }
 }
