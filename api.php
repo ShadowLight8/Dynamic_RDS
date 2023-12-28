@@ -43,7 +43,7 @@ function DynRDSPiBootChange() {
         case 'DynRDSQN8066PIHardwarePWM':
            if (strcmp($value,'1') == 0) {
               exec("sudo sed -i -e 's/^dtparam=audio=on/#dtparam=audio=on/' /boot/config.txt");
-              exec("sudo sed -i -e '/^#dtparam=audio=on/a dtoverlay=pwm' /boot/config.txt");
+              exec("sudo sed -i -e '/^#dtparam=audio=on/a dtoverlay=pwm,pin=18,func=2' /boot/config.txt");
            } else {
               exec("sudo sed -i -e '/^dtoverlay=pwm/d' /boot/config.txt");
               exec("sudo sed -i -e 's/^#dtparam=audio=on/dtparam=audio=on/' /boot/config.txt");

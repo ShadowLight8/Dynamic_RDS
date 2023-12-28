@@ -61,7 +61,8 @@
         "DynRDSAdv": {
             "description": "Advanced Options",
             "settings": [
-                "DynRDSAdvPISoftwareI2C"
+                "DynRDSAdvPISoftwareI2C",
+                "DynRDSAdvPIPWMPin"
             ]
         }
     },
@@ -137,20 +138,22 @@
             "name": "DynRDSQN8066PIHardwarePWM",
             "description": "Enable PI Hardware PWM",
             "tip": "Enables Raspberry Pi hardware PWM, but has to disable the on-board audio since it would otherwise use the hardware PWM",
-            "suffix": "- Disables on-board audio",
+            "suffix": "- Disables on-board audio, USB Sound Card required",
+            "restart": 0,
             "reboot": 1,
-            "platforms": [
-                "Raspberry Pi"
-            ],
             "type": "checkbox",
             "checkedValue": "1",
             "uncheckedValue": "0",
             "default": 0,
             "children": {
                 "1": [
-                    "DynRDSQN8066AmpPower"
+                    "DynRDSQN8066AmpPower",
+                    "DynRDSAdvPIPWMPin"
                      ]
-            }
+            },
+            "platforms": [
+                "Raspberry Pi"
+            ]
         },
         "DynRDSQN8066AmpPower": {
             "name": "DynRDSQN8066AmpPower",
@@ -399,7 +402,7 @@
             "name": "DynRDSmpcEnable",
             "description": "Enable MPC support",
             "tip": "Pulls %title% from mpc and displays it as {T} in the RDS Style Text",
-            "restart": 0,
+            "restart": 1,
             "reboot": 0,
             "type": "checkbox",
             "checkedValue": "1",
@@ -416,6 +419,22 @@
             "checkedValue": "1",
             "uncheckedValue": "0",
             "default": 0,
+            "platforms": [
+                "Raspberry Pi"
+            ]
+        },
+        "DynRDSAdvPIPWMPin": {
+            "name": "DynRDSAdvPIPWMPin",
+            "description": "PI Hardware PWM Pin",
+            "tip": "Select which Pin/GPIO is PWM0s output",
+            "restart": 0,
+            "reboot": 1,
+            "type": "select",
+            "options": {
+               "Pin 12 / GPIO 18 (default)": "18,2",
+               "Pin 32 / GPIO 12": "12,4"
+            },
+            "default": "18,2",
             "platforms": [
                 "Raspberry Pi"
             ]
