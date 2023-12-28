@@ -54,10 +54,34 @@ if (trim(shell_exec("sudo i2cget -y " . $i2cbus . " 0x21 2>&1")) != "Error: Read
   $errorDetected = true;
 }
 
-// Check for config.txt items mismatching settings
-//if (!is_dir('/sys/class/pwm/pwmchip0')) {
-//  echo '<div class="callout callout-warning">Hardware PWM not available. See bottom of this page for instructions. QN8066 amp power output limited to 0</div>';
-//}
+if (isset($pluginSettings[DynRDSQN8066PIHardwarePWM]) && $pluginSettings[DynRDSQN8066PIHardwarePWM] == 1) {
+ if (shell_exec("lsmod | grep 'snd_bcm2835.*1\>'")) {
+  echo '<div class="callout callout-warning">On-board sound card appears active and will interfere with hardware PWM. Try a reboot first, next toggle the Enable PI Hardware PWM setting below and reboot. If issues persist check /boot/config.txt and comment out dtparam=audio=on</div>';
+ }
+ if (empty(shell_exec("lsmod | grep pwm"))) {
+  echo '<div class="callout callout-warning">Hardware PWM has not been loaded. Try a reboot first, next toggle the Enable PI Hardware PWM setting below and reboot. If issues persist then check /boot/config.txt and add dtoverlay=pwm</div>';
+ }
+}
+
+$i2cBusType = 'hardware';
+if (isset($pluginSettings[DynRDSAdvPISoftwareI2C]) && $pluginSettings[DynRDSAdvPISoftwareI2C] == 1) {
+ $i2cBusType = 'software';
+ if (shell_exec("lsmod | grep i2c_bcm2835")) {
+  echo '<div class="callout callout-warning">Hardware I<sup>2</sup>C appears active. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist check /boot/config.txt and comment out dtparam=i2c_arm=on</div>';
+  $i2cBusType = 'hardware';
+ }
+ if (empty(shell_exec("lsmod | grep i2c_gpio"))) {
+  echo '<div class="callout callout-warning">Software I<sup>2</sup>C has not been loaded. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist then check /boot/config.txt and add dtoverlay=i2c-gpio,i2c_gpio_sda=2,i2c_gpio_scl=3,i2c_gpio_delay_us=4,bus=1</div>';
+ }
+} else {
+ if (shell_exec("lsmod | grep i2c_gpio")) {
+  echo '<div class="callout callout-warning">Software I<sup>2</sup>C appears active. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist check /boot/config.txt and comment out dtoverlay=i2c-gpio,i2c_gpio_sda=2,i2c_gpio_scl=3,i2c_gpio_delay_us=4,bus=1</div>';
+  $i2cBusType = 'software';
+ }
+ if (empty(shell_exec("lsmod | grep i2c_bcm2835"))) {
+  echo '<div class="callout callout-warning">Hardware I<sup>2</sup>C has not been loaded. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist then check /boot/config.txt and add dtparam=i2c_arm=on</div>';
+ }
+}
 
 if ($engineRunning || $transmitterType != '') {
  echo '<div class="callout callout-success">';
@@ -65,7 +89,7 @@ if ($engineRunning || $transmitterType != '') {
   echo '<div>Dynamic RDS Engine is running</div>';
  }
  if ($transmitterType != '') {
-  echo '<div>Detected <b>' . $transmitterType . '</b> on I<sup>2</sup>C bus ' . $i2cbus . ' at address ' . $transmitterAddress . '</div>';
+  echo '<div>Detected <b>' . $transmitterType . '</b> on I<sup>2</sup>C ' . $i2cBusType . ' bus ' . $i2cbus . ' at address ' . $transmitterAddress . '</div>';
  }
  echo '</div>';
 }
