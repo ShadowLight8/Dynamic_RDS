@@ -45,8 +45,8 @@
                 "DynRDSStop"
             ]
         },
-        "DynRDSDebugging": {
-            "description": "Debugging",
+        "DynRDSLogLevel": {
+            "description": "Log Levels",
             "settings": [
                 "DynRDSCallbackLogLevel",
                 "DynRDSEngineLogLevel"
@@ -136,7 +136,7 @@
         "DynRDSQN8066PIHardwarePWM": {
             "name": "DynRDSQN8066PIHardwarePWM",
             "description": "Enable PI Hardware PWM",
-            "tip": "Enables Raspberry Pi hardware PWM, but has to disable the on-board audio since it would otherwise use the hardward PWM",
+            "tip": "Enables Raspberry Pi hardware PWM, but has to disable the on-board audio since it would otherwise use the hardware PWM",
             "suffix": "- Disables on-board audio",
             "reboot": 1,
             "platforms": [
