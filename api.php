@@ -9,7 +9,7 @@ function getEndpointsDynamic_RDS() {
 }
 
 function DynRDSFastUpdate() {
-    shell_exec(escapeshellcmd("sudo /home/fpp/media/plugins/Dynamic_RDS/callbacks.py --update"));
+    shell_exec("sudo /home/fpp/media/plugins/Dynamic_RDS/callbacks.py --update");
 }
 
 function DynRDSPiBootChange() {
@@ -39,6 +39,10 @@ function DynRDSPiBootChange() {
 
         case 'DynRDSAdvPIPWMPin':
            exec("sudo sed -i -e '/^dtoverlay=pwm/c dtoverlay=pwm,pin=" . str_replace(",", ",func=", $myPluginSettings['DynRDSAdvPIPWMPin']) . "' /boot/config.txt");
+           break;
+
+        case 'DynRDSQN8066AmpPower':
+           DynRDSFastUpdate();
            break;
     }
 }
