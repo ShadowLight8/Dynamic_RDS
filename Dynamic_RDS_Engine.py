@@ -15,7 +15,7 @@ from urllib.request import urlopen
 from urllib.parse import quote
 
 from config import *
-import QN8066
+from QN8066 import *
 
 @atexit.register
 def cleanup():
@@ -222,6 +222,9 @@ with open(fifo_path, 'r') as fifo:
       elif line == 'UPDATE':
         read_config()
         if (transmitter != None and transmitter.active):
+          for key in rdsValues:
+            rdsValues[key] = ''
+          updateRDSData()
           transmitter.update()
 
       elif line == 'START':

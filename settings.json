@@ -402,12 +402,13 @@
             "name": "DynRDSmpcEnable",
             "description": "Enable MPC support",
             "tip": "Pulls %title% from mpc and displays it as {T} in the RDS Style Text",
-            "restart": 1,
+            "restart": 0,
             "reboot": 0,
             "type": "checkbox",
             "checkedValue": "1",
             "uncheckedValue": "0",
-            "default": 0
+            "default": 0,
+            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i>"
         },
         "DynRDSAdvPISoftwareI2C": {
             "name": "DynRDSAdvPISoftwareI2C",

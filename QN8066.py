@@ -4,8 +4,8 @@ from time import sleep
 from datetime import datetime
 
 from config import *
-import basicI2C
-import Transmitter
+from basicI2C import *
+from Transmitter import *
 
 class QN8066(Transmitter):
   def __init__(self):
