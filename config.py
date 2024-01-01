@@ -25,4 +25,3 @@ config = {
 'DynRDSAdvPIPWMPin': '18,2'
 }
 
-
