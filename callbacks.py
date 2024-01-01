@@ -30,7 +30,7 @@ configfile = os.getenv('CFGDIR', '/home/fpp/media/config') + '/plugin.Dynamic_RD
 config = {'DynRDSCallbackLogLevel': 'INFO'}
 
 try:
-  with open(configfile, 'r', encoding='UTF-8')) as f:
+  with open(configfile, 'r', encoding='UTF-8') as f:
     for line in f:
       (key, val) = line.split(' = ')
       config[key] = val.replace('"', '').strip()
@@ -68,7 +68,7 @@ try:
     sys.exit()
 
   logging.info('Starting %s', updater_path)
-  devnull = open(os.devnull, 'w', encoding='UTF-8'))
+  devnull = open(os.devnull, 'w', encoding='UTF-8')
   subprocess.Popen(['python3', updater_path], stdin=devnull, stdout=devnull, stderr=devnull, close_fds=True)
   engineStarted = True
 except socket.error:
@@ -84,7 +84,7 @@ except OSError as oe:
     raise
   logging.debug('Fifo already exists')
 
-with open(fifo_path, 'w', encoding='UTF-8')) as fifo:
+with open(fifo_path, 'w', encoding='UTF-8') as fifo:
   logging.info('Processing %s', argv[1])
 
   # If Engine was started AND the argument isn't --list, INIT must be sent to Engine before the requested argument
