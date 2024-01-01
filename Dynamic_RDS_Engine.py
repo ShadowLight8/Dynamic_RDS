@@ -53,13 +53,13 @@ def read_config():
     logging.warning('No config file found, using defaults.')
   except Exception:
     logging.exception('read_config')
- 
+
   # TODO: Move this QN8066 specific code to that class?
   # Convert DynRDSQN8066Gain into DynRDSQN8066InputImpedance, DynRDSQN8066DigitalGain, and DynRDSQN8066BufferGain
-  totalGain = (int(config['DynRDSQN8066Gain']) + 15)
+  totalGain = int(config['DynRDSQN8066Gain']) + 15
   config['DynRDSQN8066DigitalGain'] = totalGain % 3
 
-  if (totalGain < 24):
+  if totalGain < 24:
     config['DynRDSQN8066InputImpedance'] = 3 - totalGain // 6
     config['DynRDSQN8066BufferGain'] = totalGain % 6 // 3
   else:
@@ -157,7 +157,7 @@ try:
   logging.debug('Lock created')
 except:
   logging.error('Unable to create lock. Another instance of Dynamic_RDS_Engine.py running?')
-  exit(1)
+  sys.exit(1)
 
 # Setup fifo
 fifo_path = script_dir + "/Dynamic_RDS_FIFO"
@@ -167,8 +167,7 @@ try:
 except OSError as oe:
   if oe.errno != errno.EEXIST:
     raise
-  else:
-    logging.debug('Fifo already exists')
+  logging.debug('Fifo already exists')
 
 # Global RDS Values
 rdsValues = {'{T}': '', '{A}': '', '{N}': '', '{L}': '', '{C}': ''}
@@ -192,7 +191,7 @@ with open(fifo_path, 'r') as fifo:
       if line == 'EXIT':
         logging.info('Processing exit')
         transmitter.shutdown()
-        exit()
+        sys.exit()
 
       elif line == 'RESET':
         logging.info('Processing reset')
@@ -211,7 +210,7 @@ with open(fifo_path, 'r') as fifo:
         elif config['DynRDSTransmitter'] == "Si4713":
           transmitter = None # To be implemented later
 
-        if transmitter == None:
+        if transmitter is None:
           logging.error('Transmitter not set. Check Transmitter Type.')
           continue
 
@@ -222,16 +221,16 @@ with open(fifo_path, 'r') as fifo:
 
       elif line == 'UPDATE':
         read_config()
-        if (transmitter != None and transmitter.active):
+        if (transmitter is not None and transmitter.active):
           for key in rdsValues:
             rdsValues[key] = ''
           updateRDSData()
           transmitter.update()
           # TODO: Short term solution until PWM is reorganized
-          if (transmitter.activePWM):
+          if transmitter.activePWM:
             logging.info('Updating PWM duty cycle to {}'.format(int(config['DynRDSQN8066AmpPower']) * 61))
-            with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w') as p:
-              p.write('{0}\n'.format(int(config['DynRDSQN8066AmpPower']) * 61))
+            with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w') as pwm:
+              pwm.write('{0}\n'.format(int(config['DynRDSQN8066AmpPower']) * 61))
 
       elif line == 'START':
         logging.info('Processing start')
@@ -284,12 +283,12 @@ with open(fifo_path, 'r') as fifo:
       else:
         rdsValues['{'+line[0]+'}'] = line[1:]
 
-    elif transmitter != None and transmitter.active and config['DynRDSEnableRDS'] == "1":
+    elif transmitter is not None and transmitter.active and config['DynRDSEnableRDS'] == "1":
       transmitter.sendNextRDSGroup()
       # TODO: Determine when track length is done to reset RDS
       # TODO: Could add 1 sec to length, so normally track change will update data rather than time expiring. Reset should only happen when playlist is stopped?
 
-    if not activePlaylist and transmitter != None and transmitter.active and config['DynRDSmpcEnable'] == "1" and datetime.now() > nextMPCUpdate:
+    if not activePlaylist and transmitter is not None and transmitter.active and config['DynRDSmpcEnable'] == "1" and datetime.now() > nextMPCUpdate:
       logging.debug('Processing mpc')
       nextMPCUpdate = datetime.now() + timedelta(seconds=12)
       # TODO: Error handling might be needed here if the mpc execution has an issue
@@ -299,6 +298,6 @@ with open(fifo_path, 'r') as fifo:
         rdsValues['{T}'] = mpcLatest
         updateRDSData()
 
-    if transmitter == None or not transmitter.active:
+    if transmitter is None or not transmitter.active:
       logging.debug('Sleeping...')
       sleep(3)
