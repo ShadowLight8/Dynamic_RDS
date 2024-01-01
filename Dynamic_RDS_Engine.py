@@ -54,6 +54,7 @@ def read_config():
   except Exception:
     logging.exception('read_config')
  
+  # TODO: Move this QN8066 specific code to that class?
   # Convert DynRDSQN8066Gain into DynRDSQN8066InputImpedance, DynRDSQN8066DigitalGain, and DynRDSQN8066BufferGain
   totalGain = (int(config['DynRDSQN8066Gain']) + 15)
   config['DynRDSQN8066DigitalGain'] = totalGain % 3
@@ -226,6 +227,11 @@ with open(fifo_path, 'r') as fifo:
             rdsValues[key] = ''
           updateRDSData()
           transmitter.update()
+          # TODO: Short term solution until PWM is reorganized
+          if (transmitter.activePWM):
+            logging.info('Updating PWM duty cycle to {}'.format(int(config['DynRDSQN8066AmpPower']) * 61))
+            with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w') as p:
+              p.write('{0}\n'.format(int(config['DynRDSQN8066AmpPower']) * 61))
 
       elif line == 'START':
         logging.info('Processing start')
