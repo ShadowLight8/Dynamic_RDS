@@ -14,8 +14,8 @@ from datetime import date, datetime, timedelta
 from urllib.request import urlopen
 from urllib.parse import quote
 
-from config import *
-from QN8066 import *
+from config import config
+from QN8066 import QN8066
 
 @atexit.register
 def cleanup():
@@ -28,11 +28,11 @@ def cleanup():
     # TODO: Do we need to set both to fully turn off?
     # TODO: Handle case where PWM isn't being used cleanly
     if os.path.isdir('/sys/class/pwm/pwmchip0') and os.access('/sys/class/pwm/pwmchip0/export', os.W_OK):
-      with open("/sys/class/pwm/pwmchip0/pwm0/duty_cycle", 'w') as p:
-        p.write("0\n")
+      with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w', encoding='UTF-8') as p:
+        p.write('0\n')
       logging.debug('Stopped PWM')
-      with open("/sys/class/pwm/pwmchip0/pwm0/enable", 'w') as p:
-        p.write("0\n")
+      with open('/sys/class/pwm/pwmchip0/pwm0/enable', 'w', encoding='UTF-8') as p:
+        p.write('0\n')
       logging.info('Disabled PWM')
   except:
     pass
@@ -45,21 +45,21 @@ def cleanup():
 def read_config():
   configfile = os.getenv('CFGDIR', '/home/fpp/media/config') + '/plugin.Dynamic_RDS'
   try:
-    with open(configfile, 'r') as f:
-      for line in f:
-        (key, val) = line.split(' = ')
-        config[key] = val.replace('"', '').strip()
+    with open(configfile, 'r', encoding='UTF-8') as f:
+      for confline in f:
+        (confkey, confval) = confline.split(' = ')
+        config[confkey] = confval.replace('"', '').strip()
   except IOError:
     logging.warning('No config file found, using defaults.')
   except Exception:
     logging.exception('read_config')
- 
+
   # TODO: Move this QN8066 specific code to that class?
   # Convert DynRDSQN8066Gain into DynRDSQN8066InputImpedance, DynRDSQN8066DigitalGain, and DynRDSQN8066BufferGain
-  totalGain = (int(config['DynRDSQN8066Gain']) + 15)
+  totalGain = int(config['DynRDSQN8066Gain']) + 15
   config['DynRDSQN8066DigitalGain'] = totalGain % 3
 
-  if (totalGain < 24):
+  if totalGain < 24:
     config['DynRDSQN8066InputImpedance'] = 3 - totalGain // 6
     config['DynRDSQN8066BufferGain'] = totalGain % 6 // 3
   else:
@@ -157,7 +157,7 @@ try:
   logging.debug('Lock created')
 except:
   logging.error('Unable to create lock. Another instance of Dynamic_RDS_Engine.py running?')
-  exit(1)
+  sys.exit(1)
 
 # Setup fifo
 fifo_path = script_dir + "/Dynamic_RDS_FIFO"
@@ -167,8 +167,7 @@ try:
 except OSError as oe:
   if oe.errno != errno.EEXIST:
     raise
-  else:
-    logging.debug('Fifo already exists')
+  logging.debug('Fifo already exists')
 
 # Global RDS Values
 rdsValues = {'{T}': '', '{A}': '', '{N}': '', '{L}': '', '{C}': ''}
@@ -184,7 +183,7 @@ activePlaylist = False
 nextMPCUpdate = datetime.now()
 
 # Check if new information is in the FIFO and process accordingly
-with open(fifo_path, 'r') as fifo:
+with open(fifo_path, 'r', encoding='UTF-8') as fifo:
   while True:
     line = fifo.readline().rstrip()
     if len(line) > 0:
@@ -192,7 +191,7 @@ with open(fifo_path, 'r') as fifo:
       if line == 'EXIT':
         logging.info('Processing exit')
         transmitter.shutdown()
-        exit()
+        sys.exit()
 
       elif line == 'RESET':
         logging.info('Processing reset')
@@ -211,7 +210,7 @@ with open(fifo_path, 'r') as fifo:
         elif config['DynRDSTransmitter'] == "Si4713":
           transmitter = None # To be implemented later
 
-        if transmitter == None:
+        if transmitter is None:
           logging.error('Transmitter not set. Check Transmitter Type.')
           continue
 
@@ -222,16 +221,16 @@ with open(fifo_path, 'r') as fifo:
 
       elif line == 'UPDATE':
         read_config()
-        if (transmitter != None and transmitter.active):
+        if (transmitter is not None and transmitter.active):
           for key in rdsValues:
             rdsValues[key] = ''
           updateRDSData()
           transmitter.update()
           # TODO: Short term solution until PWM is reorganized
-          if (transmitter.activePWM):
-            logging.info('Updating PWM duty cycle to {}'.format(int(config['DynRDSQN8066AmpPower']) * 61))
-            with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w') as p:
-              p.write('{0}\n'.format(int(config['DynRDSQN8066AmpPower']) * 61))
+          if transmitter.activePWM:
+            logging.info('Updating PWM duty cycle to %s', int(config['DynRDSQN8066AmpPower']) * 61)
+            with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w', encoding='UTF-8') as pwm:
+              pwm.write(f'{int(config["DynRDSQN8066AmpPower"]) * 61}\n')
 
       elif line == 'START':
         logging.info('Processing start')
@@ -253,16 +252,16 @@ with open(fifo_path, 'r') as fifo:
       elif line.startswith('MAINLIST'):
         logging.info('Processing MainPlaylist')
         playlist_name = line[8:]
-        logging.debug('Playlist Name: {0}'.format(playlist_name))
+        logging.debug('Playlist Name: %s', playlist_name)
         playlist_length = 1
         if '.' not in playlist_name: # Case where a sequence is directly run from the scheduler or status page, it ends in .fseq and . is not allowed in regular playlist names
           try:
-            response = urlopen('http://localhost/api/playlist/{0}'.format(quote(playlist_name)))
-            data = response.read()
-            playlist_length = len(json.loads(data)['mainPlaylist'])
+            with urlopen(f'http://localhost/api/playlist/{quote(playlist_name)}') as response:
+              data = response.read()
+              playlist_length = len(json.loads(data)['mainPlaylist'])
           except Exception:
             logging.exception("Playlist Length")
-        logging.debug('Playlist Length: {0}'.format(playlist_length))
+        logging.debug('Playlist Length: %s', playlist_length)
         if rdsValues['{C}'] != str(playlist_length):
           rdsValues['{C}'] = str(playlist_length)
           updateRDSData()
@@ -270,7 +269,7 @@ with open(fifo_path, 'r') as fifo:
       # rdsValues that need additional parsing
       elif line[0] == 'L':
         logging.debug('Processing length')
-        rdsValues['{'+line[0]+'}'] = '{}:{:02d}'.format(int(line[1:])//60, int(line[1:])%60)
+        rdsValues['{L}'] = f'{int(line[1:])//60}:{int(line[1:])%60:02d}'
         #tracklength = max(int(line[1:10]) - max(int(config['DynRDSPSUpdateRate']), int(config['DynRDSRTUpdateRate'])), 1)
         #logging.debug('Length %s', int(tracklength))
 
@@ -284,21 +283,21 @@ with open(fifo_path, 'r') as fifo:
       else:
         rdsValues['{'+line[0]+'}'] = line[1:]
 
-    elif transmitter != None and transmitter.active and config['DynRDSEnableRDS'] == "1":
+    elif transmitter is not None and transmitter.active and config['DynRDSEnableRDS'] == "1":
       transmitter.sendNextRDSGroup()
       # TODO: Determine when track length is done to reset RDS
       # TODO: Could add 1 sec to length, so normally track change will update data rather than time expiring. Reset should only happen when playlist is stopped?
 
-    if not activePlaylist and transmitter != None and transmitter.active and config['DynRDSmpcEnable'] == "1" and datetime.now() > nextMPCUpdate:
+    if not activePlaylist and transmitter is not None and transmitter.active and config['DynRDSmpcEnable'] == "1" and datetime.now() > nextMPCUpdate:
       logging.debug('Processing mpc')
       nextMPCUpdate = datetime.now() + timedelta(seconds=12)
       # TODO: Error handling might be needed here if the mpc execution has an issue
       # TODO: Future idea to handle multiple fields from mpc, but I've not seen them used yet. [{A}%artist%][{T}%title%][{N}%track%]
-      mpcLatest = subprocess.run(['mpc', 'current', '-f', '%title%'], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
+      mpcLatest = subprocess.run(['mpc', 'current', '-f', '%title%'], stdout=subprocess.PIPE, check=False).stdout.decode('utf-8').strip()
       if rdsValues['{T}'] != mpcLatest:
         rdsValues['{T}'] = mpcLatest
         updateRDSData()
 
-    if transmitter == None or not transmitter.active:
+    if transmitter is None or not transmitter.active:
       logging.debug('Sleeping...')
       sleep(3)

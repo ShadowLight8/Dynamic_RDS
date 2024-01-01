@@ -1,11 +1,12 @@
 import logging
 import os
+import sys
 from time import sleep
 from datetime import datetime
 
-from config import *
-from basicI2C import *
-from Transmitter import *
+from config import config
+from basicI2C import basicI2C
+from Transmitter import Transmitter
 
 class QN8066(Transmitter):
   def __init__(self):
@@ -19,9 +20,9 @@ class QN8066(Transmitter):
     logging.info('Starting QN80xx transmitter')
 
     tempReadValue = self.I2C.read(0x06, 1)[0]>>2
-    if (tempReadValue != 0b1101): # TODO: Test this condition
-      logging.error('Chip ID value is {} instead of 13. Is this a QN8066 chip?'.format(tempReadValue))
-      exit(-1)
+    if tempReadValue != 0b1101: # TODO: Test this condition
+      logging.error('Chip ID value is %s instead of 13. Is this a QN8066 chip?', tempReadValue)
+      sys.exit(-1)
 
     #tempReadValue = self.I2C.read(0x0a, 1)[0]>>4
     #if (tempReadvalue != 0): # TO TEST
@@ -67,16 +68,16 @@ class QN8066(Transmitter):
       # Export PWM commands if needed
       if not os.path.isdir('/sys/class/pwm/pwmchip0/pwm0'):
         logging.debug('Exporting PWM')
-        with open('/sys/class/pwm/pwmchip0/export', 'w') as p:
+        with open('/sys/class/pwm/pwmchip0/export', 'w', encoding='UTF-8') as p:
           p.write('0\n')
 
       logging.debug('Setting PWM period to 18300')
-      with open('/sys/class/pwm/pwmchip0/pwm0/period', 'w') as p:
+      with open('/sys/class/pwm/pwmchip0/pwm0/period', 'w', encoding='UTF-8') as p:
         p.write('18300\n')
 
-      logging.debug('Setting PWM duty cycle to {}'.format(int(config['DynRDSQN8066AmpPower']) * 61))
-      with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w') as p:
-        p.write('{0}\n'.format(int(config['DynRDSQN8066AmpPower']) * 61))
+      logging.debug('Setting PWM duty cycle to %s', int(config['DynRDSQN8066AmpPower']) * 61)
+      with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w', encoding='UTF-8') as p:
+        p.write(f'{int(config["DynRDSQN8066AmpPower"]) * 61}\n')
 
       logging.info('Enabling PWM')
       with open('/sys/class/pwm/pwmchip0/pwm0/enable', 'w') as p:
@@ -109,11 +110,11 @@ class QN8066(Transmitter):
     # With everything stopped, disable PWM
     if self.activePWM:
       logging.debug('Stopping PWM')
-      with open("/sys/class/pwm/pwmchip0/pwm0/duty_cycle", 'w') as p:
+      with open("/sys/class/pwm/pwmchip0/pwm0/duty_cycle", 'w', encoding='UTF-8') as p:
         p.write("0\n")
 
       logging.info('Disabling PWM')
-      with open("/sys/class/pwm/pwmchip0/pwm0/enable", 'w') as p:
+      with open("/sys/class/pwm/pwmchip0/pwm0/enable", 'w', encoding='UTF-8') as p:
         p.write("0\n")
       self.activePWM = False
 
@@ -126,12 +127,12 @@ class QN8066(Transmitter):
     self.startup()
 
   def status(self):
-    self.aud_pk = self.I2C.read(0x1a, 1)[0]>>3 & 0b1111
-    self.fsm = self.I2C.read(0x0a,1)[0]>>4
+    aud_pk = self.I2C.read(0x1a, 1)[0]>>3 & 0b1111
+    fsm = self.I2C.read(0x0a,1)[0]>>4
     # Check frequency? 0x19 1:0 + 0x1b
     # TODO: Add PWM status if active
 
-    logging.info('Status - State {} (expect 10) - Audio Peak {} (target <= 14)'.format(self.fsm, self.aud_pk))
+    logging.info('Status - State %s (expect 10) - Audio Peak %s (target <= 14)', fsm, aud_pk)
 
     # Reset aud_pk
     self.I2C.write(0x24, [0b11111111])
@@ -154,7 +155,7 @@ class QN8066(Transmitter):
     rdsStatusByte = self.I2C.read(0x01, 1)[0]
     rdsSendToggleBit = rdsStatusByte >> 1 & 0b1
     rdsSentStatusToggleBit = self.I2C.read(0x1a, 1)[0] >> 2 & 0b1
-    logging.excessive('Transmit {0} - Send Bit {1} - Status Bit {2}'.format(' '.join('0x{:02x}'.format(a) for a in rdsBytes), rdsSendToggleBit, rdsSentStatusToggleBit))
+    logging.excessive('Transmit %s - Send Bit %s - Status Bit %s', ' '.join('0x{:02x}'.format(a) for a in rdsBytes), rdsSendToggleBit, rdsSentStatusToggleBit)
     self.I2C.write(0x1c, rdsBytes)
     self.I2C.write(0x01, [rdsStatusByte ^ 0b10])
     # RDS specifications indicate 87.6ms to send a group
@@ -185,14 +186,13 @@ class QN8066(Transmitter):
       super().updateData(data)
       # Adjust last fragment to make all 8 characters long
       self.fragments[-1] = self.fragments[-1].ljust(self.frag_size)
-      logging.info('PS {}'.format(self.fragments))
+      logging.info('PS %s', self.fragments)
 
     def sendNextGroup(self):
-      #logging.debug('PSBuffer sendNextGroup')
       if self.currentGroup == 0 and (datetime.now() - self.lastFragmentTime).total_seconds() >= self.delay:
         self.currentFragment = (self.currentFragment + 1) % len(self.fragments)
         self.lastFragmentTime = datetime.now()
-        logging.debug('Send PS Fragment \'{}\''.format(self.fragments[self.currentFragment]))
+        logging.debug('Send PS Fragment \'%s\'', self.fragments[self.currentFragment])
 
       # TODO: Seems like this could be improved
       rdsBytes = [self.pi_byte1, self.pi_byte2, 0b10<<2 | self.pty>>3, (0b00111 & self.pty)<<5 | self.currentGroup, self.pi_byte1, self.pi_byte2]
@@ -217,7 +217,7 @@ class QN8066(Transmitter):
       if len(self.fragments[-1]) < self.frag_size:
         self.fragments[-1] += chr(0x0d)
       self.ab = not self.ab
-      logging.info('RT {}'.format(self.fragments))
+      logging.info('RT %s', self.fragments)
 
     def sendNextGroup(self):
       # Will block for ~80-90ms for RDS Group to be sent
@@ -229,7 +229,7 @@ class QN8066(Transmitter):
         self.lastFragmentTime = datetime.now()
         self.ab = not self.ab
         # Change \r (0x0d) to be [0d] for logging so it is visible in case of debugging
-        logging.debug('Send RT Fragment \'{}\''.format(self.fragments[self.currentFragment].replace('\r','<0d>')))
+        logging.debug('Send RT Fragment \'%s\'', self.fragments[self.currentFragment].replace('\r','<0d>'))
 
       # TODO: Seems like this could be improved
       rdsBytes = [self.pi_byte1, self.pi_byte2, 0b1000<<2 | self.pty>>3, (0b00111 & self.pty)<<5 | self.ab<<4 | self.currentGroup]

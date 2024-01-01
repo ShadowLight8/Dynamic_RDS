@@ -24,3 +24,4 @@ config = {
 'DynRDSAdvPISoftwareI2C': '0',
 'DynRDSAdvPIPWMPin': '18,2'
 }
+
