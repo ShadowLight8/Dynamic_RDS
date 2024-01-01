@@ -1,14 +1,14 @@
 import logging
 import os
-import smbus
 from time import sleep
+import smbus
 
 # ===============
 # Basic I2C Class
 # ===============
 # Used by the Transmitter child classes (if they are i2c), but could also be used on its own if needed
 # Assuming SMBus of 1 on most modern hardware - Can check /dev/i2c-* for available buses
-class basicI2C(object):
+class basicI2C():
   def __init__(self, address, bus=1):
     self.address = address
     # Bus 1 is Modern RPis, Bus 2 is BBB, Bus 0 is older RPis
@@ -20,7 +20,7 @@ class basicI2C(object):
     try:
       self.bus = smbus.SMBus(bus)
     except Exception:
-        logging.exception("SMBus Init Error")
+      logging.exception("SMBus Init Error")
     sleep(2)
 
   def write(self, address, values, isFatal = False):
@@ -39,7 +39,7 @@ class basicI2C(object):
     else:
       logging.error("failed to write after multiple attempts")
       if isFatal:
-        exit(-1)
+        sys.exit(-1)
 
   def read(self, address, num_bytes, isFatal = False):
     # Simple i2c read - Always returns a list
@@ -58,4 +58,4 @@ class basicI2C(object):
     else:
       logging.error("failed to read after multiple attempts")
       if isFatal:
-        exit(-1)
+        sys.exit(-1)

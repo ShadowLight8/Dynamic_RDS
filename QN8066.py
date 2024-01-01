@@ -19,9 +19,9 @@ class QN8066(Transmitter):
     logging.info('Starting QN80xx transmitter')
 
     tempReadValue = self.I2C.read(0x06, 1)[0]>>2
-    if (tempReadValue != 0b1101): # TODO: Test this condition
+    if tempReadValue != 0b1101: # TODO: Test this condition
       logging.error('Chip ID value is {} instead of 13. Is this a QN8066 chip?'.format(tempReadValue))
-      exit(-1)
+      sys.exit(-1)
 
     #tempReadValue = self.I2C.read(0x0a, 1)[0]>>4
     #if (tempReadvalue != 0): # TO TEST
@@ -126,12 +126,12 @@ class QN8066(Transmitter):
     self.startup()
 
   def status(self):
-    self.aud_pk = self.I2C.read(0x1a, 1)[0]>>3 & 0b1111
-    self.fsm = self.I2C.read(0x0a,1)[0]>>4
+    aud_pk = self.I2C.read(0x1a, 1)[0]>>3 & 0b1111
+    fsm = self.I2C.read(0x0a,1)[0]>>4
     # Check frequency? 0x19 1:0 + 0x1b
     # TODO: Add PWM status if active
 
-    logging.info('Status - State {} (expect 10) - Audio Peak {} (target <= 14)'.format(self.fsm, self.aud_pk))
+    logging.info('Status - State {} (expect 10) - Audio Peak {} (target <= 14)'.format(fsm, aud_pk))
 
     # Reset aud_pk
     self.I2C.write(0x24, [0b11111111])
@@ -188,7 +188,6 @@ class QN8066(Transmitter):
       logging.info('PS {}'.format(self.fragments))
 
     def sendNextGroup(self):
-      #logging.debug('PSBuffer sendNextGroup')
       if self.currentGroup == 0 and (datetime.now() - self.lastFragmentTime).total_seconds() >= self.delay:
         self.currentFragment = (self.currentFragment + 1) % len(self.fragments)
         self.lastFragmentTime = datetime.now()
