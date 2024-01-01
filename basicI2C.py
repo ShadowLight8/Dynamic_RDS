@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from time import sleep
 import smbus
 
@@ -16,7 +17,7 @@ class basicI2C():
       bus = 2
     elif os.path.exists('/dev/i2c-0') or os.path.exists('/sys/class/i2c-0'):
       bus = 0
-    logging.info('Using i2c bus {}'.format(bus))
+    logging.info('Using i2c bus %s', bus)
     try:
       self.bus = smbus.SMBus(bus)
     except Exception:
@@ -25,7 +26,7 @@ class basicI2C():
 
   def write(self, address, values, isFatal = False):
     # Simple i2c write - Always takes an list, even for 1 byte
-    logging.excessive('I2C write at 0x{0:02x} of {1}'.format(address, ' '.join('0x{:02x}'.format(a) for a in values)))
+    logging.excessive('I2C write at 0x%02x of %s', address, ' '.join('0x{:02x}'.format(a) for a in values))
     for i in range(8):
       try:
         self.bus.write_i2c_block_data(self.address, address, values)
@@ -46,7 +47,7 @@ class basicI2C():
     for i in range(8):
       try:
         retVal = self.bus.read_i2c_block_data(self.address, address, num_bytes)
-        logging.excessive('I2C read at 0x{0:02x} of {1} byte(s) returned {2}'.format(address, num_bytes, ' '.join('0x{:02x}'.format(a) for a in retVal)))
+        logging.excessive('I2C read at 0x%02x of %s byte(s) returned %s', address, num_bytes, ' '.join('0x{:02x}'.format(a) for a in retVal))
         return retVal
       except Exception:
         logging.exception("read_i2c_block_data error")

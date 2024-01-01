@@ -46,7 +46,7 @@ logging.debug('Arguments %s', argv[1:])
 try:
   import smbus
 except ImportError as impErr:
-  logging.error("Failed to import {}.".format(impErr.args[0]))
+  logging.error("Failed to import %s", impErr.args[0])
   sys.exit(1)
 
 # Environ has a few useful items when FPPD runs callbacks.py, but logging it all the time, even at debug, is too much
