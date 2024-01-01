@@ -28,11 +28,11 @@ def cleanup():
     # TODO: Do we need to set both to fully turn off?
     # TODO: Handle case where PWM isn't being used cleanly
     if os.path.isdir('/sys/class/pwm/pwmchip0') and os.access('/sys/class/pwm/pwmchip0/export', os.W_OK):
-      with open("/sys/class/pwm/pwmchip0/pwm0/duty_cycle", 'w') as p:
-        p.write("0\n")
+      with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w', encoding='UTF-8') as p:
+        p.write('0\n')
       logging.debug('Stopped PWM')
-      with open("/sys/class/pwm/pwmchip0/pwm0/enable", 'w') as p:
-        p.write("0\n")
+      with open('/sys/class/pwm/pwmchip0/pwm0/enable', 'w', encoding='UTF-8') as p:
+        p.write('0\n')
       logging.info('Disabled PWM')
   except:
     pass
@@ -45,10 +45,10 @@ def cleanup():
 def read_config():
   configfile = os.getenv('CFGDIR', '/home/fpp/media/config') + '/plugin.Dynamic_RDS'
   try:
-    with open(configfile, 'r') as f:
-      for line in f:
-        (key, val) = line.split(' = ')
-        config[key] = val.replace('"', '').strip()
+    with open(configfile, 'r', encoding='UTF-8') as f:
+      for confline in f:
+        (confkey, confval) = confline.split(' = ')
+        config[confkey] = confval.replace('"', '').strip()
   except IOError:
     logging.warning('No config file found, using defaults.')
   except Exception:
@@ -183,7 +183,7 @@ activePlaylist = False
 nextMPCUpdate = datetime.now()
 
 # Check if new information is in the FIFO and process accordingly
-with open(fifo_path, 'r') as fifo:
+with open(fifo_path, 'r', encoding='UTF-8') as fifo:
   while True:
     line = fifo.readline().rstrip()
     if len(line) > 0:
@@ -229,8 +229,8 @@ with open(fifo_path, 'r') as fifo:
           # TODO: Short term solution until PWM is reorganized
           if transmitter.activePWM:
             logging.info('Updating PWM duty cycle to %s', int(config['DynRDSQN8066AmpPower']) * 61)
-            with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w') as pwm:
-              pwm.write('{0}\n'.format(int(config['DynRDSQN8066AmpPower']) * 61))
+            with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w', encoding='UTF-8') as pwm:
+              pwm.write(f'{int(config["DynRDSQN8066AmpPower"]) * 61}\n')
 
       elif line == 'START':
         logging.info('Processing start')
@@ -256,9 +256,9 @@ with open(fifo_path, 'r') as fifo:
         playlist_length = 1
         if '.' not in playlist_name: # Case where a sequence is directly run from the scheduler or status page, it ends in .fseq and . is not allowed in regular playlist names
           try:
-            response = urlopen('http://localhost/api/playlist/{0}'.format(quote(playlist_name)))
-            data = response.read()
-            playlist_length = len(json.loads(data)['mainPlaylist'])
+            with urlopen(f'http://localhost/api/playlist/{quote(playlist_name)}') as response:
+              data = response.read()
+              playlist_length = len(json.loads(data)['mainPlaylist'])
           except Exception:
             logging.exception("Playlist Length")
         logging.debug('Playlist Length: %s', playlist_length)
@@ -269,7 +269,7 @@ with open(fifo_path, 'r') as fifo:
       # rdsValues that need additional parsing
       elif line[0] == 'L':
         logging.debug('Processing length')
-        rdsValues['{'+line[0]+'}'] = '{}:{:02d}'.format(int(line[1:])//60, int(line[1:])%60)
+        rdsValues['{L}'] = f'{int(line[1:])//60}:{int(line[1:])%60:02d}'
         #tracklength = max(int(line[1:10]) - max(int(config['DynRDSPSUpdateRate']), int(config['DynRDSRTUpdateRate'])), 1)
         #logging.debug('Length %s', int(tracklength))
 
