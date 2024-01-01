@@ -228,7 +228,7 @@ with open(fifo_path, 'r') as fifo:
           transmitter.update()
           # TODO: Short term solution until PWM is reorganized
           if transmitter.activePWM:
-            logging.info('Updating PWM duty cycle to {}'.format(int(config['DynRDSQN8066AmpPower']) * 61))
+            logging.info('Updating PWM duty cycle to %s', int(config['DynRDSQN8066AmpPower']) * 61)
             with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w') as pwm:
               pwm.write('{0}\n'.format(int(config['DynRDSQN8066AmpPower']) * 61))
 
@@ -256,7 +256,7 @@ with open(fifo_path, 'r') as fifo:
         playlist_length = 1
         if '.' not in playlist_name: # Case where a sequence is directly run from the scheduler or status page, it ends in .fseq and . is not allowed in regular playlist names
           try:
-            response = urlopen('http://localhost/api/playlist/%s', quote(playlist_name))
+            response = urlopen('http://localhost/api/playlist/{0}'.format(quote(playlist_name)))
             data = response.read()
             playlist_length = len(json.loads(data)['mainPlaylist'])
           except Exception:
@@ -293,7 +293,7 @@ with open(fifo_path, 'r') as fifo:
       nextMPCUpdate = datetime.now() + timedelta(seconds=12)
       # TODO: Error handling might be needed here if the mpc execution has an issue
       # TODO: Future idea to handle multiple fields from mpc, but I've not seen them used yet. [{A}%artist%][{T}%title%][{N}%track%]
-      mpcLatest = subprocess.run(['mpc', 'current', '-f', '%title%'], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
+      mpcLatest = subprocess.run(['mpc', 'current', '-f', '%title%'], stdout=subprocess.PIPE, check=False).stdout.decode('utf-8').strip()
       if rdsValues['{T}'] != mpcLatest:
         rdsValues['{T}'] = mpcLatest
         updateRDSData()
