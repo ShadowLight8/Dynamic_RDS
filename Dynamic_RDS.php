@@ -54,7 +54,7 @@ if (trim(shell_exec("sudo i2cget -y " . $i2cbus . " 0x21 2>&1")) != "Error: Read
   $errorDetected = true;
 }
 
-if (isset($pluginSettings[DynRDSQN8066PIHardwarePWM]) && $pluginSettings[DynRDSQN8066PIHardwarePWM] == 1) {
+if (isset($pluginSettings['DynRDSQN8066PIHardwarePWM']) && $pluginSettings['DynRDSQN8066PIHardwarePWM'] == 1) {
  if (shell_exec("lsmod | grep 'snd_bcm2835.*1\>'")) {
   echo '<div class="callout callout-warning">On-board sound card appears active and will interfere with hardware PWM. Try a reboot first, next toggle the Enable PI Hardware PWM setting below and reboot. If issues persist check /boot/config.txt and comment out dtparam=audio=on</div>';
  }
@@ -64,7 +64,7 @@ if (isset($pluginSettings[DynRDSQN8066PIHardwarePWM]) && $pluginSettings[DynRDSQ
 }
 
 $i2cBusType = 'hardware';
-if (isset($pluginSettings[DynRDSAdvPISoftwareI2C]) && $pluginSettings[DynRDSAdvPISoftwareI2C] == 1) {
+if (isset($pluginSettings['DynRDSAdvPISoftwareI2C']) && $pluginSettings['DynRDSAdvPISoftwareI2C'] == 1) {
  $i2cBusType = 'software';
  if (shell_exec("lsmod | grep i2c_bcm2835")) {
   echo '<div class="callout callout-warning">Hardware I<sup>2</sup>C appears active. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist check /boot/config.txt and comment out dtparam=i2c_arm=on</div>';
@@ -109,7 +109,9 @@ function DynRDSFastUpdate() {
 }
 
 function DynRDSPiBootUpdate(key) {
-  $.post('api/plugin/Dynamic_RDS/PiBootChange/' + key, JSON.stringify(pluginSettings[key]));
+  $.post('api/plugin/Dynamic_RDS/PiBootChange/' + key, JSON.stringify(Object.assign({},pluginSettings)));
+  // Object.assign({},pluginSettings) converts to an object from an associative array. Very likely pluginSettings could be changed
+  // to be an object instead of an array in FPP's code
 }
 </script>
 
@@ -157,15 +159,4 @@ PrintSettingGroup("DynRDSLogLevel", "", "", 1, "Dynamic_RDS", "DynRDSFastUpdate"
 <?
 PrintSettingGroup("DynRDSAdv", "", "", 1, "Dynamic_RDS", "DynRDSPiBootUpdate");
 ?>
-<h2>QN8066 and Hardware PWM Setup</h2>
-<div class="container-fluid settingsTable settingsGroupTable">
-In order to use Hardware PWM to control the QN8066 amp power, the following are required
-<ul>
-<li>An external, USB sound card must be used as the internal audio must be disabled</li>
-<li>Modify the /boot/config.txt file by doing the following</li>
-<ul>
-<li>Comment out dtparam=audio=on with a #</li>
-<li>Add the line dtoverlay=pwm</li>
-</ul>
-</div>
 </div>
