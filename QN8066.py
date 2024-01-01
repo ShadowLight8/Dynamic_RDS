@@ -68,16 +68,16 @@ class QN8066(Transmitter):
       # Export PWM commands if needed
       if not os.path.isdir('/sys/class/pwm/pwmchip0/pwm0'):
         logging.debug('Exporting PWM')
-        with open('/sys/class/pwm/pwmchip0/export', 'w') as p:
+        with open('/sys/class/pwm/pwmchip0/export', 'w', encoding='UTF-8') as p:
           p.write('0\n')
 
       logging.debug('Setting PWM period to 18300')
-      with open('/sys/class/pwm/pwmchip0/pwm0/period', 'w') as p:
+      with open('/sys/class/pwm/pwmchip0/pwm0/period', 'w', encoding='UTF-8')) as p:
         p.write('18300\n')
 
       logging.debug('Setting PWM duty cycle to %s', int(config['DynRDSQN8066AmpPower']) * 61)
-      with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w') as p:
-        p.write('{0}\n'.format(int(config['DynRDSQN8066AmpPower']) * 61))
+      with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w', encoding='UTF-8')) as p:
+        p.write('{int(config["DynRDSQN8066AmpPower"]) * 61}\n')
 
       logging.info('Enabling PWM')
       with open('/sys/class/pwm/pwmchip0/pwm0/enable', 'w') as p:
@@ -110,11 +110,11 @@ class QN8066(Transmitter):
     # With everything stopped, disable PWM
     if self.activePWM:
       logging.debug('Stopping PWM')
-      with open("/sys/class/pwm/pwmchip0/pwm0/duty_cycle", 'w') as p:
+      with open("/sys/class/pwm/pwmchip0/pwm0/duty_cycle", 'w', encoding='UTF-8')) as p:
         p.write("0\n")
 
       logging.info('Disabling PWM')
-      with open("/sys/class/pwm/pwmchip0/pwm0/enable", 'w') as p:
+      with open("/sys/class/pwm/pwmchip0/pwm0/enable", 'w', encoding='UTF-8')) as p:
         p.write("0\n")
       self.activePWM = False
 
