@@ -14,8 +14,8 @@ from datetime import date, datetime, timedelta
 from urllib.request import urlopen
 from urllib.parse import quote
 
-from config import *
-from QN8066 import *
+from config import config
+from QN8066 import QN8066
 
 @atexit.register
 def cleanup():
@@ -252,16 +252,16 @@ with open(fifo_path, 'r') as fifo:
       elif line.startswith('MAINLIST'):
         logging.info('Processing MainPlaylist')
         playlist_name = line[8:]
-        logging.debug('Playlist Name: {0}'.format(playlist_name))
+        logging.debug('Playlist Name: %s', playlist_name)
         playlist_length = 1
         if '.' not in playlist_name: # Case where a sequence is directly run from the scheduler or status page, it ends in .fseq and . is not allowed in regular playlist names
           try:
-            response = urlopen('http://localhost/api/playlist/{0}'.format(quote(playlist_name)))
+            response = urlopen('http://localhost/api/playlist/%s', quote(playlist_name))
             data = response.read()
             playlist_length = len(json.loads(data)['mainPlaylist'])
           except Exception:
             logging.exception("Playlist Length")
-        logging.debug('Playlist Length: {0}'.format(playlist_length))
+        logging.debug('Playlist Length: %s', playlist_length)
         if rdsValues['{C}'] != str(playlist_length):
           rdsValues['{C}'] = str(playlist_length)
           updateRDSData()

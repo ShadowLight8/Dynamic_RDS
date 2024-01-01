@@ -2,7 +2,7 @@ import logging
 from time import sleep
 from datetime import datetime
 
-from config import *
+from config import config
 
 # ===================
 # Transmitter Classes
