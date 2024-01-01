@@ -77,7 +77,7 @@ class QN8066(Transmitter):
 
       logging.debug('Setting PWM duty cycle to %s', int(config['DynRDSQN8066AmpPower']) * 61)
       with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w', encoding='UTF-8') as p:
-        p.write('{int(config["DynRDSQN8066AmpPower"]) * 61}\n')
+        p.write(f'{int(config["DynRDSQN8066AmpPower"]) * 61}\n')
 
       logging.info('Enabling PWM')
       with open('/sys/class/pwm/pwmchip0/pwm0/enable', 'w') as p:
