@@ -20,7 +20,7 @@ class QN8066(Transmitter):
     logging.info('Starting QN80xx transmitter')
 
     tempReadValue = self.I2C.read(0x06, 1)[0]>>2
-    if tempReadValue != 0b1101: # TODO: Test this condition
+    if tempReadValue != 0b1101:
       logging.error('Chip ID value is %s instead of 13. Is this a QN8066 chip?', tempReadValue)
       sys.exit(-1)
 
@@ -53,9 +53,8 @@ class QN8066(Transmitter):
     sleep(0.2)
 
     # Reset aud_pk
-    # TODO: Add support for DynRDSQN8066ChipPower
-    self.I2C.write(0x24, [0b11111111])
-    self.I2C.write(0x24, [0b01111111])
+    self.I2C.write(0x24, [0b10000000 | int(max(24,(int(config['DynRDSQN8066ChipPower']) - 70.2) // 0.91))])
+    self.I2C.write(0x24, [0b00000000 | int(max(24,(int(config['DynRDSQN8066ChipPower']) - 70.2) // 0.91))])
 
     self.update()
     super().startup()
@@ -88,14 +87,13 @@ class QN8066(Transmitter):
     # Try without 0x25 0b01111101 - TX Freq Dev of 86.25KHz
     # Try without 0x26 0b00111100 - RDS Freq Dev of 21KHz
 
-    # TODO: Try disable timer for PA off when no audio to see if this is useful - Does it auto power back up? RDS stalled?
-    # TODO: Pull in soft clip from config
+    # TODO: New option to configure soft clip level 3db is the default (also 4.5db, 6db, and 9db)
     self.I2C.write(0x27, [0b00111010], True)
 
     # Stop Auto Gain Correction (AGC), which introduces obvious poor sounding audio changes
     if config['DynRDSQN8066AGC'] == '0':
       self.I2C.write(0x6e, [0b10110111], True)
-    # TODO: Else?
+    # TODO: Else if it is re-enabled
 
     # TX gain changes and input impedance
     self.I2C.write(0x28, [int(config['DynRDSQN8066SoftClipping'])<<7 | int(config['DynRDSQN8066BufferGain'])<<4 | int(config['DynRDSQN8066DigitalGain'])<<2 | int(config['DynRDSQN8066InputImpedance'])], True)
@@ -129,14 +127,14 @@ class QN8066(Transmitter):
   def status(self):
     aud_pk = self.I2C.read(0x1a, 1)[0]>>3 & 0b1111
     fsm = self.I2C.read(0x0a,1)[0]>>4
-    # Check frequency? 0x19 1:0 + 0x1b
-    # TODO: Add PWM status if active
+    # TODO: Check frequency? 0x19 1:0 + 0x1b
+    # TODO: Add PWM status if active - Might move elsewhere if PWM gets located to a single file
 
     logging.info('Status - State %s (expect 10) - Audio Peak %s (target <= 14)', fsm, aud_pk)
 
     # Reset aud_pk
-    self.I2C.write(0x24, [0b11111111])
-    self.I2C.write(0x24, [0b01111111])
+    self.I2C.write(0x24, [0b10000000 | int(max(24,(int(config['DynRDSQN8066ChipPower']) - 70.2) // 0.91))])
+    self.I2C.write(0x24, [0b00000000 | int(max(24,(int(config['DynRDSQN8066ChipPower']) - 70.2) // 0.91))])
     super().status()
 
   def updateRDSData(self, PSdata, RTdata):
@@ -179,7 +177,6 @@ class QN8066(Transmitter):
     def __init__(self, outer, data, delay=4):
       super().__init__(data, 8, 2, delay)
       # Include outer for the common transmitRDS function that both PSBuffer and RTBuffer use
-      # TODO: Not sure if this is the best way yet
       self.outer = outer
 
     def updateData(self, data):
@@ -194,7 +191,6 @@ class QN8066(Transmitter):
         self.lastFragmentTime = datetime.now()
         logging.debug('Send PS Fragment \'%s\'', self.fragments[self.currentFragment])
 
-      # TODO: Seems like this could be improved
       rdsBytes = [self.pi_byte1, self.pi_byte2, 0b10<<2 | self.pty>>3, (0b00111 & self.pty)<<5 | self.currentGroup, self.pi_byte1, self.pi_byte2]
       rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size]))
       rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size + 1]))
