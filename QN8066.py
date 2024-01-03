@@ -79,7 +79,7 @@ class QN8066(Transmitter):
         p.write(f'{int(config["DynRDSQN8066AmpPower"]) * 61}\n')
 
       logging.info('Enabling PWM')
-      with open('/sys/class/pwm/pwmchip0/pwm0/enable', 'w') as p:
+      with open('/sys/class/pwm/pwmchip0/pwm0/enable', 'w', encoding='UTF-8') as p:
         p.write('1\n')
       self.activePWM = True
 
