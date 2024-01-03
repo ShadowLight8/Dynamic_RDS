@@ -15,9 +15,11 @@ Created for Falcon Player 6.0+ (FPP) as a plugin to generate RDS (radio data sys
 ## Antenna
 The QN8066 transmitter board needs an antenna for safe operations.
 
-Small bench testing option - https://www.amazon.com/gp/product/B07K7DBVX9
-
-Show ready option 1/4 wave - https://www.amazon.com/Transmitter-Professional-87-108mhz-0-5w-100w-Waterproof/dp/B09NDPY4JG
+* Small bench testing option - https://www.amazon.com/gp/product/B07K7DBVX9
+* 1/4 wave ground plane antenna calculator - https://m0ukd.com/calculators/quarter-wave-ground-plane-antenna-calculator/
+* Show ready option 1/4 wave - https://www.amazon.com/Transmitter-Professional-87-108mhz-0-5w-100w-Waterproof/dp/B09NDPY4JG
+* Inexpensive 1/4 wave option - https://www.aliexpress.us/item/2251832695723994.html
+* BNC to BNC cable - https://www.amazon.com/gp/product/B0BVVVRYZL/)
 
 (More detail to be added)
 
@@ -34,6 +36,7 @@ If you are comfortable with crimping and making connectors, here are examples of
 * JST-XH connectors - https://www.amazon.com/dp/B015Y6JOUG
 * Dupont connectors - https://www.amazon.com/dp/B0774NMT1S
 * Single kit with both JST-XH and Dupont connectors - https://www.amazon.com/dp/B09Q5MPM7H/
+* JST-XH kit with Crimping Tool - https://www.amazon.com/gp/product/B094XSF2GK
 
 Pre-crimped wires are also an options
 * JST-XH Pre-crimped wires - https://www.amazon.com/dp/B0BW9TJN21
