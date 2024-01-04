@@ -44,6 +44,9 @@ function DynRDSPiBootChange() {
         case 'DynRDSQN8066AmpPower':
            DynRDSFastUpdate();
            break;
+
+        default:
+           DynRDSFastUpdate();
     }
 }
 ?>

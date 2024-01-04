@@ -113,8 +113,8 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
     logging.info('Type media')
     try:
       j = json.loads(argv[4])
-    except Exception as e:
-      logging.error(e)
+    except Exception:
+      logging.exception('Media JSON')
 
     # When default values are sent over fifo, other side more or less ignores them
     media_type = j['type'] if 'type' in j else 'pause'
@@ -142,8 +142,10 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
   elif argv[1] == '--type' and argv[2] == 'playlist':
     logging.info('Type playlist')
 
-    # TODO: Exception handling for json?
-    j = json.loads(argv[4])
+    try:
+      j = json.loads(argv[4])
+    except ValueError:
+      logging.exception('Playlist JSON')
 
     playlist_action = j['Action'] if 'Action' in j else 'stop'
 

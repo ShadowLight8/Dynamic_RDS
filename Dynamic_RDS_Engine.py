@@ -25,8 +25,6 @@ def cleanup():
   except:
     pass
   try:
-    # TODO: Do we need to set both to fully turn off?
-    # TODO: Handle case where PWM isn't being used cleanly
     if os.path.isdir('/sys/class/pwm/pwmchip0') and os.access('/sys/class/pwm/pwmchip0/export', os.W_OK):
       with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w', encoding='UTF-8') as p:
         p.write('0\n')
@@ -54,7 +52,7 @@ def read_config():
   except Exception:
     logging.exception('read_config')
 
-  # TODO: Move this QN8066 specific code to that class?
+  # TODO: Move this QN8066 specific code to that class? Like a config tweak in QN8066?
   # Convert DynRDSQN8066Gain into DynRDSQN8066InputImpedance, DynRDSQN8066DigitalGain, and DynRDSQN8066BufferGain
   totalGain = int(config['DynRDSQN8066Gain']) + 15
   config['DynRDSQN8066DigitalGain'] = totalGain % 3
@@ -112,7 +110,7 @@ def rdsStyleToString(rdsStyle, groupSize):
         else:
           skip += 2
           # Normalize Unicode characters to their nearest ascii characters
-          # TODO: Other character substitutions could be done here
+          # Other character substitutions could be done here
           outputRDS.append(unicodedata.normalize('NFKD', rdsValues.get(rdsStyle[i:i+3], '')).encode('ascii', 'ignore').decode())
       else:
         outputRDS.append(v)
