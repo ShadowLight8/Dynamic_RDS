@@ -136,9 +136,9 @@
 	},
         "DynRDSQN8066PIHardwarePWM": {
             "name": "DynRDSQN8066PIHardwarePWM",
-            "description": "Enable PI Hardware PWM",
-            "tip": "Enables Raspberry Pi hardware PWM, but has to disable the on-board audio since it would otherwise use the hardware PWM",
-            "suffix": "- Disables on-board audio, USB Sound Card required",
+            "description": "Enable Pi PWM",
+            "tip": "Enables Raspberry Pi hardware-based PWM on Pin 12 / GPIO 18 by default. Used to control the Amp Power. This requires the on-board audio to be disabled as it also used the PWM hardware, so an external sound card is required.",
+            "suffix": "- Disables on-board audio, external sound card required",
             "restart": 0,
             "reboot": 1,
             "type": "checkbox",
@@ -158,8 +158,8 @@
         "DynRDSQN8066AmpPower": {
             "name": "DynRDSQN8066AmpPower",
             "description": "Amp Power (0-100)",
-            "tip": "Adjust the power output for the amplifier after the transmitter chip. This is controlled by the Pis hardware pwm, hence an USB Audio Card is required.",
-            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i> - Controlled by Hardware PWM",
+            "tip": "Adjust the power output for the amplifier after the transmitter chip. This is controlled by the Pi PWM output.",
+            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i> - Controlled by PWM",
             "restart": 0,
             "reboot": 0,
             "type": "number",
@@ -361,7 +361,7 @@
         "DynRDSPICode": {
             "name": "DynRDSPICode",
             "description": "PI Code",
-            "tip": "Unique program indentification code. While no longer the standard in the US, some older recievers will attempt to translate the PI code to a callsign. Can use 819b for WRAP or 5F64 for WEBS. You can search at http://picodes.nrscstandards.org for unused codes or calculate your own at http://audemat-radio.com/popup/picode.php. First character of callsign is limited to W or K.",
+            "tip": "Unique program indentification code. While no longer the standard in the US, some older recievers will attempt to translate the PI code to a callsign. Can use 819b for WRAP or 5F64 for WEBS. You can search at https://picodes.nrscstandards.org for unused codes or calculate your own at https://caseymediallc.com/rdsreverse. First character of callsign is limited to W or K.",
             "restart": 1,
             "reboot": 0,
             "type": "text",
@@ -426,14 +426,17 @@
         },
         "DynRDSAdvPIPWMPin": {
             "name": "DynRDSAdvPIPWMPin",
-            "description": "PI Hardware PWM Pin",
-            "tip": "Select which Pin/GPIO is PWM0s output",
+            "description": "PI PWM Pin",
+            "tip": "Select which Pin/GPIO has the PWM output. HW is for true hareware-generated PWM, but is limited to specific pins. DMA is for PWM-via-DMA that can be output on any GPIO pin. Either still uses all/part of the PWM hardware, so on-board audio is still disabled and an external sound card is needed.",
             "restart": 0,
             "reboot": 1,
             "type": "select",
             "options": {
-               "Pin 12 / GPIO 18 (default)": "18,2",
-               "Pin 32 / GPIO 12": "12,4"
+               "HW - Pin 12 / GPIO 18 (default)": "18,2",
+               "HW - Pin 32 / GPIO 12": "12,4",
+               "DMA - Pin 3 / GPIO 3": "3,0",
+               "DMA - Pin 7 / GPIO 4": "4,0",
+               "DMA - TODO REST OF PINS": "x,x"
             },
             "default": "18,2",
             "platforms": [
