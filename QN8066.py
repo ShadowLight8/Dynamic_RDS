@@ -67,9 +67,9 @@ class QN8066(Transmitter):
       # Export PWM commands if needed
       if not (os.path.isdir('/sys/class/pwm/pwmchip0/pwm0') or os.path.isdir('/sys/class/pwm/pwmchip0/pwm1')):
         logging.debug('Exporting PWM')
-        pwmToUse = 0;
+        pwmToUse = 0
         if config['DynRDSAdvPIPWMPin'] in {'13,4' , '19,2'}:
-          pwmToUse = 1;
+          pwmToUse = 1
         with open('/sys/class/pwm/pwmchip0/export', 'w', encoding='UTF-8') as p:
           p.write(f'{pwmToUse}\n')
 
