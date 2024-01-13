@@ -432,8 +432,10 @@
             "reboot": 1,
             "type": "select",
             "options": {
-               "HW - Pin 12 / GPIO 18 (default)": "18,2",
-               "HW - Pin 32 / GPIO 12": "12,4",
+               "HW0 - Pin 12 / GPIO 18 (default)": "18,2",
+               "HW0 - Pin 32 / GPIO 12": "12,4",
+               "HW1 - Pin 33 / GPIO 13": "13,4",
+               "HW1 - Pin 35 / GPIO 19": "19,2",
                "DMA - Pin 3 / GPIO 3": "3,0",
                "DMA - Pin 7 / GPIO 4": "4,0",
                "DMA - TODO REST OF PINS": "x,x"

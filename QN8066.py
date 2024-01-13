@@ -60,26 +60,29 @@ class QN8066(Transmitter):
     super().startup()
 
     # With everything started up, enable PWM
-
+    # TODO: Check to see if PWM is enabled and amp power > 0, otherwise skip this
     # Check that PWM configured in /boot/config.txt and can be written to
     if os.path.isdir('/sys/class/pwm/pwmchip0') and os.access('/sys/class/pwm/pwmchip0/export', os.W_OK):
       logging.debug('Setting up PWM')
       # Export PWM commands if needed
-      if not os.path.isdir('/sys/class/pwm/pwmchip0/pwm0'):
+      if not (os.path.isdir('/sys/class/pwm/pwmchip0/pwm0') or os.path.isdir('/sys/class/pwm/pwmchip0/pwm1')):
         logging.debug('Exporting PWM')
+        pwmToUse = 0;
+        if config['DynRDSAdvPIPWMPin'] in {'13,4' , '19,2'}:
+          pwmToUse = 1;
         with open('/sys/class/pwm/pwmchip0/export', 'w', encoding='UTF-8') as p:
-          p.write('0\n')
+          p.write(f'{pwmToUse}\n')
 
       logging.debug('Setting PWM period to 18300')
-      with open('/sys/class/pwm/pwmchip0/pwm0/period', 'w', encoding='UTF-8') as p:
+      with open(f'/sys/class/pwm/pwmchip0/pwm{pwmToUse}/period', 'w', encoding='UTF-8') as p:
         p.write('18300\n')
 
       logging.debug('Setting PWM duty cycle to %s', int(config['DynRDSQN8066AmpPower']) * 61)
-      with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w', encoding='UTF-8') as p:
+      with open(f'/sys/class/pwm/pwmchip0/pwm{pwmToUse}/duty_cycle', 'w', encoding='UTF-8') as p:
         p.write(f'{int(config["DynRDSQN8066AmpPower"]) * 61}\n')
 
       logging.info('Enabling PWM')
-      with open('/sys/class/pwm/pwmchip0/pwm0/enable', 'w', encoding='UTF-8') as p:
+      with open(f'/sys/class/pwm/pwmchip0/pwm{pwmToUse}/enable', 'w', encoding='UTF-8') as p:
         p.write('1\n')
       self.activePWM = True
 

@@ -10,6 +10,8 @@ import sys
 from datetime import date
 from sys import argv
 
+from config import config,read_config_from_file
+
 if len(argv) <= 1:
   print('Usage:')
   print('   --list     | Used by fppd at startup. Used to start up the Dynamic_RDS_Engine.py script')
@@ -25,17 +27,7 @@ script_dir = os.path.dirname(os.path.abspath(argv[0]))
 
 logging.basicConfig(filename=script_dir + '/Dynamic_RDS_callbacks.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
 
-configfile = os.getenv('CFGDIR', '/home/fpp/media/config') + '/plugin.Dynamic_RDS'
-
-config = {'DynRDSCallbackLogLevel': 'INFO'}
-
-try:
-  with open(configfile, 'r', encoding='UTF-8') as f:
-    for line in f:
-      (key, val) = line.split(' = ')
-      config[key] = val.replace('"', '').strip()
-except IOError:
-  logging.warning('No config file found, using defaults.')
+read_config_from_file()
 
 logging.getLogger().setLevel(config['DynRDSCallbackLogLevel'])
 
@@ -46,8 +38,15 @@ logging.debug('Arguments %s', argv[1:])
 try:
   import smbus
 except ImportError as impErr:
-  logging.error("Failed to import %s", impErr.args[0])
+  logging.error("Failed to import smbus %s", impErr.args[0])
   sys.exit(1)
+
+#if config['DynRDSTransmitter'] == "QN8066":
+#  try:
+#    import RPIO.PWM
+#  except ImportError as impErr:
+#    logging.error("Failed to import RPIO %s", impErr.args[0])
+#    sys.exit(1)
 
 # Environ has a few useful items when FPPD runs callbacks.py, but logging it all the time, even at debug, is too much
 #logging.debug('Environ %s', os.environ)
