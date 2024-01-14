@@ -427,18 +427,15 @@
         "DynRDSAdvPIPWMPin": {
             "name": "DynRDSAdvPIPWMPin",
             "description": "PI PWM Pin",
-            "tip": "Select which Pin/GPIO has the PWM output. HW is for true hareware-generated PWM, but is limited to specific pins. DMA is for PWM-via-DMA that can be output on any GPIO pin. Either still uses all/part of the PWM hardware, so on-board audio is still disabled and an external sound card is needed.",
+            "tip": "Select which Pin/GPIO has the PWM output. PWM0/1 are for true hareware-generated PWM, but is limited to specific pins. This uses the PWM hardware, so on-board audio is still disabled and an external sound card is needed.",
             "restart": 0,
             "reboot": 1,
             "type": "select",
             "options": {
-               "HW0 - Pin 12 / GPIO 18 (default)": "18,2",
-               "HW0 - Pin 32 / GPIO 12": "12,4",
-               "HW1 - Pin 33 / GPIO 13": "13,4",
-               "HW1 - Pin 35 / GPIO 19": "19,2",
-               "DMA - Pin 3 / GPIO 3": "3,0",
-               "DMA - Pin 7 / GPIO 4": "4,0",
-               "DMA - TODO REST OF PINS": "x,x"
+               "PWM0 - Pin 12 / GPIO 18 (default)": "18,2",
+               "PWM0 - Pin 32 / GPIO 12": "12,4",
+               "PWM1 - Pin 33 / GPIO 13": "13,4",
+               "PWM1 - Pin 35 / GPIO 19": "19,2"
             },
             "default": "18,2",
             "platforms": [
