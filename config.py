@@ -1,3 +1,6 @@
+import os
+import logging
+
 config = {
 'DynRDSEnableRDS': '1',
 'DynRDSPSUpdateRate': '4',
@@ -25,3 +28,14 @@ config = {
 'DynRDSAdvPIPWMPin': '18,2'
 }
 
+def read_config_from_file():
+  configfile = os.getenv('CFGDIR', '/home/fpp/media/config') + '/plugin.Dynamic_RDS'
+  try:
+    with open(configfile, 'r', encoding='UTF-8') as f:
+      for confline in f:
+        (confkey, confval) = confline.split(' = ')
+        config[confkey] = confval.replace('"', '').strip()
+  except IOError:
+    logging.warning('No config file found, using defaults.')
+  except Exception:
+    logging.exception('read_config')

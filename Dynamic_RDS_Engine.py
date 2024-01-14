@@ -14,7 +14,7 @@ from datetime import date, datetime, timedelta
 from urllib.request import urlopen
 from urllib.parse import quote
 
-from config import config
+from config import config, read_config_from_file
 from QN8066 import QN8066
 
 @atexit.register
@@ -41,16 +41,7 @@ def cleanup():
 # ==================================
 
 def read_config():
-  configfile = os.getenv('CFGDIR', '/home/fpp/media/config') + '/plugin.Dynamic_RDS'
-  try:
-    with open(configfile, 'r', encoding='UTF-8') as f:
-      for confline in f:
-        (confkey, confval) = confline.split(' = ')
-        config[confkey] = confval.replace('"', '').strip()
-  except IOError:
-    logging.warning('No config file found, using defaults.')
-  except Exception:
-    logging.exception('read_config')
+  read_config_from_file()
 
   # TODO: Move this QN8066 specific code to that class? Like a config tweak in QN8066?
   # Convert DynRDSQN8066Gain into DynRDSQN8066InputImpedance, DynRDSQN8066DigitalGain, and DynRDSQN8066BufferGain
