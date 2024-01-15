@@ -66,11 +66,11 @@ class QN8066(Transmitter):
       pwmToUse = 0
       if config['DynRDSAdvPIPWMPin'] in {'13,4' , '19,2'}:
         pwmToUse = 1
-      logging.debug(f'Setting up PWM{pwmToUse}')
+      logging.debug('Setting up PWM%s', pwmToUse)
 
       # Export PWM commands if needed
       if not os.path.isdir(f'/sys/class/pwm/pwmchip0/pwm{pwmToUse}'):
-        logging.debug(f'Exporting PWM{pwmToUse}')
+        logging.debug('Exporting PWM%s', pwmToUse)
         with open('/sys/class/pwm/pwmchip0/export', 'w', encoding='UTF-8') as p:
           p.write(f'{pwmToUse}\n')
 
@@ -82,7 +82,7 @@ class QN8066(Transmitter):
       with open(f'/sys/class/pwm/pwmchip0/pwm{pwmToUse}/duty_cycle', 'w', encoding='UTF-8') as p:
         p.write(f'{int(config["DynRDSQN8066AmpPower"]) * 61}\n')
 
-      logging.info(f'Enabling PWM{pwmToUse}')
+      logging.info('Enabling PWM%s', pwmToUse)
       with open(f'/sys/class/pwm/pwmchip0/pwm{pwmToUse}/enable', 'w', encoding='UTF-8') as p:
         p.write('1\n')
       self.activePWM = True

@@ -38,7 +38,7 @@ def cleanup():
       logging.debug('Stopped PWM')
       with open(f'/sys/class/pwm/pwmchip0/pwm{pwmToUse}/enable', 'w', encoding='UTF-8') as p:
         p.write('0\n')
-      logging.info(f'Disabled PWM{pwmToUse}')
+      logging.info('Disabled PWM%s', pwmToUse)
   except:
     pass
   logging.info('Exiting')
