@@ -6,6 +6,7 @@ from datetime import datetime
 
 from config import config
 from basicI2C import basicI2C
+from basicPWM import basicPWM, hardwarePWM, softwarePWM
 from Transmitter import Transmitter
 
 class QN8066(Transmitter):
@@ -14,7 +15,7 @@ class QN8066(Transmitter):
     self.I2C = basicI2C(0x21)
     self.PS = self.PSBuffer(self, ' ', int(config['DynRDSPSUpdateRate']))
     self.RT = self.RTBuffer(self, ' ', int(config['DynRDSRTUpdateRate']))
-    self.activePWM = False
+    self.basicPWM = basicPWM()
 
   def startup(self):
     logging.info('Starting QN80xx transmitter')
@@ -59,33 +60,18 @@ class QN8066(Transmitter):
     self.update()
     super().startup()
 
-    # With everything started up, enable PWM
-    # TODO: Check to see if PWM is enabled and amp power > 0, otherwise skip this
-    # Check that PWM configured in /boot/config.txt and can be written to
-    if os.path.isdir('/sys/class/pwm/pwmchip0') and os.access('/sys/class/pwm/pwmchip0/export', os.W_OK):
-      pwmToUse = 0
-      if config['DynRDSAdvPIPWMPin'] in {'13,4' , '19,2'}:
-        pwmToUse = 1
-      logging.debug('Setting up PWM%s', pwmToUse)
-
-      # Export PWM commands if needed
-      if not os.path.isdir(f'/sys/class/pwm/pwmchip0/pwm{pwmToUse}'):
-        logging.debug('Exporting PWM%s', pwmToUse)
-        with open('/sys/class/pwm/pwmchip0/export', 'w', encoding='UTF-8') as p:
-          p.write(f'{pwmToUse}\n')
-
-      logging.debug('Setting PWM period to 18300')
-      with open(f'/sys/class/pwm/pwmchip0/pwm{pwmToUse}/period', 'w', encoding='UTF-8') as p:
-        p.write('18300\n')
-
-      logging.debug('Setting PWM duty cycle to %s', int(config['DynRDSQN8066AmpPower']) * 61)
-      with open(f'/sys/class/pwm/pwmchip0/pwm{pwmToUse}/duty_cycle', 'w', encoding='UTF-8') as p:
-        p.write(f'{int(config["DynRDSQN8066AmpPower"]) * 61}\n')
-
-      logging.info('Enabling PWM%s', pwmToUse)
-      with open(f'/sys/class/pwm/pwmchip0/pwm{pwmToUse}/enable', 'w', encoding='UTF-8') as p:
-        p.write('1\n')
-      self.activePWM = True
+    # With everything started up, select and enable needed PWM type
+    if config['DynRDSQN8066PIPWM'] == '1':
+      if config['DynRDSAdvPIPWMPin'] in {'18,2' , '12,4'}:
+        self.basicPWM = hardwarePWM(0)
+        self.basicPWM.startup(18300, int(config['DynRDSQN8066AmpPower']) * 61)
+      elif config['DynRDSAdvPIPWMPin'] in {'13,4' , '19,2'}:
+        self.basicPWM = hardwarePWM(1)
+        self.basicPWM.startup(18300, int(config['DynRDSQN8066AmpPower']) * 61)
+      else:
+        pass #TODO: This is where the calls to the software PWM class will go
+    else:
+      self.basicPWM.startup()
 
   def update(self):
     # Try without 0x25 0b01111101 - TX Freq Dev of 86.25KHz
@@ -103,22 +89,17 @@ class QN8066(Transmitter):
     self.I2C.write(0x28, [int(config['DynRDSQN8066SoftClipping'])<<7 | int(config['DynRDSQN8066BufferGain'])<<4 | int(config['DynRDSQN8066DigitalGain'])<<2 | int(config['DynRDSQN8066InputImpedance'])], True)
     #self.I2C.write(0x28, [0b01011011])
 
+    # PWM get updated
+    self.basicPWM.update(int(config['DynRDSQN8066AmpPower']) * 61)
+
   def shutdown(self):
     logging.info('Stopping QN80xx transmitter')
     # Exit TX, Enter standby
     self.I2C.write(0x00, [0b00100011])
     super().shutdown()
 
-    # With everything stopped, disable PWM
-    if self.activePWM:
-      logging.debug('Stopping PWM')
-      with open("/sys/class/pwm/pwmchip0/pwm0/duty_cycle", 'w', encoding='UTF-8') as p:
-        p.write("0\n")
-
-      logging.info('Disabling PWM')
-      with open("/sys/class/pwm/pwmchip0/pwm0/enable", 'w', encoding='UTF-8') as p:
-        p.write("0\n")
-      self.activePWM = False
+    # With everything stopped, shutdown PWM
+    self.basicPWM.shutdown()
 
   def reset(self, resetdelay=1):
     # Used to restart the transmitter

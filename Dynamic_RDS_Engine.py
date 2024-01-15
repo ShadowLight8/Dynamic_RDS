@@ -29,16 +29,7 @@ def cleanup():
   except:
     pass
   try:
-    if os.path.isdir('/sys/class/pwm/pwmchip0') and os.access('/sys/class/pwm/pwmchip0/export', os.W_OK):
-      pwmToUse = 0
-      if config['DynRDSAdvPIPWMPin'] in {'13,4' , '19,2'}:
-        pwmToUse = 1
-      with open(f'/sys/class/pwm/pwmchip0/pwm{pwmToUse}/duty_cycle', 'w', encoding='UTF-8') as p:
-        p.write('0\n')
-      logging.debug('Stopped PWM')
-      with open(f'/sys/class/pwm/pwmchip0/pwm{pwmToUse}/enable', 'w', encoding='UTF-8') as p:
-        p.write('0\n')
-      logging.info('Disabled PWM%s', pwmToUse)
+    transmitter.basicPWM.shutdown()
   except:
     pass
   logging.info('Exiting')
@@ -222,11 +213,6 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
             rdsValues[key] = ''
           updateRDSData()
           transmitter.update()
-          # TODO: Short term solution until PWM is reorganized
-          if transmitter.activePWM:
-            logging.info('Updating PWM duty cycle to %s', int(config['DynRDSQN8066AmpPower']) * 61)
-            with open('/sys/class/pwm/pwmchip0/pwm0/duty_cycle', 'w', encoding='UTF-8') as pwm:
-              pwm.write(f'{int(config["DynRDSQN8066AmpPower"]) * 61}\n')
 
       elif line == 'START':
         logging.info('Processing start')
