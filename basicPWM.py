@@ -1,4 +1,4 @@
-#import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 import os
 import logging
 
@@ -59,27 +59,30 @@ class hardwarePWM(basicPWM):
     super().shutdown()
 
 class softwarePWM(basicPWM):
-#GPIO.setmode(GPIO.BOARD)
-# Setup on Pin 7 / GPIO 4
-#GPIO.setup(7, GPIO.OUT)
-#GPIO.output(7, 0)
-#pwm = GPIO.PWM(7, 18000)
-#pwm.start(0) #Duty cycle at 0
-#pwm.ChangeDutyCycle(40/3)
-#pwm.stop()
-#GPIO.cleanup()
-  def __init__(self):
+  def __init__(self, pinToUse=7):
+    self.pinToUse = pinToUse
+    # TODO: Ponder if import RPi.GPIO as GPIO is a good idea
+    logging.info('Initializing software PWM on pin %s', self.pinToUse)
+    GPIO.setmode(GPIO.BOARD) # TODO: Should this be BOARD (physical pin) or BCM (GPIO number)?
+    GPIO.setup(self.pinToUse, GPIO.OUT) # aka GPIO 4
+    GPIO.output(self.pinToUse,0)
     super().__init__()
 
-  def startup(self):
+  def startup(self, period=18000, dutyCycle=0):
+    logging.debug('Starting software PWM on pin %s with period of %s', self.pinToUse, period)
+    self.pwm = GPIO.PWM(self.pinToUse, period)
+    logging.info('Updating software PWM on pin %s initial duty cycle to %s', self.pinToUse, dutyCycle)
+    self.pwm.start(dutyCycle)
     super().startup()
 
-  def update(self):
+  def update(self, dutyCycle=0):
+    logging.info('Updating software PWM on pin %s duty cycle to %s', self.pinToUse, dutyCycle)
+    self.pwm.ChangeDutyCycle(dutyCycle)
     super().update()
 
   def shutdown(self):
+    logging.debug('Shutting down software PWM on pin %s', self.pinToUse)
+    self.pwm.stop()
+    logging.info('Cleaning up software PWM on pin %s', self.pinToUse)
+    GPIO.cleanup()
     super().shutdown()
-
-# If QN8066
-# If Enable Pi PWM enabled & Amp Power > 0 & Software Pin selected
-
