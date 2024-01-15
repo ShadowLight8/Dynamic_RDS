@@ -12,6 +12,10 @@ from sys import argv
 
 from config import config,read_config_from_file
 
+def logUnhandledException(eType, eValue, eTraceback):
+  logging.error("Unhandled exception", exc_info=(eType, eValue, eTraceback))
+sys.excepthook = logUnhandledException
+
 if len(argv) <= 1:
   print('Usage:')
   print('   --list     | Used by fppd at startup. Used to start up the Dynamic_RDS_Engine.py script')
