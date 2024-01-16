@@ -1,6 +1,7 @@
-import RPi.GPIO as GPIO
 import os
 import logging
+
+import RPi.GPIO as GPIO
 
 class basicPWM:
   def __init__(self):
@@ -45,9 +46,9 @@ class hardwarePWM(basicPWM):
     super().startup()
 
   def update(self, dutyCycle=0):
-    logging.info('Updating hardware PWM%s duty cycle to %s', self.pwmToUse, dutyCycle)
+    logging.info('Updating hardware PWM%s duty cycle to %s', self.pwmToUse, dutyCycle*61)
     with open(f'/sys/class/pwm/pwmchip0/pwm{self.pwmToUse}/duty_cycle', 'w', encoding='UTF-8') as p:
-      p.write(f'{dutyCycle}\n')
+      p.write(f'{dutyCycle*61}\n')
     super().update()
 
   def shutdown(self):
@@ -61,23 +62,24 @@ class hardwarePWM(basicPWM):
 class softwarePWM(basicPWM):
   def __init__(self, pinToUse=7):
     self.pinToUse = pinToUse
+    self.pwm = None
     # TODO: Ponder if import RPi.GPIO as GPIO is a good idea
     logging.info('Initializing software PWM on pin %s', self.pinToUse)
-    GPIO.setmode(GPIO.BOARD) # TODO: Should this be BOARD (physical pin) or BCM (GPIO number)?
-    GPIO.setup(self.pinToUse, GPIO.OUT) # aka GPIO 4
+    GPIO.setmode(GPIO.BOARD)
+    GPIO.setup(self.pinToUse, GPIO.OUT)
     GPIO.output(self.pinToUse,0)
     super().__init__()
 
-  def startup(self, period=18000, dutyCycle=0):
+  def startup(self, period=10000, dutyCycle=0):
     logging.debug('Starting software PWM on pin %s with period of %s', self.pinToUse, period)
     self.pwm = GPIO.PWM(self.pinToUse, period)
-    logging.info('Updating software PWM on pin %s initial duty cycle to %s', self.pinToUse, dutyCycle)
-    self.pwm.start(dutyCycle)
+    logging.info('Updating software PWM on pin %s initial duty cycle to %s', self.pinToUse, round(dutyCycle/3,2))
+    self.pwm.start(dutyCycle/3)
     super().startup()
 
   def update(self, dutyCycle=0):
-    logging.info('Updating software PWM on pin %s duty cycle to %s', self.pinToUse, dutyCycle)
-    self.pwm.ChangeDutyCycle(dutyCycle)
+    logging.info('Updating software PWM on pin %s duty cycle to %s', self.pinToUse, round(dutyCycle/3,2))
+    self.pwm.ChangeDutyCycle(dutyCycle/3)
     super().update()
 
   def shutdown(self):

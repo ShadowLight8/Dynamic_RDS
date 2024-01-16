@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 from time import sleep
 from datetime import datetime
@@ -64,12 +63,13 @@ class QN8066(Transmitter):
     if config['DynRDSQN8066PIPWM'] == '1':
       if config['DynRDSAdvPIPWMPin'] in {'18,2' , '12,4'}:
         self.basicPWM = hardwarePWM(0)
-        self.basicPWM.startup(18300, int(config['DynRDSQN8066AmpPower']) * 61)
+        self.basicPWM.startup(18300, int(config['DynRDSQN8066AmpPower']))
       elif config['DynRDSAdvPIPWMPin'] in {'13,4' , '19,2'}:
         self.basicPWM = hardwarePWM(1)
-        self.basicPWM.startup(18300, int(config['DynRDSQN8066AmpPower']) * 61)
+        self.basicPWM.startup(18300, int(config['DynRDSQN8066AmpPower']))
       else:
-        pass #TODO: This is where the calls to the software PWM class will go
+        self.basicPWM = softwarePWM(int(config['DynRDSAdvPIPWMPin']))
+        self.basicPWM.startup(10000, int(config['DynRDSQN8066AmpPower']))
     else:
       self.basicPWM.startup()
 
@@ -90,7 +90,7 @@ class QN8066(Transmitter):
     #self.I2C.write(0x28, [0b01011011])
 
     # PWM get updated
-    self.basicPWM.update(int(config['DynRDSQN8066AmpPower']) * 61)
+    self.basicPWM.update(int(config['DynRDSQN8066AmpPower']))
 
   def shutdown(self):
     logging.info('Stopping QN80xx transmitter')

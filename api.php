@@ -30,7 +30,9 @@ function DynRDSPiBootChange() {
         case 'DynRDSQN8066PIPWM':
            if (strcmp($myPluginSettings[$settingName],'1') == 0) {
               exec("sudo sed -i -e 's/^dtparam=audio=on/#dtparam=audio=on/' /boot/config.txt");
-              exec("sudo sed -i -e '/^#dtparam=audio=on/a dtoverlay=pwm,pin=" . str_replace(",", ",func=", $myPluginSettings['DynRDSAdvPIPWMPin']) . "' /boot/config.txt");
+              if (is_numeric(strpos($myPluginSettings['DynRDSAdvPIPWMPin'], ','))) {
+                exec("sudo sed -i -e '/^#dtparam=audio=on/a dtoverlay=pwm,pin=" . str_replace(",", ",func=", $myPluginSettings['DynRDSAdvPIPWMPin']) . "' /boot/config.txt");
+              }
            } else {
               exec("sudo sed -i -e '/^dtoverlay=pwm/d' /boot/config.txt");
               exec("sudo sed -i -e 's/^#dtparam=audio=on/dtparam=audio=on/' /boot/config.txt");
@@ -38,8 +40,12 @@ function DynRDSPiBootChange() {
            break;
 
         case 'DynRDSAdvPIPWMPin':
-           //if it is a software pwm pin, func will be 0
-           exec("sudo sed -i -e '/^dtoverlay=pwm/c dtoverlay=pwm,pin=" . str_replace(",", ",func=", $myPluginSettings['DynRDSAdvPIPWMPin']) . "' /boot/config.txt");
+           if (is_numeric(strpos($myPluginSettings['DynRDSAdvPIPWMPin'], ','))) {
+              exec("sudo sed -i -e 's/^#dtoverlay=pwm/dtoverlay=pwm/' /boot/config.txt");
+              exec("sudo sed -i -e '/^dtoverlay=pwm/c dtoverlay=pwm,pin=" . str_replace(",", ",func=", $myPluginSettings['DynRDSAdvPIPWMPin']) . "' /boot/config.txt");
+           } else {
+              exec("sudo sed -i -e 's/^dtoverlay=pwm/#dtoverlay=pwm/' /boot/config.txt");
+           }
            break;
 
         case 'DynRDSQN8066AmpPower':
