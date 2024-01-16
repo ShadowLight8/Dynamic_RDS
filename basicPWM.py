@@ -7,7 +7,7 @@ class basicPWM:
   def __init__(self):
     self.active = False
 
-  def startup(self):
+  def startup(self, period=10000, dutyCycle=0):
     self.active = True
 
   def update(self, dutyCycle=0):
