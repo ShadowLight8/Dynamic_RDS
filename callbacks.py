@@ -175,7 +175,7 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
       logging.debug('Clearing playlist values')
       fifo.write('MAINLIST\n')
       fifo.write('P\n')
-    if j['currentEntry'] == None or j['currentEntry']['type'] == 'pause':
+    if j['currentEntry'] is None or j['currentEntry']['type'] == 'pause':
       # TODO: Review this case - what to send to Engine for other playlist events
       # Looks like a 'note' field is on all of them that could go into title
       logging.debug('Clearing media values')
@@ -184,7 +184,7 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
       fifo.write('B\n')
       fifo.write('G\n')
       fifo.write('N\n')
-      if j['currentEntry'] == None:
+      if j['currentEntry'] is None:
         fifo.write('L0\n')
       elif j['currentEntry']['type'] == 'pause':
         fifo.write(f"L{int(j['currentEntry']['duration'])}\n")
