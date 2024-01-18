@@ -173,6 +173,6 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
       logging.debug('Playlist position %s', j['Item']+1)
       fifo.write(f"P{j['Item']+1}\n") # Playlist position is always sent last for playlist-based updates to optimize when the Engine has to update the RDS Data
     else:
-      fifo.write(f"MAINLIST\n")
-      fifo.write(f"P\n")
+      fifo.write('MAINLIST\n')
+      fifo.write('P\n')
   logging.debug('Processing done')
