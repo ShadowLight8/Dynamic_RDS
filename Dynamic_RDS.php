@@ -122,10 +122,13 @@ PrintSettingGroup("DynRDSRDSSettings", "
 Values from File Tags or Track Info
 <ul><li>{T} = Title</li>
 <li>{A} = Artist</li>
+<li>{B} = Album</li>
+<li>{G} = Genre</li>
 <li>{N} = Track Number</li>
 <li>{L} = Track Length as 0:00</li></ul>
-Other Values
-<ul><li>{C} = Item count in Main Playlist section</li></ul>
+Main Playlist Section Values
+<ul><li>{C} = Item count in Main Playlist section</li>
+<li>{P} = Item position or number in Main Playlist section</li></ul>
 Any static text can be used<br />
 | (pipe) will split between RDS groups, like a line break<br />
 [ ] creates a subgroup such that if <b>ANY</b> substitution in the subgroup is emtpy, the entire subgroup is omitted<br />

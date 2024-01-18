@@ -123,25 +123,34 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
     media_type = j['type'] if 'type' in j else 'pause'
     media_title = j['title'] if 'title' in j else ''
     media_artist = j['artist'] if 'artist' in j else ''
+    media_album = j['album'] if 'album' in j else ''
+    media_genre = j['genre'] if 'genre' in j else ''
     media_tracknum = str(j['track']) if 'track' in j else '0'
     media_length = str(j['length']) if 'length' in j else '0'
 
     logging.debug('Type is %s', media_type)
     logging.debug('Title is %s', media_title)
     logging.debug('Artist is %s', media_artist)
+    logging.debug('Album is %s', media_album)
+    logging.debug('Genre %s', media_genre)
     logging.debug('Tracknum is %s', media_tracknum)
     logging.debug('Length is %s', media_length)
 
-    # TODO: Review this case - what to send to Engine for other playlist events
     if media_type in ('pause', 'event'):
       fifo.write('T\n') # Blank Title
       fifo.write('A\n') # Blank Artist
+      fifo.write('B\n') # Blank Album
+      fifo.write('G\n') # Blank Genre
     else:
       fifo.write('T' + media_title + '\n')
       fifo.write('A' + media_artist + '\n')
+      fifo.write('B' + media_album + '\n')
+      fifo.write('G' + media_genre + '\n')
     fifo.write('N' + media_tracknum + '\n')
-    fifo.write('L' + media_length + '\n') # Length is always sent last to optimize when the Engine has to update the RDS Data
+    fifo.write('L' + media_length + '\n') # Length is always sent last for media-based updates to optimize when the Engine has to update the RDS Data
 
+  # TODO: Review this case - what to send to Engine for other playlist events
+  # Looks like a 'note' field is on all of them that could go into title
   elif argv[1] == '--type' and argv[2] == 'playlist':
     logging.info('Type playlist')
 
@@ -159,5 +168,11 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
     elif playlist_action == 'stop':
       fifo.write('STOP\n')
     if j['Section'] == 'MainPlaylist':
-      fifo.write('MAINLIST' + j['name'] + '\n')
+      logging.debug('Playlist name %s', j['name'])
+      fifo.write(f"MAINLIST{j['name']}\n")
+      logging.debug('Playlist position %s', j['Item']+1)
+      fifo.write(f"P{j['Item']+1}\n") # Playlist position is always sent last for playlist-based updates to optimize when the Engine has to update the RDS Data
+    else:
+      fifo.write(f"MAINLIST\n")
+      fifo.write(f"P\n")
   logging.debug('Processing done')
