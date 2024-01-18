@@ -17,7 +17,7 @@ config = {
 'DynRDSQN8066SoftClipping': '0',
 'DynRDSQN8066AGC': '0',
 'DynRDSQN8066ChipPower': '122',
-'DynRDSQN8066PIHardwarePWM': 0,
+'DynRDSQN8066PIPWM': 0,
 'DynRDSQN8066AmpPower': '0',
 'DynRDSStart': 'FPPDStart',
 'DynRDSStop': 'Never',

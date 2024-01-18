@@ -54,7 +54,7 @@ if (trim(shell_exec("sudo i2cget -y " . $i2cbus . " 0x21 2>&1")) != "Error: Read
   $errorDetected = true;
 }
 
-if (isset($pluginSettings['DynRDSQN8066PIHardwarePWM']) && $pluginSettings['DynRDSQN8066PIHardwarePWM'] == 1) {
+if (isset($pluginSettings['DynRDSQN8066PIPWM']) && $pluginSettings['DynRDSQN8066PIPWM'] == 1 && is_numeric(strpos($pluginSettings['DynRDSAdvPIPWMPin'], ','))) {
  if (shell_exec("lsmod | grep 'snd_bcm2835.*1\>'")) {
   echo '<div class="callout callout-warning">On-board sound card appears active and will interfere with hardware PWM. Try a reboot first, next toggle the Enable PI Hardware PWM setting below and reboot. If issues persist check /boot/config.txt and comment out dtparam=audio=on</div>';
  }
