@@ -34,7 +34,7 @@
             "description": "Power Settings",
             "settings": [
                 "DynRDSQN8066ChipPower",
-                "DynRDSQN8066PIHardwarePWM",
+                "DynRDSQN8066PIPWM",
                 "DynRDSQN8066AmpPower"
             ]
         },
@@ -86,7 +86,7 @@
                   "DynRDSQN8066SoftClipping",
                   "DynRDSQN8066AGC",
                   "DynRDSQN8066ChipPower",
-                  "DynRDSQN8066PIHardwarePWM",
+                  "DynRDSQN8066PIPWM",
                   "DynRDSQN8066AmpPower"
                 ],
                 "Si4713": [
@@ -134,9 +134,9 @@
             "suffix": "dB&mu;V",
             "default": 122
 	},
-        "DynRDSQN8066PIHardwarePWM": {
-            "name": "DynRDSQN8066PIHardwarePWM",
-            "description": "Enable Pi PWM",
+        "DynRDSQN8066PIPWM": {
+            "name": "DynRDSQN8066PIPWM",
+            "description": "Enable PWM",
             "tip": "Enables Raspberry Pi hardware-based PWM on Pin 12 / GPIO 18 by default. Used to control the Amp Power. This requires the on-board audio to be disabled as it also used the PWM hardware, so an external sound card is required.",
             "suffix": "- Disables on-board audio, external sound card required",
             "restart": 0,
@@ -158,7 +158,7 @@
         "DynRDSQN8066AmpPower": {
             "name": "DynRDSQN8066AmpPower",
             "description": "Amp Power (0-100)",
-            "tip": "Adjust the power output for the amplifier after the transmitter chip. This is controlled by the Pi PWM output.",
+            "tip": "Adjust the power output for the amplifier after the transmitter chip. This is controlled by PWM output.",
             "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i> - Controlled by PWM",
             "restart": 0,
             "reboot": 0,
@@ -435,7 +435,22 @@
                "PWM0 - Pin 12 / GPIO 18 (default)": "18,2",
                "PWM0 - Pin 32 / GPIO 12": "12,4",
                "PWM1 - Pin 33 / GPIO 13": "13,4",
-               "PWM1 - Pin 35 / GPIO 19": "19,2"
+               "PWM1 - Pin 35 / GPIO 19": "19,2",
+               "Software - Pin 7 / GPIO 4": "7",
+               "Software - Pin 8 / GPIO 14": "8",
+               "Software - Pin 10 / GPIO 15": "10",
+               "Software - Pin 11 / GPIO 17": "11",
+               "Software - Pin 13 / GPIO 27": "13",
+               "Software - Pin 15 / GPIO 22": "15",
+               "Software - Pin 16 / GPIO 23": "16",
+               "Software - Pin 18 / GPIO 24": "18",
+               "Software - Pin 22 / GPIO 25": "22",
+               "Software - Pin 27 / GPIO 0": "27",
+               "Software - Pin 28 / GPIO 1": "28",
+               "Software - Pin 29 / GPIO 5": "29",
+               "Software - Pin 31 / GPIO 6": "31",
+               "Software - Pin 36 / GPIO 16": "36",
+               "Software - Pin 37 / GPIO 26": "37"
             },
             "default": "18,2",
             "platforms": [
