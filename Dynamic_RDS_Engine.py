@@ -234,19 +234,25 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
       elif line.startswith('MAINLIST'):
         logging.info('Processing MainPlaylist')
         playlist_name = line[8:]
-        logging.debug('Playlist Name: %s', playlist_name)
-        playlist_length = 1
-        if '.' not in playlist_name: # Case where a sequence is directly run from the scheduler or status page, it ends in .fseq and . is not allowed in regular playlist names
-          try:
-            with urlopen(f'http://localhost/api/playlist/{quote(playlist_name)}') as response:
-              data = response.read()
-              playlist_length = len(json.loads(data)['mainPlaylist'])
-          except Exception:
-            logging.exception("Playlist Length")
-        logging.debug('Playlist Length: %s', playlist_length)
-        if rdsValues['{C}'] != str(playlist_length):
+        if playlist_name != '':
+          logging.debug('Playlist Name: %s', playlist_name)
+          playlist_length = 1
+          if '.' not in playlist_name: # Case where a sequence is directly run from the scheduler or status page, it ends in .fseq and . is not allowed in regular playlist names
+            try:
+              with urlopen(f'http://localhost/api/playlist/{quote(playlist_name)}') as response:
+                data = response.read()
+                playlist_length = len(json.loads(data)['mainPlaylist'])
+            except Exception:
+              logging.exception("Playlist Length")
+          logging.debug('Playlist Length: %s', playlist_length)
           rdsValues['{C}'] = str(playlist_length)
-          updateRDSData()
+        else:
+          rdsValues['{C}'] = ''
+
+      elif line[0] == 'P':
+        logging.debug('Processing plylist position')
+        rdsValues['{P}'] = line[1:]
+        updateRDSData() # Always follows MAINLIST, so only a single update is needed
 
       # rdsValues that need additional parsing
       elif line[0] == 'L':
