@@ -412,8 +412,8 @@
         },
         "DynRDSAdvPISoftwareI2C": {
             "name": "DynRDSAdvPISoftwareI2C",
-            "description": "Use PI Software I2C",
-            "tip": "Switches PI from hardware I2C to software I2C in /boot/config.txt",
+            "description": "Use PI Software I<sup>2</sup>C",
+            "tip": "Switches PI from hardware I<sup>2</sup>C to software I<sup>2</sup>C in /boot/config.txt",
             "restart": 0,
             "reboot": 1,
             "type": "checkbox",
