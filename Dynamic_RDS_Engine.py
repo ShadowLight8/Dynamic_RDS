@@ -257,7 +257,10 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
       # rdsValues that need additional parsing
       elif line[0] == 'L':
         logging.debug('Processing length')
-        rdsValues['{L}'] = f'{int(line[1:])//60}:{int(line[1:])%60:02d}'
+        if line[1:] != '0':
+          rdsValues['{L}'] = f'{int(line[1:])//60}:{int(line[1:])%60:02d}'
+        else:
+          rdsValues['{L}'] = ''
         #tracklength = max(int(line[1:10]) - max(int(config['DynRDSPSUpdateRate']), int(config['DynRDSRTUpdateRate'])), 1)
         #logging.debug('Length %s', int(tracklength))
 

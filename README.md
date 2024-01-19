@@ -1,6 +1,6 @@
 # Dynamic_RDS - FM Transmitter Plugin for Falcon Player
 
-Created for Falcon Player 6.0+ (FPP) as a plugin to generate RDS (radio data system) messages similar to what is seen from typical FM stations. The RDS messages are fully customizable with static text, breaks, and grouping along with the supported data fields of title, artist, track number, track length, and main playlist item count. Currently, the plugin supports the QN8066 chip and there are plans to add the Si4173 in the future. The chips are controlled via the I<sup>2</sup>C bus.
+Created for Falcon Player 6.0+ (FPP) as a plugin to generate RDS (radio data system) messages similar to what is seen from typical FM stations. The RDS messages are fully customizable with static text, breaks, and grouping along with the supported file tag data fields of title, artist, album, genre, track number, and track length, as well as main playlist position and item count. Currently, the plugin supports the QN8066 chip and there are plans to add the Si4173 in the future. The chips are controlled via the I<sup>2</sup>C bus.
 
 ## Recommended QN8066 transmitter board
 > [!IMPORTANT]
@@ -23,7 +23,7 @@ The QN8066 transmitter board needs an antenna for safe operations.
 
 (More detail to be added)
 
-## Cable and Connectors
+## Cables, Connectors, and Shielding
 > [!CAUTION]
 > Do not run the PWM wire along side the I<sup>2</sup>C wires. During testing this caused failures in the I<sup>2</sup>C commands as soon as PWM was enabled.
 
@@ -48,10 +48,15 @@ Pre-crimped wires are also an options
 ![Raspberry Pi to Radio](images/radio_board_and_pi_pinout.jpeg)
 ![Custom RPi to QN8066 Cable](images/RPi_to_QN8066_cable.jpeg)
 
-The green PWM wire runs next to yellow 3.3V and orange GND wire until right before the end to eliminate issue with interference. (Still testing this, but...) Keep the cable as short as possible as well to reduce interference.
+The green PWM wire runs next to yellow 3.3V and orange GND wire until right before the end to eliminate issue with interference. Keeping the cable as short as possible helps to reduce interference.
 
 ### Cable for a BeagleBone Black (BBB)
-(Work in progress)
+(Support for the BBB is still in progress)
+
+### Shielding and RF interference
+Given the nature of an FM transmitter, interference is potential problem. This interference commonly shows up as I<sup>2</sup>C errors which become more frequent as transmitter power increases. Moving the antenna away from the RPi/BBB and the transmitter board can reduce this. A significantly more robust setup it to locate the RPi/BBB and transmitter board inside a grounded, metal case such as was done by @chrkov here:
+![Grounded case setup](images/pi_transmitter_setup1.jpg)
+![Grounded case setup](images/pi_transmitter_setup2.jpg)
 
 ## Using Hardware PWM on Raspberry Pi
 The recommended QN8066 transmitter board can take a PWM signal to increase its power output. Be sure to comply with all applicable laws related to FM broadcasts.
@@ -59,25 +64,34 @@ The recommended QN8066 transmitter board can take a PWM signal to increase its p
 > [!CAUTION]
 > Do not run the PWM wire along side the I<sup>2</sup>C wires. During testing this caused failures in the I<sup>2</sup>C commands as soon as PWM was enabled.
 
-On the Raspberry Pi, in order to use the hardware PWM, the built-in analog audio must be disabled and an external USB sound card is required. The built-in audio uses both hardware PWM channels to generate the audio, so PWM cannot be used for other purposes when enabled.
+On the Raspberry Pi, in order to use the hardware PWM, the built-in analog audio must be disabled and an external USB sound card or DAC is required. The built-in audio uses both hardware PWM channels to generate the audio, so PWM cannot be used for other purposes when enabled. Software PWM is also an option, but at an increased CPU cost and a decrease in duty cycle accuracy.
 
-Modify the /boot/config.txt by by doing the following, then rebooting:
-1. Comment out ```dtparm=audio=on``` with a #
-   - This line may appear multiple times in the file. Comment each instance.
-2. Add the line ```dtoverlay=pwm```
+From the Dynamic RDS configuration page, under the Power Settings, enable PWM.
 
-Don't forget to change the Audio Output Device in the FPP Settings to use the USB sound card.
+This will automatically modify the /boot/config.txt:
+1. Comment out all ```dtparm=audio=on``` lines with a #
+2. Add the line ```dtoverlay=pwm,pin=18,func=2``` by default
+Under the Advanced Options at the bottom of the configuration page, the output pin can be selected. This is also where Software PWM can be selected on most other pins.
+
+> [!TIP]
+> Don't forget to change the Audio Output Device in the FPP Settings to use the USB sound card or DAC
 
 ## Integration with FPP After Hours Music Plugin
-The Dynamic RDS Plugin has the ability to work in conjunction with the FPP After Hours Music Plugin to provide RDS Data from an internet stream of music.
+The Dynamic RDS plugin has the ability to work in conjunction with the [FPP After Hours Music Plugin](https://github.com/jcrossbdn/fpp-after-hours) to provide RDS Data from an internet stream of music. The information from the stream is populated in the Title field.
 
-Just install the After Hours Music Plugin located here:
-
-https://github.com/jcrossbdn/fpp-after-hours
-
-Then activate its use in Dynamic RDS Plugin.
+Once the After Hours Music Plugin is installed, the integration can be enabled on the Dynamic RDS configuration pages in the MPC / After Hours Music section.
 
 ![MPC-After-Hours](https://user-images.githubusercontent.com/23623446/201971100-7a213ef5-a22d-4e76-a545-8c8c9724a9e0.JPG)
+
+## Scripting Plugin Changes
+It is an option to use scripts to change Dynamic RDS option value. As an example, this could be used to change the PS and/or RT style text to be different during the show verses after. The following is a bash script that can update the style text and have the plugin start using it without restarting FPP.
+```
+#!/bin/bash
+curl -d 'Merry|Christ-|  -mas!|{T}|{A}|[{N} of {C}]' -X POST http://localhost/api/plugin/Dynamic_RDS/settings/DynRDSPSStyle
+curl -d 'Merry Christmas! {T}[ by {A}]|[Track {N} of {C}]' -X POST http://localhost/api/plugin/Dynamic_RDS/settings/DynRDSRTStyle
+curl http://localhost/api/plugin/Dynamic_RDS/FastUpdate
+```
+The single quotes around the style text in the script are important so the Linux shell (bash) won't try to interpret what is in there. This example could be saved as a file in the media/scripts folder and then use it with the scheduler (via Command -> Run Script) or playlists.
 
 ## Troubleshooting
 ### Transmitter not working (for the recommended QN8066 board)
@@ -105,9 +119,12 @@ Then activate its use in Dynamic RDS Plugin.
 - Enable Debug logging for the Engine
 - Check for read and/or write errors in Dynamic_RDS_Engine.log
   - If too many errors happen, then I<sup>2</sup>C fails and the Engine exits
+    - Reduce the Amp Power
+    - Try using Software I<sup>2</sup>C
+    - Enclose the RPi/BBB and transmitter in a grounded, metal box with the antenna outside of the box
     - Check connection and wire continuity between RPi/BBB
     - Disconnect transmitter 12v power if connected and check I<sup>2</sup>C bus with `i2cdetect -y 1`
   - If errors happen at random
     - Make sure the PWM wire does NOT run along side the I<sup>2</sup>C wires, interference can occur
     - Try to lower the Chip Power and Amp Power, RF interference can impact I<sup>2</sup>C
-    - Move the antenna further away from the transmitter board and Raspberry Pi / BBB
+    - Move the antenna further away from the transmitter board and RPi/BBB

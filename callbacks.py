@@ -132,10 +132,11 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
     logging.debug('Title is %s', media_title)
     logging.debug('Artist is %s', media_artist)
     logging.debug('Album is %s', media_album)
-    logging.debug('Genre %s', media_genre)
+    logging.debug('Genre is %s', media_genre)
     logging.debug('Tracknum is %s', media_tracknum)
     logging.debug('Length is %s', media_length)
 
+    # TODO: Other than type missing defaulting to pause, can media type be either of these any more?
     if media_type in ('pause', 'event'):
       fifo.write('T\n') # Blank Title
       fifo.write('A\n') # Blank Artist
@@ -149,8 +150,6 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
     fifo.write('N' + media_tracknum + '\n')
     fifo.write('L' + media_length + '\n') # Length is always sent last for media-based updates to optimize when the Engine has to update the RDS Data
 
-  # TODO: Review this case - what to send to Engine for other playlist events
-  # Looks like a 'note' field is on all of them that could go into title
   elif argv[1] == '--type' and argv[2] == 'playlist':
     logging.info('Type playlist')
 
@@ -173,6 +172,20 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
       logging.debug('Playlist position %s', j['Item']+1)
       fifo.write(f"P{j['Item']+1}\n") # Playlist position is always sent last for playlist-based updates to optimize when the Engine has to update the RDS Data
     else:
+      logging.debug('Clearing playlist values')
       fifo.write('MAINLIST\n')
       fifo.write('P\n')
+    if j['currentEntry'] is None or j['currentEntry']['type'] == 'pause':
+      # TODO: Review this case - what to send to Engine for other playlist events
+      # Looks like a 'note' field is on all of them that could go into title
+      logging.debug('Clearing media values')
+      fifo.write('T\n')
+      fifo.write('A\n')
+      fifo.write('B\n')
+      fifo.write('G\n')
+      fifo.write('N\n')
+      if j['currentEntry'] is None:
+        fifo.write('L0\n')
+      elif j['currentEntry']['type'] == 'pause':
+        fifo.write(f"L{int(j['currentEntry']['duration'])}\n")
   logging.debug('Processing done')
