@@ -14,7 +14,7 @@ from config import config
 # Transmitter
 #   RDSBuffer
 #
-# QN80xx (Transmitter)
+# QN8066 (Transmitter)
 #   PSBuffer (RDSBuffer)
 #   RTBuffer (RDSBuffer)
 

@@ -466,22 +466,20 @@
             "reboot": 0,
             "type": "select",
             "options": {
-               "PWM0A - Pin P9.22": "P9.22",
-               "PWM0A - Pin P9.31": "P9.31",
-               "PWM0B - Pin P9.21": "P9.21",
-               "PWM0B - Pin P9.29": "P9.29",
-               "PWM0 - Pin P9.42": "P9.42",
-               "PWM1A - Pin P9.14": "P9.14",
-               "PWM1A - Pin P8.36": "P8.36",
-               "PWM1B - Pin P9.16 (default)": "P9.16",
-               "PWM1B - Pin P8.34": "P8.34",
-               "PWM2A - Pin P8.19": "P8.19",
-               "PWM2A - Pin P8.45": "P8.45",
-               "PWM2B - Pin P8.13": "P8.13",
-               "PWM2B - Pin P8.46": "P8.46",
-               "PWM2 - Pin P9.28": "P9.28"
+               "PWM0A - Pin P9.22": "P9_22,0,A",
+               "PWM0A - Pin P9.31": "P9_31,0,A",
+               "PWM0B - Pin P9.21": "P9_21,0,B",
+               "PWM0B - Pin P9.29": "P9_29,0,B",
+               "PWM1A - Pin P9.14": "P9_14,1,A",
+               "PWM1A - Pin P8.36": "P8_36,1,A",
+               "PWM1B - Pin P9.16 (default)": "P9_16,1,B",
+               "PWM1B - Pin P8.34": "P8_34,1,B",
+               "PWM2A - Pin P8.19": "P8_19,2,A",
+               "PWM2A - Pin P8.45": "P8_45,2,A",
+               "PWM2B - Pin P8.13": "P8_13,2,B",
+               "PWM2B - Pin P8.46": "P8_46,2,B"
             },
-            "default": "P9.16",
+            "default": "P9_16,1,B",
             "platforms": [
                 "BeagleBone Black"
             ]
