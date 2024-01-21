@@ -75,8 +75,8 @@ class QN8066(Transmitter):
       else:
         self.basicPWM.startup()
     elif os.getenv('FPPPLATFORM', '') == 'BeagleBone Black':
-        self.basicPWM = hardwareBBBPWM(config['DynRDSAdvBBBPWMPin'])
-        self.basicPWM.startup(18300, int(config['DynRDSQN8066AmpPower']))
+      self.basicPWM = hardwareBBBPWM(config['DynRDSAdvBBBPWMPin'])
+      self.basicPWM.startup(18300, int(config['DynRDSQN8066AmpPower']))
     else:
       self.basicPWM.startup()
 

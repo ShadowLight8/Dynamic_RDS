@@ -59,7 +59,7 @@ class hardwarePWM(basicPWM):
 
 class softwarePWM(basicPWM):
   def __init__(self, pinToUse=7):
-    import RPi.GPIO as GPIO
+    from RPi import GPIO
     self.pinToUse = pinToUse
     self.pwm = None
     # TODO: Ponder if import RPi.GPIO as GPIO is a good idea
@@ -143,4 +143,3 @@ class hardwareBBBPWM(basicPWM):
     with open(f'/sys/class/pwm/{self.pwmToUse}/pwm{self.ABToUse}/enable', 'w', encoding='UTF-8') as p:
       p.write('0\n')
     super().shutdown()
-
