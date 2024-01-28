@@ -7,6 +7,7 @@ import errno
 import subprocess
 import socket
 import sys
+import time
 from datetime import date
 from sys import argv
 
@@ -45,12 +46,12 @@ except ImportError as impErr:
   logging.error("Failed to import smbus %s", impErr.args[0])
   sys.exit(1)
 
-#if config['DynRDSTransmitter'] == "QN8066":
-#  try:
-#    import RPIO.PWM
-#  except ImportError as impErr:
-#    logging.error("Failed to import RPIO %s", impErr.args[0])
-#    sys.exit(1)
+if os.getenv('FPPPLATFORM', '') == 'Raspberry Pi' and config['DynRDSTransmitter'] == "QN8066":
+  try:
+    import RPi.GPIO
+  except ImportError as impErr:
+    logging.error("Failed to import RPi.GPIO %s", impErr.args[0])
+    sys.exit(1)
 
 # Environ has a few useful items when FPPD runs callbacks.py, but logging it all the time, even at debug, is too much
 #logging.debug('Environ %s', os.environ)
@@ -58,6 +59,7 @@ except ImportError as impErr:
 # Always start the Engine since it does the real work for all command
 updater_path = script_dir + '/Dynamic_RDS_Engine.py'
 engineStarted = False
+proc = None
 try:
   logging.debug('Checking for socket lock by %s', updater_path)
   lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
@@ -72,10 +74,13 @@ try:
 
   logging.info('Starting %s', updater_path)
   devnull = open(os.devnull, 'w', encoding='UTF-8')
-  subprocess.Popen(['python3', updater_path], stdin=devnull, stdout=devnull, stderr=devnull, close_fds=True)
+  proc = subprocess.Popen(['python3', updater_path], stdin=devnull, stdout=devnull, stderr=devnull, close_fds=True)
+  time.sleep(1)
   engineStarted = True
 except socket.error:
   logging.debug('Lock found - %s is running', updater_path)
+except Exception:
+  logging.exception('engineStart')
 
 # Always setup FIFO - Expects Engine to be running to open the read side of the FIFO
 fifo_path = script_dir + '/Dynamic_RDS_FIFO'
@@ -86,6 +91,10 @@ except OSError as oe:
   if oe.errno != errno.EEXIST:
     raise
   logging.debug('Fifo already exists')
+
+if proc is not None and proc.poll() is not None:
+  logging.error('Engine failed to stay running')
+  sys.exit()
 
 with open(fifo_path, 'w', encoding='UTF-8') as fifo:
   logging.info('Processing %s', argv[1])
