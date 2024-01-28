@@ -25,6 +25,7 @@ if len(argv) <= 1:
   print('   --exit     | Function used to shutdown the Dynamic_RDS_Engine.py script')
   print('   --type media --data \'{..json..}\'    | Used by fppd when a new items starts in a playlist')
   print('   --type playlist --data \'{..json..}\' | Used by fppd when a playlist starts or stops')
+  print('   --type lifecycle startup/shutdown | Used by fppd when it starts or stops')
   print('Note: Running with sudo might be needed for manual execution')
   sys.exit()
 
@@ -36,16 +37,17 @@ read_config_from_file()
 
 logging.getLogger().setLevel(config['DynRDSCallbackLogLevel'])
 
-logging.info('--- %s', date.today())
+logging.info('---')
 logging.debug('Arguments %s', argv[1:])
 
-# If smbus is missing, don't try to start up the Engine as it will fail and cause FPP to hang
+# If smbus is missing, don't try to start up the Engine as it will fail
 try:
   import smbus
 except ImportError as impErr:
   logging.error("Failed to import smbus %s", impErr.args[0])
   sys.exit(1)
 
+# RPi.GPIO is used for software PWM on the RPi, fail if it is missing
 if os.getenv('FPPPLATFORM', '') == 'Raspberry Pi' and config['DynRDSTransmitter'] == "QN8066":
   try:
     import RPi.GPIO
@@ -68,24 +70,22 @@ try:
   logging.debug('Lock not found')
 
   # Short circuit if Engine isn't running and command is to shut it down
-  if argv[1] == '--exit':
+  if argv[1] == '--exit' or (argv[1] == '--type' and argv[2] == 'lifecycle' and argv[3] == 'shutdown'):
     logging.info('Exit, but not running')
     sys.exit()
 
   logging.info('Starting %s', updater_path)
-  devnull = open(os.devnull, 'w', encoding='UTF-8')
-  proc = subprocess.Popen(['python3', updater_path], stdin=devnull, stdout=devnull, stderr=devnull, close_fds=True)
-  time.sleep(1)
+  with open(os.devnull, 'w', encoding='UTF-8') as devnull:
+    proc = subprocess.Popen(['python3', updater_path], stdin=devnull, stdout=devnull, stderr=subprocess.PIPE, close_fds=True)
+  time.sleep(1) # Allow engine a second to start or fail before checking status
   engineStarted = True
 except socket.error:
   logging.debug('Lock found - %s is running', updater_path)
-except Exception:
-  logging.exception('engineStart')
 
 # Always setup FIFO - Expects Engine to be running to open the read side of the FIFO
 fifo_path = script_dir + '/Dynamic_RDS_FIFO'
 try:
-  logging.debug('Setting up write side of fifo %s', fifo_path)
+  logging.debug('Creating fifo %s', fifo_path)
   os.mkfifo(fifo_path)
 except OSError as oe:
   if oe.errno != errno.EEXIST:
@@ -93,11 +93,14 @@ except OSError as oe:
   logging.debug('Fifo already exists')
 
 if proc is not None and proc.poll() is not None:
-  logging.error('Engine failed to stay running')
-  sys.exit()
+  logging.error('%s failed to stay running - %s', updater_path, proc.stderr.read().decode())
+  sys.exit(1)
 
 with open(fifo_path, 'w', encoding='UTF-8') as fifo:
-  logging.info('Processing %s', argv[1])
+  if len(argv) >= 4:
+    logging.info('Processing %s %s %s', argv[1], argv[2], argv[3])
+  else:
+    logging.info('Processing %s', argv[1])
 
   # If Engine was started AND the argument isn't --list, INIT must be sent to Engine before the requested argument
   if engineStarted and argv[1] != '--list':
@@ -105,9 +108,9 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
     fifo.write('INIT\n')
 
   if argv[1] == '--list':
-    # Typically called first and will block if read side isn't open
+    # Typically called first by FPPD and will block if read side isn't open
     fifo.write('INIT\n')
-    print('media,playlist')
+    print('media,playlist,lifecycle')
 
   elif argv[1] == '--update':
     # Not used by FPPD, but used by Dynamic_RDS.php
@@ -117,12 +120,12 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
     # Not used by FPPD, but used by Dynamic_RDS.php
     fifo.write('RESET\n')
 
-  elif argv[1] == '--exit':
-    # Not used by FPPD, but useful for testing or scripting
+  elif argv[1] == '--exit' or (argv[1] == '--type' and argv[2] == 'lifecycle' and argv[3] == 'shutdown'):
+    # Used by FPPD lifecycle shutdown. Also useful for testing or scripting
     fifo.write('EXIT\n')
 
   elif argv[1] == '--type' and argv[2] == 'media':
-    logging.info('Type media')
+    logging.debug('Type media')
     try:
       j = json.loads(argv[4])
     except Exception:
@@ -160,7 +163,7 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
     fifo.write('L' + media_length + '\n') # Length is always sent last for media-based updates to optimize when the Engine has to update the RDS Data
 
   elif argv[1] == '--type' and argv[2] == 'playlist':
-    logging.info('Type playlist')
+    logging.debug('Type playlist')
 
     try:
       j = json.loads(argv[4])
@@ -175,6 +178,7 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
       fifo.write('START\n')
     elif playlist_action == 'stop':
       fifo.write('STOP\n')
+
     if j['Section'] == 'MainPlaylist':
       logging.debug('Playlist name %s', j['name'])
       fifo.write(f"MAINLIST{j['name']}\n")
@@ -184,6 +188,7 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
       logging.debug('Clearing playlist values')
       fifo.write('MAINLIST\n')
       fifo.write('P\n')
+
     if j['currentEntry'] is None or j['currentEntry']['type'] == 'pause':
       # TODO: Review this case - what to send to Engine for other playlist events
       # Looks like a 'note' field is on all of them that could go into title
