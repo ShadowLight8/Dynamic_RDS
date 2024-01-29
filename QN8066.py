@@ -1,11 +1,12 @@
 import logging
 import sys
+import os
 from time import sleep
 from datetime import datetime
 
 from config import config
 from basicI2C import basicI2C
-from basicPWM import basicPWM, hardwarePWM, softwarePWM
+from basicPWM import basicPWM, hardwarePWM, softwarePWM, hardwareBBBPWM
 from Transmitter import Transmitter
 
 class QN8066(Transmitter):
@@ -17,7 +18,7 @@ class QN8066(Transmitter):
     self.basicPWM = basicPWM()
 
   def startup(self):
-    logging.info('Starting QN80xx transmitter')
+    logging.info('Starting QN8066 transmitter')
 
     tempReadValue = self.I2C.read(0x06, 1)[0]>>2
     if tempReadValue != 0b1101:
@@ -60,16 +61,22 @@ class QN8066(Transmitter):
     super().startup()
 
     # With everything started up, select and enable needed PWM type
-    if config['DynRDSQN8066PIPWM'] == '1':
-      if config['DynRDSAdvPIPWMPin'] in {'18,2' , '12,4'}:
-        self.basicPWM = hardwarePWM(0)
-        self.basicPWM.startup(18300, int(config['DynRDSQN8066AmpPower']))
-      elif config['DynRDSAdvPIPWMPin'] in {'13,4' , '19,2'}:
-        self.basicPWM = hardwarePWM(1)
-        self.basicPWM.startup(18300, int(config['DynRDSQN8066AmpPower']))
+    if os.getenv('FPPPLATFORM', '') == 'Raspberry Pi':
+      if config['DynRDSQN8066PIPWM'] == '1':
+        if config['DynRDSAdvPIPWMPin'] in {'18,2' , '12,4'}:
+          self.basicPWM = hardwarePWM(0)
+          self.basicPWM.startup(18300, int(config['DynRDSQN8066AmpPower']))
+        elif config['DynRDSAdvPIPWMPin'] in {'13,4' , '19,2'}:
+          self.basicPWM = hardwarePWM(1)
+          self.basicPWM.startup(18300, int(config['DynRDSQN8066AmpPower']))
+        else:
+          self.basicPWM = softwarePWM(int(config['DynRDSAdvPIPWMPin']))
+          self.basicPWM.startup(10000, int(config['DynRDSQN8066AmpPower']))
       else:
-        self.basicPWM = softwarePWM(int(config['DynRDSAdvPIPWMPin']))
-        self.basicPWM.startup(10000, int(config['DynRDSQN8066AmpPower']))
+        self.basicPWM.startup()
+    elif os.getenv('FPPPLATFORM', '') == 'BeagleBone Black':
+      self.basicPWM = hardwareBBBPWM(config['DynRDSAdvBBBPWMPin'])
+      self.basicPWM.startup(18300, int(config['DynRDSQN8066AmpPower']))
     else:
       self.basicPWM.startup()
 
@@ -93,7 +100,7 @@ class QN8066(Transmitter):
     self.basicPWM.update(int(config['DynRDSQN8066AmpPower']))
 
   def shutdown(self):
-    logging.info('Stopping QN80xx transmitter')
+    logging.info('Stopping QN8066 transmitter')
     # Exit TX, Enter standby
     self.I2C.write(0x00, [0b00100011])
     super().shutdown()
@@ -123,13 +130,13 @@ class QN8066(Transmitter):
     super().status()
 
   def updateRDSData(self, PSdata, RTdata):
-    logging.debug('QN80xx updateRDSData')
+    logging.debug('QN8066 updateRDSData')
     self.PS.updateData(PSdata)
     self.RT.updateData(RTdata)
 
   def sendNextRDSGroup(self):
     # If more advanced mixing of RDS groups is needed, this is where it would occur
-    logging.excessive('QN80xx sendNextRDSGroup')
+    logging.excessive('QN8066 sendNextRDSGroup')
     self.PS.sendNextGroup()
     self.RT.sendNextGroup()
 

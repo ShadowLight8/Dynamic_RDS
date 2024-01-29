@@ -1,8 +1,6 @@
 import os
 import logging
 
-import RPi.GPIO as GPIO
-
 class basicPWM:
   def __init__(self):
     self.active = False
@@ -61,6 +59,8 @@ class hardwarePWM(basicPWM):
 
 class softwarePWM(basicPWM):
   def __init__(self, pinToUse=7):
+    global GPIO
+    from RPi import GPIO
     self.pinToUse = pinToUse
     self.pwm = None
     # TODO: Ponder if import RPi.GPIO as GPIO is a good idea
@@ -87,4 +87,60 @@ class softwarePWM(basicPWM):
     self.pwm.stop()
     logging.info('Cleaning up software PWM on pin %s', self.pinToUse)
     GPIO.cleanup()
+    super().shutdown()
+
+class hardwareBBBPWM(basicPWM):
+  def __init__(self, pwmInfo='P9_16,1,B'):
+    (self.pinToUse, self.pwmToUse, self.ABToUse) = pwmInfo.split(',', 2)
+    if self.pwmToUse == '0':
+      self.pwmToUse = '48300200'
+    elif self.pwmToUse == '2':
+      self.pwmToUse = '48304200'
+    else: # Make 1 the default case
+      self.pwmToUse = '48302200'
+    self.ABToUse = '0' if self.ABToUse == 'A' else '1'
+
+    if os.path.isfile(f'/sys/devices/platform/ocp/ocp:{self.pinToUse}_pinmux/state'):
+      logging.info('Configuring pin %s for PWM', self.pinToUse)
+      with open(f'/sys/devices/platform/ocp/ocp:{self.pinToUse}_pinmux/state', 'w', encoding='UTF-8') as p:
+        p.write('pwm\n')
+    else:
+      raise RuntimeError(f'Unable to access /sys/devices/platform/ocp/ocp:{self.pinToUse}_pinmux/state')
+
+    with os.scandir('/sys/class/pwm/') as chips:
+      for chip in chips:
+        if chip.is_symlink() and self.pwmToUse in os.readlink(chip):
+          self.pwmToUse = chip.name
+          logging.debug('PWM hardware is %s', self.pwmToUse)
+          break
+
+    if not os.path.isdir(f'/sys/class/pwm/{self.pwmToUse}/pwm{self.ABToUse}'):
+      logging.debug('Exporting hardware %s/pwm%s', self.pwmToUse, self.ABToUse)
+      with open(f'/sys/class/pwm/{self.pwmToUse}/export', 'w', encoding='UTF-8') as p:
+        p.write(f'{self.ABToUse}\n')
+
+    super().__init__()
+
+  def startup(self, period=18300, dutyCycle=0):
+    logging.debug('Starting hardware %s/pwm%s with period of %s', self.pwmToUse, self.ABToUse, period)
+    with open(f'/sys/class/pwm/{self.pwmToUse}/pwm{self.ABToUse}/period', 'w', encoding='UTF-8') as p:
+      p.write(f'{period}\n')
+    self.update(dutyCycle)
+    logging.info('Enabling hardware %s/pwm%s', self.pwmToUse, self.ABToUse)
+    with open(f'/sys/class/pwm/{self.pwmToUse}/pwm{self.ABToUse}/enable', 'w', encoding='UTF-8') as p:
+      p.write('1\n')
+    super().startup()
+
+  def update(self, dutyCycle=0):
+    logging.info('Updating hardware %s/pwm%s duty cycle to %s', self.pwmToUse, self.ABToUse, dutyCycle*61)
+    with open(f'/sys/class/pwm/{self.pwmToUse}/pwm{self.ABToUse}/duty_cycle', 'w', encoding='UTF-8') as p:
+      p.write(f'{dutyCycle*61}\n')
+    super().update()
+
+  def shutdown(self):
+    logging.debug('Shutting down hardware %s/pwm%s', self.pwmToUse, self.ABToUse)
+    self.update() #Duty Cycle to 0
+    logging.info('Disabling hardware %s/pwm%s', self.pwmToUse, self.ABToUse)
+    with open(f'/sys/class/pwm/{self.pwmToUse}/pwm{self.ABToUse}/enable', 'w', encoding='UTF-8') as p:
+      p.write('0\n')
     super().shutdown()

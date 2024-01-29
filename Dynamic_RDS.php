@@ -1,6 +1,9 @@
 <div id="global" class="settings">
 <h1>Status</h1>
 <?
+$isRPi = file_exists('/boot/config.txt');
+$isBBB = file_exists('/boot/uEnv.txt');
+
 $outputReinstallScript = '';
 if (isset($_POST["ReinstallScript"])) {
  $outputReinstallScript = shell_exec(escapeshellcmd("sudo ".$pluginDirectory."/".$_GET['plugin']."/scripts/fpp_install.sh"));
@@ -21,12 +24,12 @@ if (empty(trim(shell_exec("dpkg -s python3-smbus | grep installed")))) {
 }
 
 $i2cbus = 1;
-if (file_exists('/dev/i2c-2')) {
+if ($isBBB && file_exists('/dev/i2c-2')) {
  $i2cbus = 2;
 } elseif (file_exists('/dev/i2c-0')) {
  $i2cbus = 0;
 } elseif (!file_exists('/dev/i2c-1')) {
- echo '<div class="callout callout-danger">Unable to find an I<sup>2</sup>C bus - Check /boot/config.txt for I<sup>2</sup>C entry</div>';
+ echo '<div class="callout callout-danger">Unable to find an I<sup>2</sup>C bus - On RPi, check /boot/config.txt for I<sup>2</sup>C entry</div>';
  $errorDetected = true;
 }
 
@@ -50,11 +53,11 @@ if (trim(shell_exec("sudo i2cget -y " . $i2cbus . " 0x21 2>&1")) != "Error: Read
  $transmitterAddress = '0x63';
 } else {
   echo '<div class="callout callout-danger">No transmitter detected on I<sup>2</sup>C bus ' . $i2cbus . ' at addresses 0x21 or 0x63<br />';
-  echo 'Power cycle or reset of transmitter is recommended. SSH into FPP and run <b>i2cdetect -y ' . $i2cbus . '</b> to check I<sup>2</sup>C status</div>';
+  echo 'Power cycle or reset of transmitter is recommended. SSH into FPP and run <b>i2cdetect -y -r ' . $i2cbus . '</b> to check I<sup>2</sup>C status</div>';
   $errorDetected = true;
 }
 
-if (isset($pluginSettings['DynRDSQN8066PIPWM']) && $pluginSettings['DynRDSQN8066PIPWM'] == 1 && is_numeric(strpos($pluginSettings['DynRDSAdvPIPWMPin'], ','))) {
+if ($isRPi && isset($pluginSettings['DynRDSQN8066PIPWM']) && $pluginSettings['DynRDSQN8066PIPWM'] == 1 && is_numeric(strpos($pluginSettings['DynRDSAdvPIPWMPin'], ','))) {
  if (shell_exec("lsmod | grep 'snd_bcm2835.*1\>'")) {
   echo '<div class="callout callout-warning">On-board sound card appears active and will interfere with hardware PWM. Try a reboot first, next toggle the Enable PI Hardware PWM setting below and reboot. If issues persist check /boot/config.txt and comment out dtparam=audio=on</div>';
  }
@@ -64,22 +67,24 @@ if (isset($pluginSettings['DynRDSQN8066PIPWM']) && $pluginSettings['DynRDSQN8066
 }
 
 $i2cBusType = 'hardware';
-if (isset($pluginSettings['DynRDSAdvPISoftwareI2C']) && $pluginSettings['DynRDSAdvPISoftwareI2C'] == 1) {
- $i2cBusType = 'software';
- if (shell_exec("lsmod | grep i2c_bcm2835")) {
-  echo '<div class="callout callout-warning">Hardware I<sup>2</sup>C appears active. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist check /boot/config.txt and comment out dtparam=i2c_arm=on</div>';
-  $i2cBusType = 'hardware';
- }
- if (empty(shell_exec("lsmod | grep i2c_gpio"))) {
-  echo '<div class="callout callout-warning">Software I<sup>2</sup>C has not been loaded. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist then check /boot/config.txt and add dtoverlay=i2c-gpio,i2c_gpio_sda=2,i2c_gpio_scl=3,i2c_gpio_delay_us=4,bus=1</div>';
- }
-} else {
- if (shell_exec("lsmod | grep i2c_gpio")) {
-  echo '<div class="callout callout-warning">Software I<sup>2</sup>C appears active. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist check /boot/config.txt and comment out dtoverlay=i2c-gpio,i2c_gpio_sda=2,i2c_gpio_scl=3,i2c_gpio_delay_us=4,bus=1</div>';
+if ($isRPi) {
+ if (isset($pluginSettings['DynRDSAdvPISoftwareI2C']) && $pluginSettings['DynRDSAdvPISoftwareI2C'] == 1) {
   $i2cBusType = 'software';
- }
- if (empty(shell_exec("lsmod | grep i2c_bcm2835"))) {
-  echo '<div class="callout callout-warning">Hardware I<sup>2</sup>C has not been loaded. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist then check /boot/config.txt and add dtparam=i2c_arm=on</div>';
+  if (shell_exec("lsmod | grep i2c_bcm2835")) {
+   echo '<div class="callout callout-warning">Hardware I<sup>2</sup>C appears active. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist check /boot/config.txt and comment out dtparam=i2c_arm=on</div>';
+   $i2cBusType = 'hardware';
+  }
+  if (empty(shell_exec("lsmod | grep i2c_gpio"))) {
+   echo '<div class="callout callout-warning">Software I<sup>2</sup>C has not been loaded. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist then check /boot/config.txt and add dtoverlay=i2c-gpio,i2c_gpio_sda=2,i2c_gpio_scl=3,i2c_gpio_delay_us=4,bus=1</div>';
+  }
+ } else {
+  if (shell_exec("lsmod | grep i2c_gpio")) {
+   echo '<div class="callout callout-warning">Software I<sup>2</sup>C appears active. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist check /boot/config.txt and comment out dtoverlay=i2c-gpio,i2c_gpio_sda=2,i2c_gpio_scl=3,i2c_gpio_delay_us=4,bus=1</div>';
+   $i2cBusType = 'software';
+  }
+  if (empty(shell_exec("lsmod | grep i2c_bcm2835"))) {
+   echo '<div class="callout callout-warning">Hardware I<sup>2</sup>C has not been loaded. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist then check /boot/config.txt and add dtparam=i2c_arm=on</div>';
+  }
  }
 }
 
@@ -145,9 +150,10 @@ PrintSettingGroup("DynRDSPowerSettings", "", "", 1, "Dynamic_RDS", "DynRDSPiBoot
 PrintSettingGroup("DynRDSPluginActivation", "", "Set when the transmitter is active", 1, "Dynamic_RDS");
 
 if (!(is_file('/bin/mpc') || is_file('/usr/bin/mpc'))) {
-  echo '<div class="callout callout-warning">MPC not detected. Functionality not available.</div>';
-}
+  echo '<h2>MPC / After Hours Music</h2><div class="callout callout-warning">MPC not detected. Functionality not available. Install After Hours Music Player Plugin to enabled.</div><br />';
+} else {
 PrintSettingGroup("DynRDSmpc", "", "Pull RDS data from MPC / After Hours Music plugin when idle", 1, "Dynamic_RDS", "DynRDSFastUpdate");
+}
 
 PrintSettingGroup("DynRDSLogLevel", "", "", 1, "Dynamic_RDS", "DynRDSFastUpdate");
 ?>

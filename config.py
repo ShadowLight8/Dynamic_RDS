@@ -25,7 +25,8 @@ config = {
 'DynRDSEngineLogLevel': 'INFO',
 'DynRDSmpcEnable': '0',
 'DynRDSAdvPISoftwareI2C': '0',
-'DynRDSAdvPIPWMPin': '18,2'
+'DynRDSAdvPIPWMPin': '18,2',
+'DynRDSAdvBBBPWMPin': 'P9_16,1,B'
 }
 
 def read_config_from_file():
