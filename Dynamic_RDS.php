@@ -1,15 +1,57 @@
+<? if (!isset($_GET['nopage'])): ?>
 <div id="global" class="settings">
 <h1>Status</h1>
 <?
+endif;
+
+$isRPi = file_exists('/boot/config.txt');
+$isBBB = file_exists('/boot/uEnv.txt');
+$dynRDSDir = $pluginDirectory . '/' . $_GET['plugin'];
+
 $outputReinstallScript = '';
 if (isset($_POST["ReinstallScript"])) {
- $outputReinstallScript = shell_exec(escapeshellcmd("sudo ".$pluginDirectory."/".$_GET['plugin']."/scripts/fpp_install.sh"));
+ $outputReinstallScript = shell_exec(escapeshellcmd("sudo ". $dynRDSDir . "/scripts/fpp_install.sh"));
 }
 
 if ($outputReinstallScript != '') {
  echo '<div class="callout callout-default"><b>Reinstall Script Output</b><br />';
  echo $outputReinstallScript;
  echo '</div>';
+}
+
+if (isset($_POST["DownloadZip"])) {
+ $zip = new ZipArchive();
+ $zipName = $dynRDSDir . "/Dynamic_RDS_logs_config_" . date("YmdHis") . ".zip";
+ if ($zip->open($zipName, ZipArchive::CREATE)!==TRUE) {
+  echo '<div class="callout callout-danger">Unable to create ZIP file to download</div>';
+  exit;
+ }
+ if (is_file($dynRDSDir . "/Dynamic_RDS_callbacks.log")) {
+  $zip->addFile($dynRDSDir . "/Dynamic_RDS_callbacks.log", "Dynamic_RDS_callbacks.log");
+ }
+ if (is_file($dynRDSDir . "/Dynamic_RDS_Engine.log")) {
+  $zip->addFile($dynRDSDir . "/Dynamic_RDS_Engine.log", "Dynamic_RDS_Engine.log");
+ }
+ if (is_file($configDirectory . "/plugin.Dynamic_RDS")) {
+  $zip->addFile($configDirectory . "/plugin.Dynamic_RDS", "plugin.Dynamic_RDS");
+ }
+ if (is_file("/boot/config.txt")) {
+  $zip->addFile("/boot/config.txt", "config.txt");
+ }
+ if (is_file("/boot/uEnv.txt")) {
+  $zip->addFile("/boot/uEnv.txt", "uEnv.txt");
+ }
+ $zip->close();
+ if (is_file($zipName)) {
+  header("Content-Disposition: attachment; filename=\"" . basename($zipName) . "\"");
+  header("Content-Type: application/octet-stream");
+  header("Content-Length: ".filesize($zipName));
+  header("Connection: close");
+  flush();
+  readfile($zipName);
+  unlink($zipName);
+ }
+ exit;
 }
 
 $errorDetected = false;
@@ -157,6 +199,16 @@ PrintSettingGroup("DynRDSLogLevel", "", "", 1, "Dynamic_RDS", "DynRDSFastUpdate"
 <input onclick= "ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_callbacks.log?tail=100', 'Dynamic_RDS/Dynamic_RDS_callbacks.log');" id="btnViewScript" class="buttons" type="button" value="View Recent" /></p>
 <p>Dynamic_RDS_Engine.log <input onclick= "ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_Engine.log', 'Dynamic_RDS/Dynamic_RDS_Engine.log');" id="btnViewScript" class="buttons" type="button" value="View All" />
 <input onclick= "ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_Engine.log?tail=100', 'Dynamic_RDS/Dynamic_RDS_Engine.log');" id="btnViewScript" class="buttons" type="button" value="View Recent" /></p>
+</div>
+<br />
+<h2>Report an Issue</h2>
+<div class="container-fluid settingsTable settingsGroupTable">
+<p>Click the button below to download a zip file containing the Dynamic_RDS_callbacks.log, Dynamic_RDS_Engine.log, plugin.Dynamic_RDS, and /boot/config.txt or /boot/uEnv.txt.</p>
+<p>
+<form action="plugin.php?_menu=status&plugin=Dynamic_RDS&page=Dynamic_RDS.php&nopage" method="post">
+<button name="DownloadZip" type="Submit" class="buttons" value="Download log and config zip"><i class="fas fa-fw fa-nbsp fa-download"></i>Download log and config zip</button>
+</form></p>
+<p>Then create a new issue at <a href="https://github.com/ShadowLight8/Dynamic_RDS/issues"><b>https://github.com/ShadowLight8/Dynamic_RDS/issues</b></a>, describe what you're seeing, and attach the zip file.</p>
 </div>
 <br />
 <?
