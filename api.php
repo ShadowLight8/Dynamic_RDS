@@ -3,7 +3,8 @@
 function getEndpointsDynamic_RDS() {
     $endpoints = array(
        array('method' => 'GET', 'endpoint' => 'FastUpdate', 'callback' => 'DynRDSFastUpdate'),
-       array('method' => 'POST', 'endpoint' => 'PiBootChange/:SettingName', 'callback' => 'DynRDSPiBootChange')
+       array('method' => 'POST', 'endpoint' => 'PiBootChange/:SettingName', 'callback' => 'DynRDSPiBootChange'),
+       array('method' => 'POST', 'endpoint' => 'ScriptStream', 'callback' => 'DynRDSScriptStream')
     );
     return $endpoints;
 }
@@ -55,5 +56,12 @@ function DynRDSPiBootChange() {
         default:
            DynRDSFastUpdate();
     }
+}
+
+function DynRDSScriptStream() {
+    // Get script path & name
+    DisableOutputBuffering();
+    system('~/media/plugins/Dynamic_RDS/scripts/paho_install.sh', $return_val);
+    return "\nDone\n";
 }
 ?>

@@ -157,6 +157,17 @@ function DynRDSPiBootUpdate(key) {
   // Object.assign({},pluginSettings) converts to an object from an associative array. Very likely pluginSettings could be changed
   // to be an object instead of an array in FPP's code
 }
+
+function DynRDSScriptStream() {
+  var url = 'api/plugin/Dynamic_RDS/ScriptStream';
+  DisplayProgressDialog('DynRDSScriptStream', 'Install MQTT');
+  StreamURL(url, 'DynRDSScriptStreamText', 'ScriptStreamProgressDialogDone', 'ScriptStreamProgressDialogDone', 'POST');
+}
+
+function ScriptStreamProgressDialogDone() {
+    $('#DynRDSScriptStreamCloseButton').prop('disabled', false);
+    EnableModalDialogCloseButton('DynRDSScriptStream');
+}
 </script>
 
 <?
@@ -196,8 +207,8 @@ if (!(is_file('/bin/mpc') || is_file('/usr/bin/mpc'))) {
 
 if ($settings['MQTTHost'] == '') {
   echo '<h2>MQTT</h2><div class="callout callout-default">Requires that MQTT has been configured under <a href="settings.php#settings-mqtt">FPP Settings -&gt; MQTT</a></div><br />';
-} elseif (false) {
-
+} elseif (!(file_exists('/usr/lib/python3/dist-packages/paho') || file_exists('/usr/local/lib/python3.9/dist-packages/paho'))) {
+  echo '<h2>MQTT</h2><div class="callout callout-warning">python3-paho-mqtt is missing <button name="pahoInstall" onClick="DynRDSScriptStream(\'paho\');">Install python3-paho-mqtt</button></div>';
 } else {
   PrintSettingGroup("DynRDSmqtt", "", "Will connect to <b>" . $settings['MQTTHost'] . ":" . $settings['MQTTPort'] . "</b>", 1, "Dynamic_RDS", "");
 }
