@@ -59,9 +59,20 @@ function DynRDSPiBootChange() {
 }
 
 function DynRDSScriptStream() {
-    // Get script path & name
+    $postData = json_decode(file_get_contents('php://input'), true);
+
     DisableOutputBuffering();
-    system('~/media/plugins/Dynamic_RDS/scripts/paho_install.sh', $return_val);
+
+    switch ($postData['script']) {
+        case 'dependencies':
+           system('~/media/plugins/Dynamic_RDS/scripts/fpp_install.sh', $return_val);
+           break;
+        case 'python3-paho-mqtt':
+           system('~/media/plugins/Dynamic_RDS/scripts/paho_install.sh', $return_val);
+           break;
+        default:
+           return "\nUnknown script\n";
+    }
     return "\nDone\n";
 }
 ?>

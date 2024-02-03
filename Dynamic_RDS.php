@@ -8,17 +8,6 @@ $isRPi = file_exists('/boot/config.txt');
 $isBBB = file_exists('/boot/uEnv.txt');
 $dynRDSDir = $pluginDirectory . '/' . $_GET['plugin'];
 
-$outputReinstallScript = '';
-if (isset($_POST["ReinstallScript"])) {
- $outputReinstallScript = shell_exec(escapeshellcmd("sudo ". $dynRDSDir . "/scripts/fpp_install.sh"));
-}
-
-if ($outputReinstallScript != '') {
- echo '<div class="callout callout-default"><b>Reinstall Script Output</b><br />';
- echo $outputReinstallScript;
- echo '</div>';
-}
-
 if (isset($_POST["DownloadZip"])) {
  $zip = new ZipArchive();
  $zipName = $dynRDSDir . "/Dynamic_RDS_logs_config_" . date("YmdHis") . ".zip";
@@ -57,8 +46,7 @@ if (isset($_POST["DownloadZip"])) {
 $errorDetected = false;
 
 if (empty(trim(shell_exec("dpkg -s python3-smbus | grep installed")))) {
-  echo '<div class="callout callout-danger">python3-smbus is missing - Uninstall and reinstall from Plugin Manager';
-  echo '<br /><form method="post"><button name="ReinstallScript">Try re-running install script</button> It may take up to 1 minute to return.</form></div>';
+  echo '<div class="callout callout-danger">python3-smbus is missing <button name="ReinstallScript" onClick="DynRDSScriptStream(\'dependencies\')">Reinstall plugin dependencies</button></div>';
   $errorDetected = true;
 }
 
@@ -158,10 +146,11 @@ function DynRDSPiBootUpdate(key) {
   // to be an object instead of an array in FPP's code
 }
 
-function DynRDSScriptStream() {
-  var url = 'api/plugin/Dynamic_RDS/ScriptStream';
-  DisplayProgressDialog('DynRDSScriptStream', 'Install MQTT');
-  StreamURL(url, 'DynRDSScriptStreamText', 'ScriptStreamProgressDialogDone', 'ScriptStreamProgressDialogDone', 'POST');
+function DynRDSScriptStream(scriptName) {
+  var postData = {};
+  postData['script'] = scriptName;
+  DisplayProgressDialog('DynRDSScriptStream', 'Install ' + scriptName);
+  StreamURL('api/plugin/Dynamic_RDS/ScriptStream', 'DynRDSScriptStreamText', 'ScriptStreamProgressDialogDone', 'ScriptStreamProgressDialogDone', 'POST', JSON.stringify(postData));
 }
 
 function ScriptStreamProgressDialogDone() {
@@ -208,13 +197,14 @@ if (!(is_file('/bin/mpc') || is_file('/usr/bin/mpc'))) {
 if ($settings['MQTTHost'] == '') {
   echo '<h2>MQTT</h2><div class="callout callout-default">Requires that MQTT has been configured under <a href="settings.php#settings-mqtt">FPP Settings -&gt; MQTT</a></div><br />';
 } elseif (!(file_exists('/usr/lib/python3/dist-packages/paho') || file_exists('/usr/local/lib/python3.9/dist-packages/paho'))) {
-  echo '<h2>MQTT</h2><div class="callout callout-warning">python3-paho-mqtt is missing <button name="pahoInstall" onClick="DynRDSScriptStream(\'paho\');">Install python3-paho-mqtt</button></div>';
+  echo '<h2>MQTT</h2><div class="callout callout-warning">python3-paho-mqtt is needed to enable MQTT support <button name="pahoInstall" onClick="DynRDSScriptStream(\'python3-paho-mqtt\');">Install python3-paho-mqtt</button></div>';
 } else {
-  PrintSettingGroup("DynRDSmqtt", "", "Will connect to <b>" . $settings['MQTTHost'] . ":" . $settings['MQTTPort'] . "</b>", 1, "Dynamic_RDS", "");
+  PrintSettingGroup("DynRDSmqtt", "", "Broker Host is <b>" . $settings['MQTTHost'] . ":" . $settings['MQTTPort'] . "</b>", 1, "Dynamic_RDS", "");
 }
 
 PrintSettingGroup("DynRDSLogLevel", "", "", 1, "Dynamic_RDS", "DynRDSFastUpdate");
 ?>
+
 <h2>View Logs</h2>
 <div class="container-fluid settingsTable settingsGroupTable">
 <p>Dynamic_RDS_callbacks.log <input onclick= "ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_callbacks.log', 'Dynamic_RDS/Dynamic_RDS_callbacks.log');" id="btnViewScript" class="buttons" type="button" value="View All" />
@@ -223,6 +213,7 @@ PrintSettingGroup("DynRDSLogLevel", "", "", 1, "Dynamic_RDS", "DynRDSFastUpdate"
 <input onclick= "ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_Engine.log?tail=100', 'Dynamic_RDS/Dynamic_RDS_Engine.log');" id="btnViewScript" class="buttons" type="button" value="View Recent" /></p>
 </div>
 <br />
+
 <h2>Report an Issue</h2>
 <div class="container-fluid settingsTable settingsGroupTable">
 <p>Click the button below to download a zip file containing the Dynamic_RDS_callbacks.log, Dynamic_RDS_Engine.log, plugin.Dynamic_RDS, and /boot/config.txt or /boot/uEnv.txt.</p>
@@ -233,6 +224,7 @@ PrintSettingGroup("DynRDSLogLevel", "", "", 1, "Dynamic_RDS", "DynRDSFastUpdate"
 <p>Then create a new issue at <a href="https://github.com/ShadowLight8/Dynamic_RDS/issues"><b>https://github.com/ShadowLight8/Dynamic_RDS/issues</b></a>, describe what you're seeing, and attach the zip file.</p>
 </div>
 <br />
+
 <?
 PrintSettingGroup("DynRDSAdv", "", "", 1, "Dynamic_RDS", "DynRDSPiBootUpdate");
 ?>
