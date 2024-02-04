@@ -31,7 +31,8 @@ def cleanup():
     pass
   try:
     transmitter.basicPWM.shutdown()
-    mqtt.disconnect()
+    if mqtt.connected:
+      mqtt.disconnect()
   except:
     pass
   logging.info('Exiting')
@@ -72,7 +73,15 @@ def updateRDSData():
 
   # TODO: DynRDSRTSize functionally works, but I think this should source from the RTBuffer class post initialization
   transmitter.updateRDSData(rdsStyleToString(config['DynRDSPSStyle'], 8), rdsStyleToString(config['DynRDSRTStyle'], int(config['DynRDSRTSize'])))
-  mqtt.publish('status', '-----')
+
+  if config['DynRDSmqttEnable'] == '1':
+    mqttStatus = {}
+    mqttStatus['PStext'] = transmitter.PStext
+    mqttStatus['RTtext'] = transmitter.RTtext
+    mqttStatus['PSfragments'] = transmitter.PS.fragments
+    mqttStatus['RTfragments'] = transmitter.RT.fragments
+    mqttStatus['RDSValues'] = rdsValues
+    mqtt.publish('status', json.dumps(mqttStatus, indent=8))
 
 def rdsStyleToString(rdsStyle, groupSize):
   outputRDS = []
@@ -122,7 +131,7 @@ def rdsStyleToString(rdsStyle, groupSize):
 # Setup logging
 script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
 #logging.basicConfig(stream=sys.stderr, level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
-logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
+logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
 
 # Adding in excessive log level below debug for very noisy items
 # Allow for debug to be reasonable
@@ -160,7 +169,7 @@ except OSError as oe:
   logging.debug('Fifo already exists')
 
 # Global RDS Values
-rdsValues = {'{T}': ''}
+rdsValues = {'{T}': '', '{A}': '', '{B}': '', '{G}': '', '{N}': '','{L}': '', '{C}': '', '{P}': ''}
 
 # TODO: Check for existance of After Hours plugin by dir
 # TODO: Check for existance of mpc program to get status
@@ -188,6 +197,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
       elif line == 'RESET':
         logging.info('Processing reset')
         read_config()
+        mqtt.publish('config', json.dumps(config, indent=8))
         transmitter.reset()
         if config['DynRDSStart'] == "FPPDStart":
           transmitter.startup()
@@ -212,6 +222,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
           mqtt = basicMQTT()
         mqtt.connect()
         mqtt.publish('ready', '1')
+        mqtt.publish('config', json.dumps(config, indent=8))
 
         updateRDSData()
 
@@ -220,6 +231,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
 
       elif line == 'UPDATE':
         read_config()
+        mqtt.publish('config', json.dumps(config, indent=8))
         if (transmitter is not None and transmitter.active):
           for key in rdsValues:
             rdsValues[key] = ''

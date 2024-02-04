@@ -45,9 +45,10 @@ class Transmitter:
     # Expected to be defined by child class
     pass
 
-  def updateRDSData(self, PSdata, RTdata):
+  def updateRDSData(self, PSdata='', RTdata=''):
     # Expected to be defined by child class
-    pass
+    self.PStext = PSdata
+    self.RTtext = RTdata
 
   def sendNextRDSGroup(self):
     # Expected to be defined by child class

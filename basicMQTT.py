@@ -24,6 +24,7 @@ class basicMQTT:
 class pahoMQTT(basicMQTT):
   # Command line to monitor: mosquitto_sub -v -d -h localhost -t "#"
   def __init__(self):
+    logging.info('Initializing pahoMQTT')
     global paho
     import paho.mqtt.client as paho
 
@@ -49,6 +50,7 @@ class pahoMQTT(basicMQTT):
     super().__init__()
 
   def connect(self):
+    logging.info('Connecting to broker with pahoMQTT')
     self.client.on_connect = self.on_connect
     if self.MQTTSettings['MQTTUsername'] != '':
       self.client.username_pw_set(self.MQTTSettings['MQTTUsername'], self.MQTTSettings['MQTTPassword'])
@@ -60,6 +62,7 @@ class pahoMQTT(basicMQTT):
     self.client.publish(f'{self.topicBase}/{subtopic}', value, qos, retain)
 
   def disconnect(self):
+    logging.info('Disconnecting from broker')
     self.publish('ready', '0')
     self.client.loop_stop()
     self.client.disconnect()
@@ -69,7 +72,8 @@ class pahoMQTT(basicMQTT):
     pass
 
   def on_connect(self, client, userdata, flags, rc):
-    # TODO: Maybe something to log here?
+    logging.info('Connected to broker with pahoMQTT')
+    # TODO: Deal with rc for failures
     super().connect()
 
   def on_publish(self):

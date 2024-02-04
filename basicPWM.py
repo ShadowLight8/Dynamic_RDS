@@ -59,12 +59,12 @@ class hardwarePWM(basicPWM):
 
 class softwarePWM(basicPWM):
   def __init__(self, pinToUse=7):
+    logging.info('Initializing software PWM on pin %s', self.pinToUse)
     global GPIO
     from RPi import GPIO
     self.pinToUse = pinToUse
     self.pwm = None
     # TODO: Ponder if import RPi.GPIO as GPIO is a good idea
-    logging.info('Initializing software PWM on pin %s', self.pinToUse)
     GPIO.setmode(GPIO.BOARD)
     GPIO.setup(self.pinToUse, GPIO.OUT)
     GPIO.output(self.pinToUse,0)
@@ -92,6 +92,7 @@ class softwarePWM(basicPWM):
 class hardwareBBBPWM(basicPWM):
   def __init__(self, pwmInfo='P9_16,1,B'):
     (self.pinToUse, self.pwmToUse, self.ABToUse) = pwmInfo.split(',', 2)
+    logging.info('Initializing hardware PWM on pin %s', self.pinToUse)
     if self.pwmToUse == '0':
       self.pwmToUse = '48300200'
     elif self.pwmToUse == '2':
