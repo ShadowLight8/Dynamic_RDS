@@ -5,8 +5,6 @@ import json
 from urllib.request import urlopen
 from urllib.parse import quote
 
-import time
-
 class basicMQTT:
   def __init__(self):
     self.connected = False
@@ -83,3 +81,4 @@ class pahoMQTT(basicMQTT):
         return json.loads(response.read())
     except Exception:
       logging.exception("readAPISetting %s", settingName)
+    return ''
