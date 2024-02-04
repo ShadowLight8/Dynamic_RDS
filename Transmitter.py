@@ -22,6 +22,8 @@ class Transmitter:
   def __init__(self):
     # Common class init
     self.active = False
+    self.PStext = ''
+    self.RTtext = ''
 
   def startup(self):
     # Common elements for starting up the transmitter for broadcast

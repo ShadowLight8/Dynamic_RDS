@@ -61,4 +61,3 @@ class basicI2C():
       if isFatal:
         sys.exit(-1)
       return []
-

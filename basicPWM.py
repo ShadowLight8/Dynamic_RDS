@@ -59,7 +59,7 @@ class hardwarePWM(basicPWM):
 
 class softwarePWM(basicPWM):
   def __init__(self, pinToUse=7):
-    logging.info('Initializing software PWM on pin %s', self.pinToUse)
+    logging.info('Initializing software PWM on pin %s', pinToUse)
     global GPIO
     from RPi import GPIO
     self.pinToUse = pinToUse
