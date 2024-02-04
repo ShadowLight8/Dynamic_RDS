@@ -16,6 +16,7 @@ from urllib.parse import quote
 
 from config import config, read_config_from_file
 from QN8066 import QN8066
+from basicMQTT import basicMQTT, pahoMQTT
 
 def logUnhandledException(eType, eValue, eTraceback):
   logging.error("Unhandled exception", exc_info=(eType, eValue, eTraceback))
@@ -30,6 +31,7 @@ def cleanup():
     pass
   try:
     transmitter.basicPWM.shutdown()
+    mqtt.disconnect()
   except:
     pass
   logging.info('Exiting')
@@ -70,6 +72,7 @@ def updateRDSData():
 
   # TODO: DynRDSRTSize functionally works, but I think this should source from the RTBuffer class post initialization
   transmitter.updateRDSData(rdsStyleToString(config['DynRDSPSStyle'], 8), rdsStyleToString(config['DynRDSRTStyle'], int(config['DynRDSRTSize'])))
+  mqtt.publish('status', '-----')
 
 def rdsStyleToString(rdsStyle, groupSize):
   outputRDS = []
@@ -157,7 +160,7 @@ except OSError as oe:
   logging.debug('Fifo already exists')
 
 # Global RDS Values
-rdsValues = {'{T}': '', '{A}': '', '{N}': '', '{L}': '', '{C}': ''}
+rdsValues = {'{T}': ''}
 
 # TODO: Check for existance of After Hours plugin by dir
 # TODO: Check for existance of mpc program to get status
@@ -166,6 +169,7 @@ rdsValues = {'{T}': '', '{A}': '', '{N}': '', '{L}': '', '{C}': ''}
 # Main Loop
 # =========
 transmitter = None
+mqtt = None
 activePlaylist = False
 nextMPCUpdate = datetime.now()
 
@@ -178,6 +182,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
       if line == 'EXIT':
         logging.info('Processing exit')
         transmitter.shutdown()
+        mqtt.disconnect()
         sys.exit()
 
       elif line == 'RESET':
@@ -200,6 +205,13 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
         if transmitter is None:
           logging.error('Transmitter not set. Check Transmitter Type.')
           continue
+
+        if config['DynRDSmqttEnable'] == "1":
+          mqtt = pahoMQTT()
+        else:
+          mqtt = basicMQTT()
+        mqtt.connect()
+        mqtt.publish('ready', '1')
 
         updateRDSData()
 
@@ -250,7 +262,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
           rdsValues['{C}'] = ''
 
       elif line[0] == 'P':
-        logging.debug('Processing plylist position')
+        logging.debug('Processing playlist position')
         rdsValues['{P}'] = line[1:]
         updateRDSData() # Always follows MAINLIST, so only a single update is needed
 
