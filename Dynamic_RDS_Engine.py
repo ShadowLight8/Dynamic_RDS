@@ -257,7 +257,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
 
       elif line.startswith('MAINLIST'):
         logging.info('Processing MainPlaylist')
-        playlist_name = line[8:]
+        playlist_name = line[8:] # TODO: Need to keep track of last playlist name to reduce overhead?
         if playlist_name != '':
           logging.debug('Playlist Name: %s', playlist_name)
           playlist_length = 1
@@ -291,7 +291,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
         # TANL is always sent together with L being last item, so we only need to update the RDS Data once with the new values
         # TODO: This will likely change as more data is added, so a new way will have to be determined
         updateRDSData()
-        activePlaylist = True
+        #activePlaylist = True # TODO: Is this needed still?
         transmitter.status()
 
       # All of the rdsValues that are stored as is
