@@ -50,12 +50,14 @@ if (empty(trim(shell_exec("dpkg -s python3-smbus | grep installed")))) {
   $errorDetected = true;
 }
 
-$i2cbus = 1;
+$i2cbus = -1;
 if ($isBBB && file_exists('/dev/i2c-2')) {
  $i2cbus = 2;
 } elseif (file_exists('/dev/i2c-0')) {
  $i2cbus = 0;
-} elseif (!file_exists('/dev/i2c-1')) {
+} elseif (file_exists('/dev/i2c-1')) {
+ $i2cbus = 1;
+} else {
  echo '<div class="callout callout-danger">Unable to find an I<sup>2</sup>C bus - On RPi, check /boot/config.txt for I<sup>2</sup>C entry</div>';
  $errorDetected = true;
 }
@@ -72,16 +74,18 @@ if (empty(trim(shell_exec("ps -ef | grep python.*Dynamic_RDS_Engine.py | grep -v
 
 $transmitterType = '';
 $transmitterAddress = '';
-if (trim(shell_exec("sudo i2cget -y " . $i2cbus . " 0x21 2>&1")) != "Error: Read failed") {
- $transmitterType = 'QN8066';
- $transmitterAddress = '0x21';
-} elseif (trim(shell_exec("sudo i2cget -y " . $i2cbus . " 0x63 2>&1")) != "Error: Read failed") {
- $transmitterType = 'Si4713';
- $transmitterAddress = '0x63';
-} else {
-  echo '<div class="callout callout-danger">No transmitter detected on I<sup>2</sup>C bus ' . $i2cbus . ' at addresses 0x21 or 0x63<br />';
-  echo 'Power cycle or reset of transmitter is recommended. SSH into FPP and run <b>i2cdetect -y -r ' . $i2cbus . '</b> to check I<sup>2</sup>C status</div>';
-  $errorDetected = true;
+if ($i2cbus != -1) {
+ if (trim(shell_exec("sudo i2cget -y " . $i2cbus . " 0x21 2>&1")) != "Error: Read failed") {
+  $transmitterType = 'QN8066';
+  $transmitterAddress = '0x21';
+ } elseif (trim(shell_exec("sudo i2cget -y " . $i2cbus . " 0x63 2>&1")) != "Error: Read failed") {
+  $transmitterType = 'Si4713';
+  $transmitterAddress = '0x63';
+ } else {
+   echo '<div class="callout callout-danger">No transmitter detected on I<sup>2</sup>C bus ' . $i2cbus . ' at addresses 0x21 or 0x63<br />';
+   echo 'Power cycle or reset of transmitter is recommended. SSH into FPP and run <b>i2cdetect -y -r ' . $i2cbus . '</b> to check I<sup>2</sup>C status</div>';
+   $errorDetected = true;
+ }
 }
 
 if ($isRPi && isset($pluginSettings['DynRDSQN8066PIPWM']) && $pluginSettings['DynRDSQN8066PIPWM'] == 1 && is_numeric(strpos($pluginSettings['DynRDSAdvPIPWMPin'], ','))) {

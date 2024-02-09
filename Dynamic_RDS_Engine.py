@@ -190,7 +190,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
       logging.debug('line %s', line)
       if line == 'EXIT':
         logging.info('Processing exit')
-        transmitter.shutdown()
+        transmitter.shutdown() # TODO: Can fail if transmitter wasn't set - Can fix with an if statement or look into using Transmitter base class initially
         mqtt.disconnect()
         sys.exit()
 
