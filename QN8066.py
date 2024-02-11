@@ -130,7 +130,7 @@ class QN8066(Transmitter):
     self.I2C.write(0x24, [0b00000000 | int(max(24,(int(config['DynRDSQN8066ChipPower']) - 70.2) // 0.91))])
     super().status()
 
-  def updateRDSData(self, PSdata, RTdata):
+  def updateRDSData(self, PSdata='', RTdata=''):
     logging.debug('QN8066 updateRDSData')
     super().updateRDSData(PSdata, RTdata)
     self.PS.updateData(PSdata)

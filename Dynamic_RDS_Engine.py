@@ -217,11 +217,11 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
           continue
 
         if config['DynRDSmqttEnable'] == "1":
-           try:
-             mqtt = pahoMQTT()
-           except Exception:
-             logging.exception('Unable to initialize pahoMQTT')
-             mqtt = basicMQTT()
+          try:
+            mqtt = pahoMQTT()
+          except Exception:
+            logging.exception('Unable to initialize pahoMQTT')
+            mqtt = basicMQTT()
         else:
           mqtt = basicMQTT()
         mqtt.connect()
