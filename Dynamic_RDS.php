@@ -193,7 +193,7 @@ PrintSettingGroup("DynRDSPowerSettings", "", "", 1, "Dynamic_RDS", "DynRDSPiBoot
 PrintSettingGroup("DynRDSPluginActivation", "", "Set when the transmitter is active", 1, "Dynamic_RDS");
 
 if (!(is_file('/bin/mpc') || is_file('/usr/bin/mpc'))) {
-  echo '<h2>MPC / After Hours Music</h2><div class="callout callout-default">MPC not detected. Functionality not available. Install After Hours Music Player Plugin to enabled.</div><br />';
+  echo '<h2>MPC / After Hours Music</h2><div class="callout callout-default">Install the After Hours Music Player Plugin to enabled. MPC not detected</div><br />';
 } else {
   PrintSettingGroup("DynRDSmpc", "", "Pull RDS data from MPC / After Hours Music plugin when idle", 1, "Dynamic_RDS", "DynRDSFastUpdate");
 }
@@ -201,7 +201,7 @@ if (!(is_file('/bin/mpc') || is_file('/usr/bin/mpc'))) {
 if ($settings['MQTTHost'] == '') {
   echo '<h2>MQTT</h2><div class="callout callout-default">Requires that MQTT has been configured under <a href="settings.php#settings-mqtt">FPP Settings -&gt; MQTT</a></div><br />';
 } elseif (!(file_exists('/usr/lib/python3/dist-packages/paho') || file_exists('/usr/local/lib/python3.9/dist-packages/paho'))) {
-  echo '<h2>MQTT</h2><div class="callout callout-warning">python3-paho-mqtt is needed to enable MQTT support <button name="pahoInstall" onClick="DynRDSScriptStream(\'python3-paho-mqtt\');">Install python3-paho-mqtt</button></div>';
+  echo '<h2>MQTT</h2><div class="callout callout-default">python3-paho-mqtt is needed to enable MQTT support <button name="pahoInstall" onClick="DynRDSScriptStream(\'python3-paho-mqtt\');">Install python3-paho-mqtt</button></div>';
 } else {
   PrintSettingGroup("DynRDSmqtt", "", "Broker Host is <b>" . $settings['MQTTHost'] . ":" . $settings['MQTTPort'] . "</b>", 1, "Dynamic_RDS", "");
 }

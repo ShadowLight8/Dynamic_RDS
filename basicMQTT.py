@@ -35,9 +35,17 @@ class pahoMQTT(basicMQTT):
     mqttInfo = self.readAPISetting('MQTTHost')
     self.MQTTSettings['MQTTHost'] = mqttInfo['value']
 
+    if self.MQTTSettings['MQTTHost'] == '':
+      logging.warning('MQTT Broker Host is not set. Check FPP Settings -> MQTT -> Broker Host value')
+      raise Exception('Missing MQTT Host')
+
     for setting in mqttInfo['children']['*']:
       settingInfo = self.readAPISetting(setting)
       self.MQTTSettings[setting] = settingInfo['value'] if 'value' in settingInfo else ''
+
+    if self.MQTTSettings['MQTTPort'] == '':
+      logging.warning('MQTT Port value is missing, using default of 1883')
+      self.MQTTSettings['MQTTPort'] = '1883'
 
     logging.debug('MQTT Settings %s', self.MQTTSettings)
 
@@ -55,7 +63,7 @@ class pahoMQTT(basicMQTT):
     if self.MQTTSettings['MQTTUsername'] != '':
       self.client.username_pw_set(self.MQTTSettings['MQTTUsername'], self.MQTTSettings['MQTTPassword'])
     self.client.will_set(f'{self.topicBase}/ready', '-1', 0, True)
-    self.client.connect_async(self.MQTTSettings['MQTTHost'], self.MQTTSettings['MQTTPort'])
+    self.client.connect_async(self.MQTTSettings['MQTTHost'], int(self.MQTTSettings['MQTTPort']))
     self.client.loop_start()
 
   def publish(self, subtopic, value, qos=1, retain=True):
