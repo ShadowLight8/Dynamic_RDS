@@ -22,6 +22,8 @@ class Transmitter:
   def __init__(self):
     # Common class init
     self.active = False
+    self.PStext = ''
+    self.RTtext = ''
 
   def startup(self):
     # Common elements for starting up the transmitter for broadcast
@@ -45,9 +47,10 @@ class Transmitter:
     # Expected to be defined by child class
     pass
 
-  def updateRDSData(self, PSdata, RTdata):
+  def updateRDSData(self, PSdata='', RTdata=''):
     # Expected to be defined by child class
-    pass
+    self.PStext = PSdata
+    self.RTtext = RTdata
 
   def sendNextRDSGroup(self):
     # Expected to be defined by child class

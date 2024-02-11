@@ -8,17 +8,6 @@ $isRPi = file_exists('/boot/config.txt');
 $isBBB = file_exists('/boot/uEnv.txt');
 $dynRDSDir = $pluginDirectory . '/' . $_GET['plugin'];
 
-$outputReinstallScript = '';
-if (isset($_POST["ReinstallScript"])) {
- $outputReinstallScript = shell_exec(escapeshellcmd("sudo ". $dynRDSDir . "/scripts/fpp_install.sh"));
-}
-
-if ($outputReinstallScript != '') {
- echo '<div class="callout callout-default"><b>Reinstall Script Output</b><br />';
- echo $outputReinstallScript;
- echo '</div>';
-}
-
 if (isset($_POST["DownloadZip"])) {
  $zip = new ZipArchive();
  $zipName = $dynRDSDir . "/Dynamic_RDS_logs_config_" . date("YmdHis") . ".zip";
@@ -57,17 +46,18 @@ if (isset($_POST["DownloadZip"])) {
 $errorDetected = false;
 
 if (empty(trim(shell_exec("dpkg -s python3-smbus | grep installed")))) {
-  echo '<div class="callout callout-danger">python3-smbus is missing - Uninstall and reinstall from Plugin Manager';
-  echo '<br /><form method="post"><button name="ReinstallScript">Try re-running install script</button> It may take up to 1 minute to return.</form></div>';
+  echo '<div class="callout callout-danger">python3-smbus is missing <button name="ReinstallScript" onClick="DynRDSScriptStream(\'dependencies\')">Reinstall plugin dependencies</button></div>';
   $errorDetected = true;
 }
 
-$i2cbus = 1;
+$i2cbus = -1;
 if ($isBBB && file_exists('/dev/i2c-2')) {
  $i2cbus = 2;
 } elseif (file_exists('/dev/i2c-0')) {
  $i2cbus = 0;
-} elseif (!file_exists('/dev/i2c-1')) {
+} elseif (file_exists('/dev/i2c-1')) {
+ $i2cbus = 1;
+} else {
  echo '<div class="callout callout-danger">Unable to find an I<sup>2</sup>C bus - On RPi, check /boot/config.txt for I<sup>2</sup>C entry</div>';
  $errorDetected = true;
 }
@@ -84,16 +74,18 @@ if (empty(trim(shell_exec("ps -ef | grep python.*Dynamic_RDS_Engine.py | grep -v
 
 $transmitterType = '';
 $transmitterAddress = '';
-if (trim(shell_exec("sudo i2cget -y " . $i2cbus . " 0x21 2>&1")) != "Error: Read failed") {
- $transmitterType = 'QN8066';
- $transmitterAddress = '0x21';
-} elseif (trim(shell_exec("sudo i2cget -y " . $i2cbus . " 0x63 2>&1")) != "Error: Read failed") {
- $transmitterType = 'Si4713';
- $transmitterAddress = '0x63';
-} else {
-  echo '<div class="callout callout-danger">No transmitter detected on I<sup>2</sup>C bus ' . $i2cbus . ' at addresses 0x21 or 0x63<br />';
-  echo 'Power cycle or reset of transmitter is recommended. SSH into FPP and run <b>i2cdetect -y -r ' . $i2cbus . '</b> to check I<sup>2</sup>C status</div>';
-  $errorDetected = true;
+if ($i2cbus != -1) {
+ if (trim(shell_exec("sudo i2cget -y " . $i2cbus . " 0x21 2>&1")) != "Error: Read failed") {
+  $transmitterType = 'QN8066';
+  $transmitterAddress = '0x21';
+ } elseif (trim(shell_exec("sudo i2cget -y " . $i2cbus . " 0x63 2>&1")) != "Error: Read failed") {
+  $transmitterType = 'Si4713';
+  $transmitterAddress = '0x63';
+ } else {
+   echo '<div class="callout callout-danger">No transmitter detected on I<sup>2</sup>C bus ' . $i2cbus . ' at addresses 0x21 or 0x63<br />';
+   echo 'Power cycle or reset of transmitter is recommended. SSH into FPP and run <b>i2cdetect -y -r ' . $i2cbus . '</b> to check I<sup>2</sup>C status</div>';
+   $errorDetected = true;
+ }
 }
 
 if ($isRPi && isset($pluginSettings['DynRDSQN8066PIPWM']) && $pluginSettings['DynRDSQN8066PIPWM'] == 1 && is_numeric(strpos($pluginSettings['DynRDSAdvPIPWMPin'], ','))) {
@@ -157,6 +149,18 @@ function DynRDSPiBootUpdate(key) {
   // Object.assign({},pluginSettings) converts to an object from an associative array. Very likely pluginSettings could be changed
   // to be an object instead of an array in FPP's code
 }
+
+function DynRDSScriptStream(scriptName) {
+  var postData = {};
+  postData['script'] = scriptName;
+  DisplayProgressDialog('DynRDSScriptStream', 'Install ' + scriptName);
+  StreamURL('api/plugin/Dynamic_RDS/ScriptStream', 'DynRDSScriptStreamText', 'ScriptStreamProgressDialogDone', 'ScriptStreamProgressDialogDone', 'POST', JSON.stringify(postData));
+}
+
+function ScriptStreamProgressDialogDone() {
+    $('#DynRDSScriptStreamCloseButton').prop('disabled', false);
+    EnableModalDialogCloseButton('DynRDSScriptStream');
+}
 </script>
 
 <?
@@ -189,13 +193,22 @@ PrintSettingGroup("DynRDSPowerSettings", "", "", 1, "Dynamic_RDS", "DynRDSPiBoot
 PrintSettingGroup("DynRDSPluginActivation", "", "Set when the transmitter is active", 1, "Dynamic_RDS");
 
 if (!(is_file('/bin/mpc') || is_file('/usr/bin/mpc'))) {
-  echo '<h2>MPC / After Hours Music</h2><div class="callout callout-warning">MPC not detected. Functionality not available. Install After Hours Music Player Plugin to enabled.</div><br />';
+  echo '<h2>MPC / After Hours Music</h2><div class="callout callout-default">Install the After Hours Music Player Plugin to enabled. MPC not detected</div><br />';
 } else {
-PrintSettingGroup("DynRDSmpc", "", "Pull RDS data from MPC / After Hours Music plugin when idle", 1, "Dynamic_RDS", "DynRDSFastUpdate");
+  PrintSettingGroup("DynRDSmpc", "", "Pull RDS data from MPC / After Hours Music plugin when idle", 1, "Dynamic_RDS", "DynRDSFastUpdate");
+}
+
+if ($settings['MQTTHost'] == '') {
+  echo '<h2>MQTT</h2><div class="callout callout-default">Requires that MQTT has been configured under <a href="settings.php#settings-mqtt">FPP Settings -&gt; MQTT</a></div><br />';
+} elseif (!(file_exists('/usr/lib/python3/dist-packages/paho') || file_exists('/usr/local/lib/python3.9/dist-packages/paho'))) {
+  echo '<h2>MQTT</h2><div class="callout callout-default">python3-paho-mqtt is needed to enable MQTT support <button name="pahoInstall" onClick="DynRDSScriptStream(\'python3-paho-mqtt\');">Install python3-paho-mqtt</button></div>';
+} else {
+  PrintSettingGroup("DynRDSmqtt", "", "Broker Host is <b>" . $settings['MQTTHost'] . ":" . $settings['MQTTPort'] . "</b>", 1, "Dynamic_RDS", "");
 }
 
 PrintSettingGroup("DynRDSLogLevel", "", "", 1, "Dynamic_RDS", "DynRDSFastUpdate");
 ?>
+
 <h2>View Logs</h2>
 <div class="container-fluid settingsTable settingsGroupTable">
 <p>Dynamic_RDS_callbacks.log <input onclick= "ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_callbacks.log', 'Dynamic_RDS/Dynamic_RDS_callbacks.log');" id="btnViewScript" class="buttons" type="button" value="View All" />
@@ -204,6 +217,7 @@ PrintSettingGroup("DynRDSLogLevel", "", "", 1, "Dynamic_RDS", "DynRDSFastUpdate"
 <input onclick= "ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_Engine.log?tail=100', 'Dynamic_RDS/Dynamic_RDS_Engine.log');" id="btnViewScript" class="buttons" type="button" value="View Recent" /></p>
 </div>
 <br />
+
 <h2>Report an Issue</h2>
 <div class="container-fluid settingsTable settingsGroupTable">
 <p>Click the button below to download a zip file containing the Dynamic_RDS_callbacks.log, Dynamic_RDS_Engine.log, plugin.Dynamic_RDS, and /boot/config.txt or /boot/uEnv.txt.</p>
@@ -214,6 +228,7 @@ PrintSettingGroup("DynRDSLogLevel", "", "", 1, "Dynamic_RDS", "DynRDSFastUpdate"
 <p>Then create a new issue at <a href="https://github.com/ShadowLight8/Dynamic_RDS/issues"><b>https://github.com/ShadowLight8/Dynamic_RDS/issues</b></a>, describe what you're seeing, and attach the zip file.</p>
 </div>
 <br />
+
 <?
 PrintSettingGroup("DynRDSAdv", "", "", 1, "Dynamic_RDS", "DynRDSPiBootUpdate");
 ?>

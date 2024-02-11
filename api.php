@@ -3,7 +3,8 @@
 function getEndpointsDynamic_RDS() {
     $endpoints = array(
        array('method' => 'GET', 'endpoint' => 'FastUpdate', 'callback' => 'DynRDSFastUpdate'),
-       array('method' => 'POST', 'endpoint' => 'PiBootChange/:SettingName', 'callback' => 'DynRDSPiBootChange')
+       array('method' => 'POST', 'endpoint' => 'PiBootChange/:SettingName', 'callback' => 'DynRDSPiBootChange'),
+       array('method' => 'POST', 'endpoint' => 'ScriptStream', 'callback' => 'DynRDSScriptStream')
     );
     return $endpoints;
 }
@@ -55,5 +56,23 @@ function DynRDSPiBootChange() {
         default:
            DynRDSFastUpdate();
     }
+}
+
+function DynRDSScriptStream() {
+    $postData = json_decode(file_get_contents('php://input'), true);
+
+    DisableOutputBuffering();
+
+    switch ($postData['script']) {
+        case 'dependencies':
+           system('~/media/plugins/Dynamic_RDS/scripts/fpp_install.sh', $return_val);
+           break;
+        case 'python3-paho-mqtt':
+           system('~/media/plugins/Dynamic_RDS/scripts/paho_install.sh', $return_val);
+           break;
+        default:
+           return "\nUnknown script\n";
+    }
+    return "\nDone\n";
 }
 ?>

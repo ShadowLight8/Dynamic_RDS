@@ -13,5 +13,3 @@ fi
 
 echo -e "\nRestarting FPP..."
 curl -s http://localhost/api/system/fppd/restart
-echo -e "\nDone"
-

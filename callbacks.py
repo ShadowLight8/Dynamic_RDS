@@ -177,6 +177,7 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
       fifo.write('START\n')
     elif playlist_action == 'stop':
       fifo.write('STOP\n')
+      sys.exit()
 
     if j['Section'] == 'MainPlaylist':
       logging.debug('Playlist name %s', j['name'])

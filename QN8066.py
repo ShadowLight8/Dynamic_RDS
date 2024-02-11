@@ -11,6 +11,7 @@ from Transmitter import Transmitter
 
 class QN8066(Transmitter):
   def __init__(self):
+    logging.info('Initializing QN8066 transmitter')
     super().__init__()
     self.I2C = basicI2C(0x21)
     self.PS = self.PSBuffer(self, ' ', int(config['DynRDSPSUpdateRate']))
@@ -72,13 +73,13 @@ class QN8066(Transmitter):
         else:
           self.basicPWM = softwarePWM(int(config['DynRDSAdvPIPWMPin']))
           self.basicPWM.startup(10000, int(config['DynRDSQN8066AmpPower']))
-      else:
-        self.basicPWM.startup()
+      #else:
+        #self.basicPWM.startup()
     elif os.getenv('FPPPLATFORM', '') == 'BeagleBone Black':
       self.basicPWM = hardwareBBBPWM(config['DynRDSAdvBBBPWMPin'])
       self.basicPWM.startup(18300, int(config['DynRDSQN8066AmpPower']))
-    else:
-      self.basicPWM.startup()
+    #else:
+      #self.basicPWM.startup()
 
   def update(self):
     # Try without 0x25 0b01111101 - TX Freq Dev of 86.25KHz
@@ -129,8 +130,9 @@ class QN8066(Transmitter):
     self.I2C.write(0x24, [0b00000000 | int(max(24,(int(config['DynRDSQN8066ChipPower']) - 70.2) // 0.91))])
     super().status()
 
-  def updateRDSData(self, PSdata, RTdata):
+  def updateRDSData(self, PSdata='', RTdata=''):
     logging.debug('QN8066 updateRDSData')
+    super().updateRDSData(PSdata, RTdata)
     self.PS.updateData(PSdata)
     self.RT.updateData(RTdata)
 

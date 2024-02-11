@@ -58,6 +58,12 @@
                 "DynRDSmpcEnable"
             ]
         },
+        "DynRDSmqtt": {
+            "description": "MQTT",
+            "settings": [
+                "DynRDSmqttEnable"
+            ]
+        },
         "DynRDSAdv": {
             "description": "Advanced Options",
             "settings": [
@@ -410,6 +416,18 @@
             "uncheckedValue": "0",
             "default": 0,
             "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i>"
+        },
+        "DynRDSmqttEnable": {
+            "name": "DynRDSmqttEnable",
+            "description": "Enable MQTT",
+            "tip": "Enables Dynamic_RDS to publish status to MQTT",
+            "restart": 0,
+            "reboot": 0,
+            "type": "checkbox",
+            "checkedValue": "1",
+            "uncheckedValue": "0",
+            "default": 0,
+            "suffix": ""
         },
         "DynRDSAdvPISoftwareI2C": {
             "name": "DynRDSAdvPISoftwareI2C",

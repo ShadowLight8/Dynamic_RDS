@@ -16,6 +16,7 @@ from urllib.parse import quote
 
 from config import config, read_config_from_file
 from QN8066 import QN8066
+from basicMQTT import basicMQTT, pahoMQTT
 
 def logUnhandledException(eType, eValue, eTraceback):
   logging.error("Unhandled exception", exc_info=(eType, eValue, eTraceback))
@@ -30,6 +31,8 @@ def cleanup():
     pass
   try:
     transmitter.basicPWM.shutdown()
+    if mqtt.connected:
+      mqtt.disconnect()
   except:
     pass
   logging.info('Exiting')
@@ -70,6 +73,15 @@ def updateRDSData():
 
   # TODO: DynRDSRTSize functionally works, but I think this should source from the RTBuffer class post initialization
   transmitter.updateRDSData(rdsStyleToString(config['DynRDSPSStyle'], 8), rdsStyleToString(config['DynRDSRTStyle'], int(config['DynRDSRTSize'])))
+
+  if config['DynRDSmqttEnable'] == '1':
+    mqttStatus = {}
+    mqttStatus['PStext'] = transmitter.PStext
+    mqttStatus['RTtext'] = transmitter.RTtext
+    mqttStatus['PSfragments'] = transmitter.PS.fragments
+    mqttStatus['RTfragments'] = transmitter.RT.fragments
+    mqttStatus['RDSValues'] = rdsValues
+    mqtt.publish('status', json.dumps(mqttStatus, indent=8))
 
 def rdsStyleToString(rdsStyle, groupSize):
   outputRDS = []
@@ -119,7 +131,7 @@ def rdsStyleToString(rdsStyle, groupSize):
 # Setup logging
 script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
 #logging.basicConfig(stream=sys.stderr, level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
-logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
+logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
 
 # Adding in excessive log level below debug for very noisy items
 # Allow for debug to be reasonable
@@ -157,7 +169,7 @@ except OSError as oe:
   logging.debug('Fifo already exists')
 
 # Global RDS Values
-rdsValues = {'{T}': '', '{A}': '', '{N}': '', '{L}': '', '{C}': ''}
+rdsValues = {'{T}': '', '{A}': '', '{B}': '', '{G}': '', '{N}': '','{L}': '', '{C}': '', '{P}': ''}
 
 # TODO: Check for existance of After Hours plugin by dir
 # TODO: Check for existance of mpc program to get status
@@ -166,6 +178,7 @@ rdsValues = {'{T}': '', '{A}': '', '{N}': '', '{L}': '', '{C}': ''}
 # Main Loop
 # =========
 transmitter = None
+mqtt = None
 activePlaylist = False
 nextMPCUpdate = datetime.now()
 
@@ -177,12 +190,14 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
       logging.debug('line %s', line)
       if line == 'EXIT':
         logging.info('Processing exit')
-        transmitter.shutdown()
+        transmitter.shutdown() # TODO: Can fail if transmitter wasn't set - Can fix with an if statement or look into using Transmitter base class initially
+        mqtt.disconnect()
         sys.exit()
 
       elif line == 'RESET':
         logging.info('Processing reset')
         read_config()
+        mqtt.publish('config', json.dumps(config, indent=8))
         transmitter.reset()
         if config['DynRDSStart'] == "FPPDStart":
           transmitter.startup()
@@ -201,6 +216,18 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
           logging.error('Transmitter not set. Check Transmitter Type.')
           continue
 
+        if config['DynRDSmqttEnable'] == "1":
+          try:
+            mqtt = pahoMQTT()
+          except Exception:
+            logging.exception('Unable to initialize pahoMQTT')
+            mqtt = basicMQTT()
+        else:
+          mqtt = basicMQTT()
+        mqtt.connect()
+        mqtt.publish('ready', '1')
+        mqtt.publish('config', json.dumps(config, indent=8))
+
         updateRDSData()
 
         if config['DynRDSStart'] == "FPPDStart":
@@ -208,6 +235,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
 
       elif line == 'UPDATE':
         read_config()
+        mqtt.publish('config', json.dumps(config, indent=8))
         if (transmitter is not None and transmitter.active):
           for key in rdsValues:
             rdsValues[key] = ''
@@ -233,7 +261,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
 
       elif line.startswith('MAINLIST'):
         logging.info('Processing MainPlaylist')
-        playlist_name = line[8:]
+        playlist_name = line[8:] # TODO: Need to keep track of last playlist name to reduce overhead?
         if playlist_name != '':
           logging.debug('Playlist Name: %s', playlist_name)
           playlist_length = 1
@@ -250,7 +278,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
           rdsValues['{C}'] = ''
 
       elif line[0] == 'P':
-        logging.debug('Processing plylist position')
+        logging.debug('Processing playlist position')
         rdsValues['{P}'] = line[1:]
         updateRDSData() # Always follows MAINLIST, so only a single update is needed
 
@@ -267,7 +295,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
         # TANL is always sent together with L being last item, so we only need to update the RDS Data once with the new values
         # TODO: This will likely change as more data is added, so a new way will have to be determined
         updateRDSData()
-        activePlaylist = True
+        #activePlaylist = True # TODO: Is this needed still?
         transmitter.status()
 
       # All of the rdsValues that are stored as is
