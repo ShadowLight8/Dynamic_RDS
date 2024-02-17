@@ -30,6 +30,7 @@ if (isset($_POST["DownloadZip"])) {
  if (is_file("/boot/uEnv.txt")) {
   $zip->addFile("/boot/uEnv.txt", "uEnv.txt");
  }
+ $zip->addFromString('Dynamic_RDS_version.txt', shell_exec('git -C ' . $dynRDSDir . ' rev-parse --short HEAD'));
  $zip->close();
  if (is_file($zipName)) {
   header("Content-Disposition: attachment; filename=\"" . basename($zipName) . "\"");
@@ -212,20 +213,26 @@ PrintSettingGroup("DynRDSLogLevel", "", "", 1, "Dynamic_RDS", "DynRDSFastUpdate"
 <h2>View Logs</h2>
 <div class="container-fluid settingsTable settingsGroupTable">
 <p>Dynamic_RDS_callbacks.log <input onclick= "ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_callbacks.log', 'Dynamic_RDS/Dynamic_RDS_callbacks.log');" id="btnViewScript" class="buttons" type="button" value="View All" />
-<input onclick= "ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_callbacks.log?tail=100', 'Dynamic_RDS/Dynamic_RDS_callbacks.log');" id="btnViewScript" class="buttons" type="button" value="View Recent" /></p>
+<input onclick= "ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_callbacks.log?tail=50', 'Dynamic_RDS/Dynamic_RDS_callbacks.log');" id="btnViewScript" class="buttons" type="button" value="View Recent" /></p>
 <p>Dynamic_RDS_Engine.log <input onclick= "ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_Engine.log', 'Dynamic_RDS/Dynamic_RDS_Engine.log');" id="btnViewScript" class="buttons" type="button" value="View All" />
-<input onclick= "ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_Engine.log?tail=100', 'Dynamic_RDS/Dynamic_RDS_Engine.log');" id="btnViewScript" class="buttons" type="button" value="View Recent" /></p>
+<input onclick= "ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_Engine.log?tail=50', 'Dynamic_RDS/Dynamic_RDS_Engine.log');" id="btnViewScript" class="buttons" type="button" value="View Recent" /></p>
 </div>
 <br />
 
 <h2>Report an Issue</h2>
 <div class="container-fluid settingsTable settingsGroupTable">
-<p>Click the button below to download a zip file containing the Dynamic_RDS_callbacks.log, Dynamic_RDS_Engine.log, plugin.Dynamic_RDS, and /boot/config.txt or /boot/uEnv.txt.</p>
 <p>
 <form action="plugin.php?_menu=status&plugin=Dynamic_RDS&page=Dynamic_RDS.php&nopage" method="post">
 <button name="DownloadZip" type="Submit" class="buttons" value="Download log and config zip"><i class="fas fa-fw fa-nbsp fa-download"></i>Download log and config zip</button>
 </form></p>
-<p>Then create a new issue at <a href="https://github.com/ShadowLight8/Dynamic_RDS/issues"><b>https://github.com/ShadowLight8/Dynamic_RDS/issues</b></a>, describe what you're seeing, and attach the zip file.</p>
+<p>Create a new issue at <a href="https://github.com/ShadowLight8/Dynamic_RDS/issues"><b>https://github.com/ShadowLight8/Dynamic_RDS/issues</b></a>, describe what you're seeing, and attach the zip file.</p>
+Zip file includes:
+<ul>
+<li>Logs - <tt>Dynamic_RDS_callbacks.log</tt> and <tt>Dynamic_RDS_Engine.log</tt></li>
+<li>Config - <tt>plugin.Dynamic_RDS</tt></li>
+<li>Version from <tt>git rev-parse --short HEAD</tt></li>
+<li>Pi/BBB boot config - <tt>/boot/config.txt</tt> or <tt>/boot/uEnv.txt</tt></li>
+</ul>
 </div>
 <br />
 
