@@ -2,8 +2,8 @@ name: FPP Latest Docker Test
 
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [ "main" ]
+  #pull_request:
+    #branches: [ "main" ]
 
 jobs:
 
@@ -15,6 +15,6 @@ jobs:
       ports:
         - 80
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       name: Build the Docker image
       
