@@ -25,7 +25,10 @@ if (isset($_POST["DownloadZip"])) {
   $zip->addFile($configDirectory . "/plugin.Dynamic_RDS", "plugin.Dynamic_RDS");
  }
  if (is_file("/boot/config.txt")) {
-  $zip->addFile("/boot/config.txt", "config.txt");
+  $zip->addFile("/boot/config.txt", "old-config.txt");
+ }
+ if (is_file("/boot/firmware/config.txt")) {
+  $zip->addFile("/boot/firmware/config.txt", "config.txt");
  }
  if (is_file("/boot/uEnv.txt")) {
   $zip->addFile("/boot/uEnv.txt", "uEnv.txt");
