@@ -13,7 +13,8 @@ class basicI2C():
   def __init__(self, address, bus=1):
     self.address = address
     # Bus 1 is Modern RPis, Bus 2 is BBB, Bus 0 is older RPis
-    if os.path.exists('/dev/i2c-2') or os.path.exists('/sys/class/i2c-2'):
+    # uEnv.txt indicates a BBB, so 2 would be ok. On single HDMI port RPi's i2c-2 can show up, but isn't what should be used
+    if os.path.exists('/boot/uEnv.txt') and (os.path.exists('/dev/i2c-2') or os.path.exists('/sys/class/i2c-2')):
       bus = 2
     elif os.path.exists('/dev/i2c-0') or os.path.exists('/sys/class/i2c-0'):
       bus = 0

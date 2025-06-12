@@ -7,8 +7,8 @@ echo -e "\nInstalling python3-smbus..."
 sudo apt-get install -y python3-smbus
 
 if test -f /boot/config.txt; then
-  echo -e "\nInstalling RPi.GPIO..."
-  sudo apt-get install -y python3-rpi.gpio
+  echo -e "\nInstalling python3-rpi-lgpio..."
+  sudo apt-get install -y python3-rpi-lgpio
 fi
 
 echo -e "\nRestarting FPP..."
