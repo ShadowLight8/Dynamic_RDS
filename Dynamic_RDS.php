@@ -4,7 +4,7 @@
 <?
 endif;
 
-$isRPi = file_exists('/boot/config.txt');
+$isRPi = file_exists('/boot/firmware/config.txt');
 $isBBB = file_exists('/boot/uEnv.txt');
 $dynRDSDir = $pluginDirectory . '/' . $_GET['plugin'];
 
@@ -24,8 +24,8 @@ if (isset($_POST["DownloadZip"])) {
  if (is_file($configDirectory . "/plugin.Dynamic_RDS")) {
   $zip->addFile($configDirectory . "/plugin.Dynamic_RDS", "plugin.Dynamic_RDS");
  }
- if (is_file("/boot/config.txt")) {
-  $zip->addFile("/boot/config.txt", "old-config.txt");
+ if (is_file("/boot/firmware/config.txt")) {
+  $zip->addFile("/boot/firmware/config.txt", "old-config.txt");
  }
  if (is_file("/boot/firmware/config.txt")) {
   $zip->addFile("/boot/firmware/config.txt", "config.txt");
@@ -62,7 +62,7 @@ if ($isBBB && file_exists('/dev/i2c-2')) {
 } elseif (file_exists('/dev/i2c-1')) {
  $i2cbus = 1;
 } else {
- echo '<div class="callout callout-danger">Unable to find an I<sup>2</sup>C bus - On RPi, check /boot/config.txt for I<sup>2</sup>C entry</div>';
+ echo '<div class="callout callout-danger">Unable to find an I<sup>2</sup>C bus - On RPi, check /boot/firmware/config.txt for I<sup>2</sup>C entry</div>';
  $errorDetected = true;
 }
 
@@ -86,7 +86,7 @@ if ($i2cbus != -1) {
   $transmitterType = 'Si4713';
   $transmitterAddress = '0x63';
  } else {
-   echo '<div class="callout callout-danger">No transmitter detected on I<sup>2</sup>C bus ' . $i2cbus . ' at addresses 0x21 or 0x63<br />';
+   echo '<div class="callout callout-danger">No transmitter detected on I<sup>2</sup>C bus ' . $i2cbus . ' at addresses 0x21 (QN8066) or 0x63 (Si4713)<br />';
    echo 'Power cycle or reset of transmitter is recommended. SSH into FPP and run <b>i2cdetect -y -r ' . $i2cbus . '</b> to check I<sup>2</sup>C status</div>';
    $errorDetected = true;
  }
@@ -94,10 +94,10 @@ if ($i2cbus != -1) {
 
 if ($isRPi && isset($pluginSettings['DynRDSQN8066PIPWM']) && $pluginSettings['DynRDSQN8066PIPWM'] == 1 && is_numeric(strpos($pluginSettings['DynRDSAdvPIPWMPin'], ','))) {
  if (shell_exec("lsmod | grep 'snd_bcm2835.*1\>'")) {
-  echo '<div class="callout callout-warning">On-board sound card appears active and will interfere with hardware PWM. Try a reboot first, next toggle the Enable PI Hardware PWM setting below and reboot. If issues persist check /boot/config.txt and comment out dtparam=audio=on</div>';
+  echo '<div class="callout callout-warning">On-board sound card appears active and will interfere with hardware PWM. Try a reboot first, next toggle the Enable PI Hardware PWM setting below and reboot. If issues persist check /boot/firmware/config.txt and comment out dtparam=audio=on</div>';
  }
  if (empty(shell_exec("lsmod | grep pwm")) || !file_exists('/sys/class/pwm/pwmchip0')) {
-  echo '<div class="callout callout-warning">Hardware PWM has not been loaded. Try a reboot first, next toggle the Enable PI Hardware PWM setting below and reboot. If issues persist then check /boot/config.txt and add dtoverlay=pwm</div>';
+  echo '<div class="callout callout-warning">Hardware PWM has not been loaded. Try a reboot first, next toggle the Enable PI Hardware PWM setting below and reboot. If issues persist then check /boot/firmware/config.txt and add dtoverlay=pwm</div>';
  }
 }
 
@@ -106,19 +106,19 @@ if ($isRPi) {
  if (isset($pluginSettings['DynRDSAdvPISoftwareI2C']) && $pluginSettings['DynRDSAdvPISoftwareI2C'] == 1) {
   $i2cBusType = 'software';
   if (shell_exec("lsmod | grep i2c_bcm2835")) {
-   echo '<div class="callout callout-warning">Hardware I<sup>2</sup>C appears active. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist check /boot/config.txt and comment out dtparam=i2c_arm=on</div>';
+   echo '<div class="callout callout-warning">Hardware I<sup>2</sup>C appears active. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist check /boot/firmware/config.txt and comment out dtparam=i2c_arm=on</div>';
    $i2cBusType = 'hardware';
   }
   if (empty(shell_exec("lsmod | grep i2c_gpio"))) {
-   echo '<div class="callout callout-warning">Software I<sup>2</sup>C has not been loaded. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist then check /boot/config.txt and add dtoverlay=i2c-gpio,i2c_gpio_sda=2,i2c_gpio_scl=3,i2c_gpio_delay_us=4,bus=1</div>';
+   echo '<div class="callout callout-warning">Software I<sup>2</sup>C has not been loaded. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist then check /boot/firmware/config.txt and add dtoverlay=i2c-gpio,i2c_gpio_sda=2,i2c_gpio_scl=3,i2c_gpio_delay_us=4,bus=1</div>';
   }
  } else {
   if (shell_exec("lsmod | grep i2c_gpio")) {
-   echo '<div class="callout callout-warning">Software I<sup>2</sup>C appears active. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist check /boot/config.txt and comment out dtoverlay=i2c-gpio,i2c_gpio_sda=2,i2c_gpio_scl=3,i2c_gpio_delay_us=4,bus=1</div>';
+   echo '<div class="callout callout-warning">Software I<sup>2</sup>C appears active. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist check /boot/firmware/config.txt and comment out dtoverlay=i2c-gpio,i2c_gpio_sda=2,i2c_gpio_scl=3,i2c_gpio_delay_us=4,bus=1</div>';
    $i2cBusType = 'software';
   }
-  if (empty(shell_exec("lsmod | grep i2c_bcm2835"))) {
-   echo '<div class="callout callout-warning">Hardware I<sup>2</sup>C has not been loaded. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist then check /boot/config.txt and add dtparam=i2c_arm=on</div>';
+  if (empty(shell_exec("lsmod | grep -e i2c_bcm2835 -e i2c_designware_core"))) {
+   echo '<div class="callout callout-warning">Hardware I<sup>2</sup>C has not been loaded. Try a reboot first, next toggle the Use PI Software I2C setting below and reboot. If issues persist then check /boot/firmware/config.txt and add dtparam=i2c_arm=on</div>';
   }
  }
 }
@@ -234,7 +234,7 @@ Zip file includes:
 <li>Logs - <tt>Dynamic_RDS_callbacks.log</tt> and <tt>Dynamic_RDS_Engine.log</tt></li>
 <li>Config - <tt>plugin.Dynamic_RDS</tt></li>
 <li>Version from <tt>git rev-parse --short HEAD</tt></li>
-<li>Pi/BBB boot config - <tt>/boot/config.txt</tt> or <tt>/boot/uEnv.txt</tt></li>
+<li>Pi/BBB boot config - <tt>/boot/firmware/config.txt</tt> or <tt>/boot/uEnv.txt</tt></li>
 </ul>
 </div>
 <br />
