@@ -96,7 +96,7 @@ if ($isRPi && isset($pluginSettings['DynRDSQN8066PIPWM']) && $pluginSettings['Dy
  if (shell_exec("lsmod | grep 'snd_bcm2835.*1\>'")) {
   echo '<div class="callout callout-warning">On-board sound card appears active and will interfere with hardware PWM. Try a reboot first, next toggle the Enable PI Hardware PWM setting below and reboot. If issues persist check /boot/firmware/config.txt and comment out dtparam=audio=on</div>';
  }
- if (empty(shell_exec("lsmod | grep pwm")) || !file_exists('/sys/class/pwm/pwmchip0')) {
+ if (!file_exists('/sys/class/pwm/pwmchip0')) {
   echo '<div class="callout callout-warning">Hardware PWM has not been loaded. Try a reboot first, next toggle the Enable PI Hardware PWM setting below and reboot. If issues persist then check /boot/firmware/config.txt and add dtoverlay=pwm</div>';
  }
 }
