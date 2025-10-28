@@ -90,7 +90,7 @@ def rdsStyleToString(rdsStyle, groupSize):
 
   try:
     for i, v in enumerate(rdsStyle):
-      #print("i {} - v {} - squStart {} - skip {} - outputRDS {}".format(i,v,squStart,skip,outputRDS))
+      logging.debug("i {} - v {} - squStart {} - skip {} - outputRDS {}".format(i,v,squStart,skip,outputRDS))
       if skip:
         skip -= 1
       elif v == '\\' and i < len(rdsStyle) - 1:
@@ -120,7 +120,7 @@ def rdsStyleToString(rdsStyle, groupSize):
   except Exception:
     logging.exception('rdsStyleToString')
 
-  outputRDS = ''.join(outputRDS)
+  outputRDS = ''.join(outputRDS) or ' '
   logging.debug('RDS Data [%s]', outputRDS)
   return outputRDS
 
