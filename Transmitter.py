@@ -18,6 +18,10 @@ from config import config
 #   PSBuffer (RDSBuffer)
 #   RTBuffer (RDSBuffer)
 
+# Si4713 (Transmitter)
+#   PSBuffer (RDSBuffer)
+#   RTBuffer (RDSBuffer)
+
 class Transmitter:
   def __init__(self):
     # Common class init

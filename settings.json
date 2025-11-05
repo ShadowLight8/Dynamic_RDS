@@ -84,7 +84,7 @@
             "options": {
                 "SELECT TRANSMITTER": "None",
                 "QN8066": "QN8066",
-                "Si4713 (planned for future release)": "zzSi4713"
+                "Si4713": "Si4713"
             },
             "default": "None",
             "children": {
