@@ -16,6 +16,7 @@ from urllib.parse import quote
 
 from config import config, read_config_from_file
 from QN8066 import QN8066
+from Si4713 import Si4713
 from basicMQTT import basicMQTT, pahoMQTT
 
 def logUnhandledException(eType, eValue, eTraceback):
@@ -210,7 +211,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
         if config['DynRDSTransmitter'] == "QN8066":
           transmitter = QN8066()
         elif config['DynRDSTransmitter'] == "Si4713":
-          transmitter = None # To be implemented later
+          transmitter = Si4713()
 
         if transmitter is None:
           logging.error('Transmitter not set. Check Transmitter Type.')

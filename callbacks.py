@@ -41,9 +41,9 @@ logging.debug('Arguments %s', argv[1:])
 
 # If smbus is missing, don't try to start up the Engine as it will fail
 try:
-  import smbus
+  import smbus2
 except ImportError as impErr:
-  logging.error("Failed to import smbus %s", impErr.args[0])
+  logging.error("Failed to import smbus2 %s", impErr.args[0])
   sys.exit(1)
 
 # RPi.GPIO is used for software PWM on the RPi, fail if it is missing

@@ -3,6 +3,7 @@ import sys
 import os
 from time import sleep
 from datetime import datetime
+from gpiozero import DigitalOutputDevice
 
 from config import config
 from basicI2C import basicI2C
