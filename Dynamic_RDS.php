@@ -150,7 +150,7 @@ class I2CBusDetector {
 
 class DependencyChecker {
     public static function isPython3SmbusInstalled(): bool {
-        $output = ShellCommandExecutor::execute('dpkg -s python3-smbus | grep installed');
+        $output = ShellCommandExecutor::execute('dpkg -s python3-smbus2 | grep installed');
         return !ShellCommandExecutor::isEmpty($output);
     }
 
@@ -455,6 +455,24 @@ window.onload = function() {
     }
 };
 
+function DynRDSTransmitterFrequencyUpdate() {
+    var iconHTML = " <i class='fas fa-fw fa-nbsp ui-level-0'></i>";
+    var transmitterSelect = document.getElementById("DynRDSTransmitter");
+
+    if (transmitterSelect && transmitterSelect.value !== "None") {
+        var frequencyInput = document.getElementById('DynRDSFrequency');
+        var descriptionDiv = document.querySelector('#DynRDSFrequencyRow .description');
+
+        if (frequencyInput && descriptionDiv && transmitterSelect.value === "QN8066") {
+            frequencyInput.min = '60';
+            descriptionDiv.innerHTML = iconHTML + 'Frequency (60.00-108.00)';
+        } else if (frequencyInput && descriptionDiv && transmitterSelect.value === "Si4713") {
+            frequencyInput.min = '76';
+            descriptionDiv.innerHTML = iconHTML + 'Frequency (76.00-108.00)';
+        }
+    }
+}
+
 function DynRDSFastUpdate() {
     $.get('api/plugin/Dynamic_RDS/FastUpdate');
 }
@@ -489,10 +507,10 @@ function ScriptStreamProgressDialogDone() {
 function displaySettingsGroups(array $settings): void {
     PrintSettingGroup("DynRDSRDSSettings", getRDSStyleGuideHTML(), "", 1, "Dynamic_RDS");
 
-    PrintSettingGroup("DynRDSTransmitterSettings", "", "", 1, "Dynamic_RDS");
+    PrintSettingGroup("DynRDSTransmitterSettings", "", "", 1, "Dynamic_RDS", "DynRDSTransmitterFrequencyUpdate");
 
-    PrintSettingGroup("DynRDSAudioSettings", "", 
-        "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i>indicates a live change to transmitter, no FPP restart required", 
+    PrintSettingGroup("DynRDSAudioSettings", "",
+        "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i>indicates a live change to transmitter, no FPP restart required",
         1, "Dynamic_RDS", "DynRDSFastUpdate");
 
     PrintSettingGroup("DynRDSPowerSettings", "", "", 1, "Dynamic_RDS", "DynRDSPiBootUpdate");
@@ -500,8 +518,8 @@ function displaySettingsGroups(array $settings): void {
     PrintSettingGroup("DynRDSPluginActivation", "", "Set when the transmitter is active", 1, "Dynamic_RDS");
 
     if (DependencyChecker::isMPCInstalled()) {
-        PrintSettingGroup("DynRDSmpc", "", 
-            "Pull RDS data from MPC / After Hours Music plugin when idle", 
+        PrintSettingGroup("DynRDSmpc", "",
+            "Pull RDS data from MPC / After Hours Music plugin when idle",
             1, "Dynamic_RDS", "DynRDSFastUpdate");
     } else {
         echo '<h2>MPC / After Hours Music</h2>';
@@ -600,7 +618,7 @@ function displayReportIssueSection(): void {
 <i class="fas fa-fw fa-nbsp fa-download"></i>Download log and config zip
 </button>
 </form></p>
-<p>Create a new issue at <a href="https://github.com/ShadowLight8/Dynamic_RDS/issues"><b>https://github.com/ShadowLight8/Dynamic_RDS/issues</b></a>, describe what you're seeing, and attach the zip file.</p>
+<p>Increase the Log Levels to Debug, then create a new issue at <a href="https://github.com/ShadowLight8/Dynamic_RDS/issues"><b>https://github.com/ShadowLight8/Dynamic_RDS/issues</b></a>, describe what you're seeing, and attach the zip file.</p>
 Zip file includes:
 <ul>
 <li>Logs - <code>Dynamic_RDS_callbacks.log</code> and <code>Dynamic_RDS_Engine.log</code></li>
