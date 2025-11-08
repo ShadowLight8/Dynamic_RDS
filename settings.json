@@ -14,11 +14,13 @@
             ]
         },
         "DynRDSTransmitterSettings": {
-            "description": "Transmitter Type and Common Settings",
+            "description": "Transmitter Type and Settings",
             "settings": [
                 "DynRDSTransmitter",
                 "DynRDSFrequency",
-                "DynRDSPreemphasis"
+                "DynRDSPreemphasis",
+                "DynRDSSi4713TuningCap",
+                "DynRDSSi4713GPIOReset"
             ]
         },
         "DynRDSAudioSettings": {
@@ -35,7 +37,8 @@
             "settings": [
                 "DynRDSQN8066ChipPower",
                 "DynRDSQN8066PIPWM",
-                "DynRDSQN8066AmpPower"
+                "DynRDSQN8066AmpPower",
+                "DynRDSSi4713ChipPower"
             ]
         },
         "DynRDSPluginActivation": {
@@ -97,7 +100,10 @@
                   "DynRDSQN8066AmpPower"
                 ],
                 "Si4713": [
-                  "DynRDSSi4713TestAudio"
+                  "DynRDSSi4713TestAudio",
+                  "DynRDSSi4713GPIOReset",
+                  "DynRDSSi4713TuningCap",
+                  "DynRDSSi4713ChipPower"
                 ]
             }
         },
@@ -175,6 +181,19 @@
             "step": 1,
             "default": 0
 	},
+        "DynRDSSi4713ChipPower": {
+            "name": "DynRDSSi4713ChipPower",
+            "description": "Chip Power (88-120)",
+            "tip": "Adjust the power output from the transmitter chip. Voltage accuracy above 115dB&mu;V is not guaranteed.",
+            "suffix": "dB&mu;V",
+            "restart": 0,
+            "reboot": 0,
+            "type": "number",
+            "min": 88,
+            "max": 120,
+            "step": 1,
+            "default": 115
+	},
         "DynRDSFrequency": {
             "name": "DynRDSFrequency",
             "description": "Frequency (60.00-108.00)",
@@ -200,6 +219,46 @@
                 "50 &mu;s (Europe, Australia, Japan)": "50us"
             },
             "default": "75us"
+        },
+        "DynRDSSi4713TuningCap": {
+            "name": "DynRDSSi4713TuningCap",
+            "description": "Antenna Tuning Capacitor",
+            "tip": "Setting to 0, the Si4713 will attempt to auto set the capacitor. The range is 1-191.",
+            "restart": 1,
+            "reboot": 0,
+            "type": "number",
+            "min": 0,
+            "max": 191,
+            "step": 1,
+            "suffix": "* 0.25pF",
+            "default": 0
+        },
+        "DynRDSSi4713GPIOReset": {
+            "name": "DynRDSSi4713GPIOReset",
+            "description": "Reset Pin / GPIO",
+            "tip": "The Si4713 requires the reset pin to be high to enter normal operations. This can also be used to reset the transmitter.",
+            "restart": 1,
+            "reboot": 0,
+            "type": "select",
+            "options": {
+                "Pin 7 / GPIO 4 (Default)": "4",
+                "Pin 8 / GPIO 14": "14",
+                "Pin 10 / GPIO 15": "15",
+                "Pin 11 / GPIO 17": "17",
+                "Pin 12 / GPIO 18": "18",
+                "Pin 13 / GPIO 27": "27",
+                "Pin 15 / GPIO 22": "22",
+                "Pin 16 / GPIO 23": "23",
+                "Pin 18 / GPIO 24": "24",
+                "Pin 22 / GPIO 25": "22",
+                "Pin 27 / GPIO 0": "27",
+                "Pin 28 / GPIO 1": "28",
+                "Pin 29 / GPIO 5": "29",
+                "Pin 31 / GPIO 6": "31",
+                "Pin 36 / GPIO 16": "36",
+                "Pin 37 / GPIO 26": "37"
+            },
+            "default": "4"
         },
         "DynRDSQN8066Gain": {
             "name": "DynRDSQN8066Gain",
