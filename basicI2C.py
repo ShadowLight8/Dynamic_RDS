@@ -20,7 +20,7 @@ class basicI2C():
       bus = 0
     logging.info('Using i2c bus %s', bus)
     try:
-      self.bus = smbus.SMBus(bus)
+      self.bus = smbus2.SMBus(bus)
     except Exception:
       logging.exception("SMBus Init Error")
     #sleep(2) # TODO: Is this sleep still needed for the bus to init?

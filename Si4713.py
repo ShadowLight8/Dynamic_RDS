@@ -48,24 +48,16 @@ class Si4713(Transmitter):
   STATUS_CTS = 0x80
 
   def _wait_for_cts(self, timeout=100):
-    """Wait for Clear To Send status"""
-    start_time = datetime.now()
-    while (datetime.now() - start_time).total_seconds() * 1000 < timeout:
-      status = self.I2C.read(0x00, 1)[0]
-      if status & self.STATUS_CTS:
+    iterations = timeout  # Each iteration is ~1ms
+    for _ in range(iterations):
+      if self.I2C.read(0x00, 1)[0] & self.STATUS_CTS:
         return True
       sleep(0.001)
     return False
 
-  def _send_command(self, cmd, args=None):
-    """Send a command to the Si4713"""
-    if args is None:
-      args = []
-
-    # Write command and arguments
-    self.I2C.write(cmd, args, False)
-
-    # Wait for CTS
+  def _send_command(self, cmd, args = None, isFatal = False):
+    args = args or []
+    self.I2C.write(cmd, args, isFatal)
     return self._wait_for_cts()
 
   def _set_property(self, prop, value):
@@ -82,41 +74,46 @@ class Si4713(Transmitter):
   def startup(self):
     logging.info('Starting Si4713 transmitter')
 
-    # Power up in transmit mode
-    args = [
-      0x12,  # CTS interrupt disabled, GPO2 output enabled, transmit mode
-      0x50   # Analog input mode
-    ]
-    if not self._send_command(self.CMD_POWER_UP, args):
-      logging.error('Failed to power up Si4713')
-      sys.exit(-1)
+    logging.debug('Executing Reset with Pin %s', config['DynRDSSi4713GPIOReset'])
+    with DigitalOutputDevice(int(config['DynRDSSi4713GPIOReset'])) as resetPin:
+      resetPin.on()
+      sleep(0.01)
+      resetPin.off()
+      sleep(0.01)
+      resetPin.on()
+      sleep(0.11)
 
-    sleep(0.11)  # Wait for power up
+    # Power up in transmit mode (Crystal oscillator and Analog audio input)
+    self.I2C.write(self.CMD_POWER_UP, [0b00010010, 0b01010000], True)
+    sleep(0.11) # Wait for power up
+    if not self._wait_for_cts():
+      logging.error('Si4713 failed to be read after power up')
+      sys.exit(-1)
 
     # Verify chip by getting revision
-    self._send_command(self.CMD_GET_REV, [])
-    rev_data = self.I2C.read(0x00, 9)
-    if not (rev_data[0] & self.STATUS_CTS):
-      logging.error('Failed to read Si4713 revision. Is this a Si4713 chip?')
+    self._send_command(self.CMD_GET_REV, [], True)
+    rev_data = self.I2C.read(0x00, 9, True)
+    logging.info(f'Si4713 Part Number: 47{rev_data[1]:02d}, Firmware: {rev_data[2]}.{rev_data[3]}, '
+                 f'Patch ID: {rev_data[4]}.{rev_data[5]}, Component: {rev_data[6]}.{rev_data[7]}, '
+                 f'Chip Revision: {rev_data[8]}')
+    if rev_data[1] != 13:
+      logging.error('Part Number value is %02d instead of 13. Is this a Si4713 chip?', rev_data[1])
       sys.exit(-1)
 
-    logging.info('Si4713 Part Number: %02x, Firmware: %d.%d, Component: %d.%d', 
-                 rev_data[1], rev_data[2], rev_data[3], rev_data[6], rev_data[7])
-
     # Set reference clock (32.768 kHz crystal)
-    self._set_property(self.PROP_REFCLK_FREQ, 32768)
+    #self._set_property(self.PROP_REFCLK_FREQ, 32768)
 
     # Enable stereo, pilot, and RDS
     self._set_property(self.PROP_TX_COMPONENT_ENABLE, 0x0007)
 
     # Set audio deviation (68.25 kHz)
-    self._set_property(self.PROP_TX_AUDIO_DEVIATION, 6825)
+    #self._set_property(self.PROP_TX_AUDIO_DEVIATION, 6825)
 
     # Set pilot deviation (6.75 kHz)
-    self._set_property(self.PROP_TX_PILOT_DEVIATION, 675)
+    #self._set_property(self.PROP_TX_PILOT_DEVIATION, 675)
 
     # Set RDS deviation (2 kHz)
-    self._set_property(self.PROP_TX_RDS_DEVIATION, 200)
+    #self._set_property(self.PROP_TX_RDS_DEVIATION, 200)
 
     # Set pre-emphasis
     if config['DynRDSPreemphasis'] == "50us":
@@ -125,9 +122,9 @@ class Si4713(Transmitter):
       self._set_property(self.PROP_TX_PREEMPHASIS, 0)  # 75 us
 
     # Configure RDS
-    self._set_property(self.PROP_TX_RDS_PS_MIX, 0x03)  # Mix mode
-    self._set_property(self.PROP_TX_RDS_PS_MISC, 0x1808)  # Standard settings
-    self._set_property(self.PROP_TX_RDS_PS_REPEAT_COUNT, 3)  # Repeat 3 times
+    #self._set_property(self.PROP_TX_RDS_PS_MIX, 0x03)  # Mix mode
+    #self._set_property(self.PROP_TX_RDS_PS_MISC, 0x1808)  # Standard settings
+    #self._set_property(self.PROP_TX_RDS_PS_REPEAT_COUNT, 3)  # Repeat 3 times
 
     # Set frequency from config
     tempFreq = int(float(config['DynRDSFrequency']) * 100)  # Convert to 10 kHz units
@@ -137,20 +134,22 @@ class Si4713(Transmitter):
       tempFreq & 0xFF  # Frequency low byte
     ]
     self._send_command(self.CMD_TX_TUNE_FREQ, args)
-    sleep(0.25)  # Wait for tune
+    sleep(0.1)  # Wait for tune
 
     # Set transmission power
-    power = 115  # Max power ~1W
-    if 'DynRDSSi4713ChipPower' in config:
-      power = int(config['DynRDSSi4713ChipPower'])
+    power = int(config['DynRDSSi4713ChipPower'])
+    antcap = int(config['DynRDSSi4713TuningCap'])
 
     args = [
       0x00,  # Reserved
+      0x00,  # Reserved
       power & 0xFF,
-      0x00  # Antenna cap (0 = auto)
+      antcap & 0xFF # Antenna cap (0 = auto)
     ]
     self._send_command(self.CMD_TX_TUNE_POWER, args)
-    sleep(0.25)
+    sleep(0.02)
+
+    sys.exit(0)
 
     self.update()
     super().startup()
