@@ -147,7 +147,7 @@ class QN8066(Transmitter):
     rdsStatusByte = self.I2C.read(0x01, 1)[0]
     rdsSendToggleBit = rdsStatusByte >> 1 & 0b1
     rdsSentStatusToggleBit = self.I2C.read(0x1a, 1)[0] >> 2 & 0b1
-    logging.excessive('Transmit %s - Send Bit %s - Status Bit %s', ' '.join('0x{:02x}'.format(a) for a in rdsBytes), rdsSendToggleBit, rdsSentStatusToggleBit)
+    logging.excessive('Transmit %s - Send Bit %s - Status Bit %s', ' '.join(f'0x{b:02x}' for a in rdsBytes), rdsSendToggleBit, rdsSentStatusToggleBit)
     self.I2C.write(0x1c, rdsBytes)
     self.I2C.write(0x01, [rdsStatusByte ^ 0b10])
     # RDS specifications indicate 87.6ms to send a group

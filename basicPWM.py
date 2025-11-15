@@ -65,6 +65,7 @@ class softwarePWM(basicPWM):
     self.pinToUse = pinToUse
     self.pwm = None
     # TODO: Ponder if import RPi.GPIO as GPIO is a good idea
+    # TODO: Look at switching to gpiozero
     GPIO.setmode(GPIO.BOARD)
     GPIO.setup(self.pinToUse, GPIO.OUT)
     GPIO.output(self.pinToUse,0)

@@ -7,7 +7,6 @@ import errno
 import subprocess
 import socket
 import sys
-import time
 from sys import argv
 
 from config import config,read_config_from_file
@@ -39,21 +38,14 @@ logging.getLogger().setLevel(config['DynRDSCallbackLogLevel'])
 logging.info('---')
 logging.debug('Arguments %s', argv[1:])
 
-# TODO: Should be able to remove these import check since they are part of FPP 9 image
-# If smbus is missing, don't try to start up the Engine as it will fail
-#try:
-#  import smbus2
-#except ImportError as impErr:
-#  logging.error("Failed to import smbus2 %s", impErr.args[0])
-#  sys.exit(1)
-
 # RPi.GPIO is used for software PWM on the RPi, fail if it is missing
-#if os.getenv('FPPPLATFORM', '') == 'Raspberry Pi' and config['DynRDSTransmitter'] == "QN8066":
-#  try:
-#    import RPi.GPIO
-#  except ImportError as impErr:
-#    logging.error("Failed to import RPi.GPIO %s", impErr.args[0])
-#    sys.exit(1)
+# TODO: Look at switching to gpiozero
+if os.getenv('FPPPLATFORM', '') == 'Raspberry Pi' and config['DynRDSTransmitter'] == "QN8066":
+  try:
+    import RPi.GPIO
+  except ImportError as impErr:
+    logging.error("Failed to import RPi.GPIO %s", impErr.args[0])
+    sys.exit(1)
 
 # Environ has a few useful items when FPPD runs callbacks.py, but logging it all the time, even at debug, is too much
 #logging.debug('Environ %s', os.environ)
