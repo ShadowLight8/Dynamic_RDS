@@ -13,7 +13,7 @@ from sys import argv
 from config import config,read_config_from_file
 
 def logUnhandledException(eType, eValue, eTraceback):
-  logging.error("Unhandled exception", exc_info=(eType, eValue, eTraceback))
+  logging.error('Unhandled exception', exc_info=(eType, eValue, eTraceback))
 sys.excepthook = logUnhandledException
 
 if len(argv) <= 1:
@@ -39,20 +39,21 @@ logging.getLogger().setLevel(config['DynRDSCallbackLogLevel'])
 logging.info('---')
 logging.debug('Arguments %s', argv[1:])
 
+# TODO: Should be able to remove these import check since they are part of FPP 9 image
 # If smbus is missing, don't try to start up the Engine as it will fail
-try:
-  import smbus2
-except ImportError as impErr:
-  logging.error("Failed to import smbus2 %s", impErr.args[0])
-  sys.exit(1)
+#try:
+#  import smbus2
+#except ImportError as impErr:
+#  logging.error("Failed to import smbus2 %s", impErr.args[0])
+#  sys.exit(1)
 
 # RPi.GPIO is used for software PWM on the RPi, fail if it is missing
-if os.getenv('FPPPLATFORM', '') == 'Raspberry Pi' and config['DynRDSTransmitter'] == "QN8066":
-  try:
-    import RPi.GPIO
-  except ImportError as impErr:
-    logging.error("Failed to import RPi.GPIO %s", impErr.args[0])
-    sys.exit(1)
+#if os.getenv('FPPPLATFORM', '') == 'Raspberry Pi' and config['DynRDSTransmitter'] == "QN8066":
+#  try:
+#    import RPi.GPIO
+#  except ImportError as impErr:
+#    logging.error("Failed to import RPi.GPIO %s", impErr.args[0])
+#    sys.exit(1)
 
 # Environ has a few useful items when FPPD runs callbacks.py, but logging it all the time, even at debug, is too much
 #logging.debug('Environ %s', os.environ)
@@ -72,14 +73,20 @@ try:
   if argv[1] == '--exit' or (argv[1] == '--type' and argv[2] == 'lifecycle' and argv[3] == 'shutdown'):
     logging.info('Exit, but not running')
     sys.exit()
-
   logging.info('Starting %s', updater_path)
   with open(os.devnull, 'w', encoding='UTF-8') as devnull:
-    proc = subprocess.Popen(['python3', updater_path], stdin=devnull, stdout=devnull, stderr=subprocess.PIPE, close_fds=True)
-  time.sleep(1) # Allow engine a second to start or fail before checking status
-  engineStarted = True
+    proc = subprocess.Popen(['python3', updater_path], stdin=devnull, stdout=devnull, stderr=subprocess.PIPE, text=True, close_fds=True)
+  try:
+    # Wait up to 1 second to see if the process exits
+    proc.wait(timeout=1)
+    logging.error('%s exited early - %s', updater_path, proc.returncode)
+    engineStarted = False
+  except subprocess.TimeoutExpired:
+    # Timeout means process is STILL RUNNING / success
+    engineStarted = True
 except socket.error:
-  logging.debug('Lock found - %s is running', updater_path)
+  logging.debug('Lock found — %s is already running', updater_path)
+  engineStarted = False
 
 # Always setup FIFO - Expects Engine to be running to open the read side of the FIFO
 fifo_path = script_dir + '/Dynamic_RDS_FIFO'
