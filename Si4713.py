@@ -213,7 +213,7 @@ class Si4713(Transmitter):
     # If more advanced mixing of RDS groups is needed, this is where it would occur
     logging.excessive('Si4713 sendNextRDSGroup')
     self.PS.sendNextGroup()
-    #self.RT.sendNextGroup()
+    self.RT.sendNextGroup()
 
   def transmitRDS(self, rdsBytes):
     """
@@ -224,10 +224,13 @@ class Si4713(Transmitter):
 
     # Si4713 uses CMD_TX_RDS_BUFF to load RDS data
     # Command format: CMD, status, FIFO count, RDS data (8 bytes)
-    args = [0x00]  # Clear interrupt
+    args = [0b00000100]  # Clear interrupt
     args.extend(rdsBytes)
 
     success = self._send_command(self.CMD_TX_RDS_BUFF, args)
+    self._send_command(self.CMD_TX_RDS_BUFF, [0, 0, 0, 0, 0, 0, 0], True)
+    rdsBuffData = self.I2C.read(0x00, 6, True)
+    logging.debug(f'Circular Buffer: {rdsBuffData[3]}/{rdsBuffData[2]+rdsBuffData[3]}, Fifo Buffer: {rdsBuffData[5]}/{rdsBuffData[4]+rdsBuffData[5]}')
 
     if not success:
       logging.error('Failed to transmit RDS group')
@@ -326,7 +329,7 @@ class Si4713(Transmitter):
       rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size + 2]) if len(self.fragments[self.currentFragment]) - self.currentGroup * self.group_size >= 3 else 0x20)
       rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size + 3]) if len(self.fragments[self.currentFragment]) - self.currentGroup * self.group_size >= 4 else 0x20)
 
-      #self.outer.transmitRDS(rdsBytes)
+      self.outer.transmitRDS(rdsBytes)
       self.currentGroup += 1
       if self.currentGroup * self.group_size >= len(self.fragments[self.currentFragment]):
         self.currentGroup = 0
