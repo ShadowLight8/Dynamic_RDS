@@ -94,9 +94,11 @@ class Si4713(Transmitter):
     # Verify chip by getting revision
     self._send_command(self.CMD_GET_REV, [], True)
     revData = self.I2C.read(0x00, 9, True)
-    logging.info(f'Si4713 Part Number: 47{revData[1]:02d}, Firmware: {revData[2]}.{revData[3]}, '
-                 f'Patch ID: {revData[4]}.{revData[5]}, Component: {revData[6]}.{revData[7]}, '
-                 f'Chip Revision: {revData[8]}')
+    #logging.info(f'Si4713 Part Number: 47{revData[1]:02d}, Firmware: {revData[2]}.{revData[3]}, '
+    #             f'Patch ID: {revData[4]}.{revData[5]}, Component: {revData[6]}.{revData[7]}, '
+    #             f'Chip Revision: {revData[8]}')
+    logging.info('Si47%02x - FW %c.%c - Chip Rev %c',
+                 revData[1], revData[2], revData[3], revData[8])
     if revData[1] != 13:
       logging.error('Part Number value is %02d instead of 13. Is this a Si4713 chip?', revData[1])
       sys.exit(-1)
@@ -104,7 +106,9 @@ class Si4713(Transmitter):
     # TODO: Make a function to use in status?
     self._send_command(self.CMD_TX_RDS_BUFF, [0, 0, 0, 0, 0, 0, 0], True)
     rdsBuffData = self.I2C.read(0x00, 6, True)
-    logging.debug(f'Circular Buffer: {rdsBuffData[3]}/{rdsBuffData[2]}, Fifo Buffer: {rdsBuffData[5]}/{rdsBuffData[4]}')
+    logging.debug('Circular Buffer: %d/%d, Fifo Buffer: %d/%d',
+                  rdsBuffData[3], rdsBuffData[2] + rdsBuffData[3],
+                  rdsBuffData[5], rdsBuffData[4] + rdsBuffData[5])
 
     # Set reference clock (32.768 kHz crystal)
     #self._set_property(self.PROP_REFCLK_FREQ, 32768)
@@ -196,7 +200,7 @@ class Si4713(Transmitter):
       antenna_cap = status_data[6]
       noise = status_data[7]
 
-      logging.info('Status - Freq: %.1f MHz - Power: %d - Antenna Cap: %d - Noise: %d', 
+      logging.info('Status - Freq: %.1f MHz - Power: %d - Antenna Cap: %d - Noise: %d',
                    freq / 100.0, power, antenna_cap, noise)
 
     super().status()
@@ -220,7 +224,7 @@ class Si4713(Transmitter):
     Transmit RDS group using Si4713's TX_RDS_BUFF command
     rdsBytes: 8-byte array containing the RDS group
     """
-    logging.excessive('Transmit %s', ' '.join('0x{:02x}'.format(a) for a in rdsBytes))
+    logging.excessive("Transmit %s", ' '.join(f"0x{b:02X}" for b in rdsBytes))
 
     # Si4713 uses CMD_TX_RDS_BUFF to load RDS data
     # Command format: CMD, status, FIFO count, RDS data (8 bytes)
@@ -230,7 +234,9 @@ class Si4713(Transmitter):
     success = self._send_command(self.CMD_TX_RDS_BUFF, args)
     self._send_command(self.CMD_TX_RDS_BUFF, [0, 0, 0, 0, 0, 0, 0], True)
     rdsBuffData = self.I2C.read(0x00, 6, True)
-    logging.debug(f'Circular Buffer: {rdsBuffData[3]}/{rdsBuffData[2]+rdsBuffData[3]}, Fifo Buffer: {rdsBuffData[5]}/{rdsBuffData[4]+rdsBuffData[5]}')
+    logging.debug('Circular Buffer: %d/%d, Fifo Buffer: %d/%d',
+                  rdsBuffData[3], rdsBuffData[2] + rdsBuffData[3],
+                  rdsBuffData[5], rdsBuffData[4] + rdsBuffData[5])
 
     if not success:
       logging.error('Failed to transmit RDS group')
@@ -260,7 +266,7 @@ class Si4713(Transmitter):
       self.fragments[-1] = self.fragments[-1].ljust(self.frag_size)
       logging.info('PS %s', self.fragments)
 
-      self.outer._set_property(self.outer.PROP_TX_RDS_PS_MESSAGE_COUNT, 3) 
+      self.outer._set_property(self.outer.PROP_TX_RDS_PS_MESSAGE_COUNT, 3)
 
       group = 0
       for fragment in self.fragments:
