@@ -92,13 +92,18 @@ class Si4713(Transmitter):
 
     # Verify chip by getting revision
     self._send_command(self.CMD_GET_REV, [], True)
-    rev_data = self.I2C.read(0x00, 9, True)
-    logging.info(f'Si4713 Part Number: 47{rev_data[1]:02d}, Firmware: {rev_data[2]}.{rev_data[3]}, '
-                 f'Patch ID: {rev_data[4]}.{rev_data[5]}, Component: {rev_data[6]}.{rev_data[7]}, '
-                 f'Chip Revision: {rev_data[8]}')
-    if rev_data[1] != 13:
-      logging.error('Part Number value is %02d instead of 13. Is this a Si4713 chip?', rev_data[1])
+    revData = self.I2C.read(0x00, 9, True)
+    logging.info(f'Si4713 Part Number: 47{revData[1]:02d}, Firmware: {revData[2]}.{revData[3]}, '
+                 f'Patch ID: {revData[4]}.{revData[5]}, Component: {revData[6]}.{revData[7]}, '
+                 f'Chip Revision: {revData[8]}')
+    if revData[1] != 13:
+      logging.error('Part Number value is %02d instead of 13. Is this a Si4713 chip?', revData[1])
       sys.exit(-1)
+
+    # TODO: Make a function to use in status?
+    self._send_command(self.CMD_TX_RDS_BUFF, [0, 0, 0, 0, 0, 0, 0], True)
+    rdsBuffData = self.I2C.read(0x00, 6, True)
+    logging.debug(f'Circular Buffer: {rdsBuffData[3]}/{rdsBuffData[2]}, Fifo Buffer: {rdsBuffData[5]}/{rdsBuffData[4]}')
 
     # Set reference clock (32.768 kHz crystal)
     #self._set_property(self.PROP_REFCLK_FREQ, 32768)
@@ -149,7 +154,12 @@ class Si4713(Transmitter):
     self._send_command(self.CMD_TX_TUNE_POWER, args)
     sleep(0.02)
 
-    sys.exit(0)
+    # Set TX_RDS_PS_MISC
+    # TODO: Decide on bit 11 - 0=FIFO and BUFFER use PTY and TP as when written, 1=Force to be this setting
+    self._set_property(self.PROP_TX_RDS_PS_MISC, 0b0001100000001000 | int(config['DynRDSPty'])<<5)
+
+    # Set TX_RDS_PI
+    self._set_property(self.PROP_TX_RDS_PI, int(config['DynRDSPICode'], 16))
 
     self.update()
     super().startup()
@@ -226,9 +236,9 @@ class Si4713(Transmitter):
 
   class PSBuffer(Transmitter.RDSBuffer):
     # Sends RDS type 0B groups - Program Service
-    # Fragment size of 8, Groups send 2 characters at a time
+    # Fragment size of 8, Groups send 4 characters at a time
     def __init__(self, outer, data, delay=4):
-      super().__init__(data, 8, 2, delay)
+      super().__init__(data, 8, 4, delay)
       # Include outer for the common transmitRDS function that both PSBuffer and RTBuffer use
       self.outer = outer
 
@@ -244,12 +254,16 @@ class Si4713(Transmitter):
         self.lastFragmentTime = datetime.now()
         logging.debug('Send PS Fragment \'%s\'', self.fragments[self.currentFragment])
 
-      rdsBytes = [self.pi_byte1, self.pi_byte2, 0b10<<2 | self.pty>>3, (0b00111 & self.pty)<<5 | self.currentGroup, self.pi_byte1, self.pi_byte2]
+      rdsBytes = [self.currentGroup]
       rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size]))
       rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size + 1]))
+      rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size + 2]))
+      rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size + 3]))
 
-      self.outer.transmitRDS(rdsBytes)
+      self.outer._send_command(self.outer.CMD_TX_RDS_PS, rdsBytes)
+      #self.outer.transmitRDS(rdsBytes)
       self.currentGroup = (self.currentGroup + 1) % (self.frag_size // self.group_size)
+      #sleep(0.25)
 
   class RTBuffer(Transmitter.RDSBuffer):
     # Sends RDS type 2A groups - RadioText
@@ -281,13 +295,13 @@ class Si4713(Transmitter):
         logging.debug('Send RT Fragment \'%s\'', self.fragments[self.currentFragment].replace('\r','<0d>'))
 
       # TODO: Seems like this could be improved
-      rdsBytes = [self.pi_byte1, self.pi_byte2, 0b1000<<2 | self.pty>>3, (0b00111 & self.pty)<<5 | self.ab<<4 | self.currentGroup]
+      rdsBytes = [0b1000<<2 | self.pty>>3, (0b00111 & self.pty)<<5 | self.ab<<4 | self.currentGroup]
       rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size]))
       rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size + 1]) if len(self.fragments[self.currentFragment]) - self.currentGroup * self.group_size >= 2 else 0x20)
       rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size + 2]) if len(self.fragments[self.currentFragment]) - self.currentGroup * self.group_size >= 3 else 0x20)
       rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size + 3]) if len(self.fragments[self.currentFragment]) - self.currentGroup * self.group_size >= 4 else 0x20)
 
-      self.outer.transmitRDS(rdsBytes)
+      #self.outer.transmitRDS(rdsBytes)
       self.currentGroup += 1
       if self.currentGroup * self.group_size >= len(self.fragments[self.currentFragment]):
         self.currentGroup = 0
