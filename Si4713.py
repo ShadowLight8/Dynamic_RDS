@@ -42,6 +42,7 @@ class Si4713(Transmitter):
   PROP_TX_RDS_PS_MIX = 0x2C02
   PROP_TX_RDS_PS_MISC = 0x2C03
   PROP_TX_RDS_PS_REPEAT_COUNT = 0x2C04
+  PROP_TX_RDS_PS_MESSAGE_COUNT = 0x2C05
   PROP_REFCLK_FREQ = 0x0201
 
   # Status bits
@@ -127,7 +128,7 @@ class Si4713(Transmitter):
       self._set_property(self.PROP_TX_PREEMPHASIS, 0)  # 75 us
 
     # Configure RDS
-    #self._set_property(self.PROP_TX_RDS_PS_MIX, 0x03)  # Mix mode
+    #self._set_property(self.PROP_TX_RDS_PS_MIX, 0x06)  # Mix mode
     #self._set_property(self.PROP_TX_RDS_PS_MISC, 0x1808)  # Standard settings
     #self._set_property(self.PROP_TX_RDS_PS_REPEAT_COUNT, 3)  # Repeat 3 times
 
@@ -163,6 +164,7 @@ class Si4713(Transmitter):
 
     self.update()
     super().startup()
+    self.updateRDSData(self.PStext, self.RTtext)
 
   def update(self):
     # Si4713 doesn't have AGC or soft clipping settings like QN8066
@@ -202,14 +204,16 @@ class Si4713(Transmitter):
   def updateRDSData(self, PSdata='', RTdata=''):
     logging.debug('Si4713 updateRDSData')
     super().updateRDSData(PSdata, RTdata)
-    self.PS.updateData(PSdata)
-    self.RT.updateData(RTdata)
+    if self.active:
+      logging.debug('Si4713 updateRDSData active')
+      self.PS.updateData(PSdata)
+      self.RT.updateData(RTdata)
 
   def sendNextRDSGroup(self):
     # If more advanced mixing of RDS groups is needed, this is where it would occur
     logging.excessive('Si4713 sendNextRDSGroup')
     self.PS.sendNextGroup()
-    self.RT.sendNextGroup()
+    #self.RT.sendNextGroup()
 
   def transmitRDS(self, rdsBytes):
     """
@@ -238,17 +242,38 @@ class Si4713(Transmitter):
     # Sends RDS type 0B groups - Program Service
     # Fragment size of 8, Groups send 4 characters at a time
     def __init__(self, outer, data, delay=4):
+      self.outer = outer
       super().__init__(data, 8, 4, delay)
       # Include outer for the common transmitRDS function that both PSBuffer and RTBuffer use
-      self.outer = outer
 
     def updateData(self, data):
       super().updateData(data)
+
+      if len(self.fragments) > 12:
+        logging.error('Too many PS fragments: %d (max 12)', len(self.fragments))
+        return
+
       # Adjust last fragment to make all 8 characters long
       self.fragments[-1] = self.fragments[-1].ljust(self.frag_size)
       logging.info('PS %s', self.fragments)
 
+      self.outer._set_property(self.outer.PROP_TX_RDS_PS_MESSAGE_COUNT, 3) 
+
+      group = 0
+      for fragment in self.fragments:
+        for chunk in range(self.frag_size // self.group_size):
+          start = chunk * self.group_size
+          rdsBytes = [group]
+          rdsBytes.append(ord(fragment[start]))
+          rdsBytes.append(ord(fragment[start + 1]))
+          rdsBytes.append(ord(fragment[start + 2]))
+          rdsBytes.append(ord(fragment[start + 3]))
+          self.outer._send_command(self.outer.CMD_TX_RDS_PS, rdsBytes)
+          group += 1
+
     def sendNextGroup(self):
+      sleep(0.25)
+      return
       if self.currentGroup == 0 and (datetime.now() - self.lastFragmentTime).total_seconds() >= self.delay:
         self.currentFragment = (self.currentFragment + 1) % len(self.fragments)
         self.lastFragmentTime = datetime.now()

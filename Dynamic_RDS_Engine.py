@@ -69,10 +69,10 @@ def read_config():
 
 def updateRDSData():
   # Take the data from FPP and the configuration to build the actual RDS string
-  logging.info('New RDS Data')
   logging.debug('RDS Values %s', rdsValues)
 
   # TODO: DynRDSRTSize functionally works, but I think this should source from the RTBuffer class post initialization
+  # TODO: Check if transmitter is active?
   transmitter.updateRDSData(rdsStyleToString(config['DynRDSPSStyle'], 8), rdsStyleToString(config['DynRDSRTStyle'], int(config['DynRDSRTSize'])))
 
   if config['DynRDSmqttEnable'] == '1':
@@ -91,7 +91,7 @@ def rdsStyleToString(rdsStyle, groupSize):
 
   try:
     for i, v in enumerate(rdsStyle):
-      logging.debug("i {} - v {} - squStart {} - skip {} - outputRDS {}".format(i,v,squStart,skip,outputRDS))
+      #logging.excessive("rdsSytle i %s - v %s - squStart %s - skip %s - outputRDS %s", i, v, squStart, skip, outputRDS)
       if skip:
         skip -= 1
       elif v == '\\' and i < len(rdsStyle) - 1:
@@ -131,7 +131,7 @@ def rdsStyleToString(rdsStyle, groupSize):
 
 # Setup logging
 script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-#logging.basicConfig(stream=sys.stderr, level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+logging.basicConfig(stream=sys.stderr, level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
 logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
 
 # Adding in excessive log level below debug for very noisy items
