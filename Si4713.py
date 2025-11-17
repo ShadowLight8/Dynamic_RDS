@@ -1,9 +1,7 @@
 import logging
 import sys
-import os
 from threading import Timer
 from time import sleep
-from datetime import datetime
 from gpiozero import DigitalOutputDevice
 
 from config import config
@@ -15,6 +13,7 @@ class Si4713(Transmitter):
     logging.info('Initializing Si4713 transmitter')
     super().__init__()
     self.I2C = basicI2C(0x63)  # Si4713 default I2C address
+    self.totalCircularBuffers = 0
 
   # Si4713 Commands
   CMD_POWER_UP = 0x01
