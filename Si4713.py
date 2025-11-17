@@ -97,7 +97,7 @@ class Si4713(Transmitter):
     #logging.info(f'Si4713 Part Number: 47{revData[1]:02d}, Firmware: {revData[2]}.{revData[3]}, '
     #             f'Patch ID: {revData[4]}.{revData[5]}, Component: {revData[6]}.{revData[7]}, '
     #             f'Chip Revision: {revData[8]}')
-    logging.info('Si47%02x - FW %c.%c - Chip Rev %c',
+    logging.info('Si47%02d - FW %d.%d - Chip Rev %d',
                  revData[1], revData[2], revData[3], revData[8])
     if revData[1] != 13:
       logging.error('Part Number value is %02d instead of 13. Is this a Si4713 chip?', revData[1])
@@ -109,6 +109,7 @@ class Si4713(Transmitter):
     logging.debug('Circular Buffer: %d/%d, Fifo Buffer: %d/%d',
                   rdsBuffData[3], rdsBuffData[2] + rdsBuffData[3],
                   rdsBuffData[5], rdsBuffData[4] + rdsBuffData[5])
+    self.totalCircularBuffers = rdsBuffData[2] + rdsBuffData[3]
 
     # Set reference clock (32.768 kHz crystal)
     #self._set_property(self.PROP_REFCLK_FREQ, 32768)
@@ -132,9 +133,9 @@ class Si4713(Transmitter):
       self._set_property(self.PROP_TX_PREEMPHASIS, 0)  # 75 us
 
     # Configure RDS
-    #self._set_property(self.PROP_TX_RDS_PS_MIX, 0x06)  # Mix mode
+    self._set_property(self.PROP_TX_RDS_PS_MIX, 0x05)  # Mix mode
     #self._set_property(self.PROP_TX_RDS_PS_MISC, 0x1808)  # Standard settings
-    #self._set_property(self.PROP_TX_RDS_PS_REPEAT_COUNT, 3)  # Repeat 3 times
+    self._set_property(self.PROP_TX_RDS_PS_REPEAT_COUNT, 5)  # Repeat 3 times
 
     # Set frequency from config
     tempFreq = int(float(config['DynRDSFrequency']) * 100)  # Convert to 10 kHz units
@@ -210,14 +211,115 @@ class Si4713(Transmitter):
     super().updateRDSData(PSdata, RTdata)
     if self.active:
       logging.debug('Si4713 updateRDSData active')
-      self.PS.updateData(PSdata)
-      self.RT.updateData(RTdata)
+      self._updatePS(PSdata)
+      self._updateRT(RTdata)
+
+  def _updatePS(self, psText):
+    logging.info('Called _updatePS')
+    if len(psText) > 96:
+      logging.error('PS text too long: %d (max 96) - truncating', len(psText))
+      psText = psText[:96]
+
+    # Ensure psText is a multiple of 8 in length
+    psText = psText.ljust((len(psText) + 7) // 8 * 8)
+    logging.info('PS %s', psText)
+
+    for block in range(len(psText) // 4):
+      start = block * 4
+      rdsBytes = [block]
+      rdsBytes.append(ord(psText[start]))
+      rdsBytes.append(ord(psText[start + 1]))
+      rdsBytes.append(ord(psText[start + 2]))
+      rdsBytes.append(ord(psText[start + 3]))
+      self._send_command(self.CMD_TX_RDS_PS, rdsBytes)
+
+    self._set_property(self.PROP_TX_RDS_PS_MESSAGE_COUNT, (len(psText) // 8))
+
+  def _updateRT(self, rtText):
+    logging.info('Called _updateRT')
+
+    #rtText ='012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345'
+    rtMaxLength = self.totalCircularBuffers // 3 * 4
+
+    logging.error('Abs Max Length: %d', rtMaxLength)
+
+    logging.error('RT length: %d', len(rtText))
+
+    if len(rtText) > rtMaxLength:
+      rtText = rtText[:rtMaxLength]
+      logging.error('RT text too long: %d (max %d) - truncating', len(rtText), rtMaxLength)
+
+    logging.error('RT length 2: %d', len(rtText))
+
+    if len(rtText) % 32 != 0:
+      if len(rtText) == rtMaxLength:
+        rtText = rtText[:-1] + chr(0x0d)
+      else:
+        rtText = rtText + chr(0x0d) * (4 - len(rtText) % 4)
+
+    logging.debug('Adj RT %d \'%s\'', len(rtText), rtText.replace('\r','<0d>'))
+
+    # Empty circular buffer
+    self._send_command(self.CMD_TX_RDS_BUFF, [0b00000010, 0, 0, 0, 0, 0, 0])
+
+    segmentOffset = 0
+    ab_flag = 1
+    for i in range(0, len(rtText), 4):
+      if i % 32 == 0:
+        ab_flag = not ab_flag
+        segmentOffset = 0
+
+      rtBytes = [0b00000100, 0b00100000, ab_flag<<4 | segmentOffset]
+      rtBytes.extend(list(rtText[i:i+4].encode('ascii')))
+      logging.info(rtBytes)
+      self._send_command(self.CMD_TX_RDS_BUFF, rtBytes)
+      rdsBuffData = self.I2C.read(0x00, 6, True)
+      logging.debug('Circular Buffer: %d/%d, Fifo Buffer: %d/%d',
+                    rdsBuffData[3], rdsBuffData[2] + rdsBuffData[3],
+                    rdsBuffData[5], rdsBuffData[4] + rdsBuffData[5])
+      segmentOffset += 1
+
+      # Will block for ~80-90ms for RDS Group to be sent
+      # Check time, if it has been long enough AND a full RT fragment has been sent, move to next fragment
+      # Flip A/B bit, send next group, if last group set full RT sent flag
+      # Need to make sure full RT group has been sent at least once before moving on
+      #if self.currentGroup == 0 and (datetime.now() - self.lastFragmentTime).total_seconds() >= self.delay:
+      #  self.currentFragment = (self.currentFragment + 1) % len(self.fragments)
+      #  self.lastFragmentTime = datetime.now()
+      #  self.ab = not self.ab
+        # Change \r (0x0d) to be [0d] for logging so it is visible in case of debugging
+
+
+      #if len(self.fragments[-1]) < self.frag_size:
+      #  self.fragments[-1] += chr(0x0d)
+
+
+      # TODO: Seems like this could be improved
+      #rdsBytes = [0b1000<<2 | self.pty>>3, (0b00111 & self.pty)<<5 | self.ab<<4 | self.currentGroup]
+      #rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size]))
+      #rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size + 1]) if len(self.fragments[self.currentFragment]) - self.currentGroup * self.group_size >= 2 else 0x20)
+      #rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size + 2]) if len(self.fragments[self.currentFragment]) - self.currentGroup * self.group_size >= 3 else 0x20)
+      #rdsBytes.append(ord(self.fragments[self.currentFragment][self.currentGroup * self.group_size + 3]) if len(self.fragments[self.currentFragment]) - self.currentGroup * self.group_size >= 4 else 0x20)
+
+      #self.outer.transmitRDS(rdsBytes)
+      #self.currentGroup += 1
+      #if self.currentGroup * self.group_size >= len(self.fragments[self.currentFragment]):
+      #  self.currentGroup = 0
+
+
+
+
+
+
+
+
 
   def sendNextRDSGroup(self):
     # If more advanced mixing of RDS groups is needed, this is where it would occur
     logging.excessive('Si4713 sendNextRDSGroup')
-    self.PS.sendNextGroup()
-    self.RT.sendNextGroup()
+    sleep(0.25)
+    #self.PS.sendNextGroup()
+    #self.RT.sendNextGroup()
 
   def transmitRDS(self, rdsBytes):
     """
