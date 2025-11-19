@@ -42,7 +42,7 @@ foreach ($menuEntries as $entry)
 		if (isset($entry['wrap']) && ($entry['wrap'] == 0))
 			$nopage = '&nopage=1';
 
-		printf("<li><a href='plugin.php?plugin=%s&page=%s%s'><i class='fas fa-rss'></i> %s</a></li>\n",
+		printf("<li><a href='plugin.php?plugin=%s&page=%s%s'><i class='fas fa-radio'></i> %s</a></li>\n",
 			$plugin, $entry['page'], $nopage, $entry['text']);
 	}
 }
