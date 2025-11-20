@@ -194,12 +194,12 @@ class Si4713(Transmitter):
     logging.debug('Si4713 updateRDSData')
     super().updateRDSData(PSdata, RTdata)
     if self.active:
-      logging.debug('Si4713 updateRDSData active')
       self._updatePS(PSdata)
       self._updateRT(RTdata)
       # Initial burst of RT groups to get it displayed quickly
-      self._set_property(self.PROP_TX_RDS_PS_MIX, 0x01)  # Mix mode
-      Timer(1, lambda: (logging.info('LAMBDA'), self._set_property(self.PROP_TX_RDS_PS_MIX, 0x05))).start()
+      logging.debug('Lambda: RT group burst')
+      self._set_property(self.PROP_TX_RDS_PS_MIX, 0x02)  # Mix mode
+      Timer(1, lambda: (logging.debug('Lambda: RT group burst done'), self._set_property(self.PROP_TX_RDS_PS_MIX, 0x05))).start()
 
   def _updatePS(self, psText):
     logging.info('Called _updatePS')
@@ -223,34 +223,27 @@ class Si4713(Transmitter):
     self._set_property(self.PROP_TX_RDS_PS_MESSAGE_COUNT, (len(psText) // 8))
 
   def _updateRT(self, rtText):
-    logging.info('Called _updateRT')
+    logging.info('RT length: %d', len(rtText))
 
-    rtMaxLength = self.totalCircularBuffers // 3 * 4
-
-    logging.error('Abs Max Length: %d', rtMaxLength)
-
-    logging.error('RT length: %d', len(rtText))
+    # Calculate max number of complete BCD groups * 4 chars per group, down to the nearest 32, back to characters
+    rtMaxLength = self.totalCircularBuffers // 3 * 4 // 32 * 32
+    logging.info('Abs Max Length: %d', rtMaxLength)
 
     if len(rtText) > rtMaxLength:
       rtText = rtText[:rtMaxLength]
-      logging.error('RT text too long: %d (max %d) - truncating', len(rtText), rtMaxLength)
+      logging.info('RT text too long: %d (max %d) - truncating', len(rtText), rtMaxLength)
 
-    logging.error('RT length 2: %d', len(rtText))
-
+    # Pad the last group so transmitting takes the same time as prior blocks
     if len(rtText) % 32 != 0:
-      if len(rtText) == rtMaxLength:
-        rtText = rtText[:-1] + chr(0x0d)
-      else:
-        rtText = rtText + chr(0x0d) * (4 - len(rtText) % 4)
+        rtText = rtText.ljust((len(rtText) + 31) // 32 * 32)
 
-    # TODO: It might be better to stick with 32 char groups only
-    logging.debug('Adj RT %d \'%s\'', len(rtText), rtText.replace('\r','<0d>'))
+    logging.info('Adj RT %d \'%s\'', len(rtText), rtText.replace('\r','<0d>'))
 
     # Empty circular buffer
     self._send_command(self.CMD_TX_RDS_BUFF, [0b00000010, 0, 0, 0, 0, 0, 0])
 
     segmentOffset = 0
-    ab_flag = 1
+    ab_flag = True
     for i in range(0, len(rtText), 4):
       if i % 32 == 0:
         ab_flag = not ab_flag
@@ -258,14 +251,13 @@ class Si4713(Transmitter):
 
       rtBytes = [0b00000100, 0b00100000, ab_flag<<4 | segmentOffset]
       rtBytes.extend(list(rtText[i:i+4].encode('ascii')))
-      logging.info(rtBytes)
       # TODO: Can add to buffer twice as a way to slow down update speed
       self._send_command(self.CMD_TX_RDS_BUFF, rtBytes)
-      rdsBuffData = self.I2C.read(0x00, 6, True)
-      logging.debug('Circular Buffer: %d/%d, Fifo Buffer: %d/%d',
-                    rdsBuffData[3], rdsBuffData[2] + rdsBuffData[3],
-                    rdsBuffData[5], rdsBuffData[4] + rdsBuffData[5])
+      rdsBuffData = self.I2C.read(0x00, 6)
       segmentOffset += 1
+    logging.debug('Circular Buffer: %d/%d, Fifo Buffer: %d/%d',
+                  rdsBuffData[3], rdsBuffData[2] + rdsBuffData[3],
+                  rdsBuffData[5], rdsBuffData[4] + rdsBuffData[5])
 
   def sendNextRDSGroup(self):
     logging.excessive('Si4713 sendNextRDSGroup')
