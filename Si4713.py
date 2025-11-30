@@ -73,7 +73,7 @@ class Si4713(Transmitter):
   def startup(self):
     logging.info('Starting Si4713 transmitter')
 
-    logging.debug('Executing Reset with Pin %s', config['DynRDSSi4713GPIOReset'])
+    logging.info('Executing Reset with Pin %s', config['DynRDSSi4713GPIOReset'])
     with DigitalOutputDevice(int(config['DynRDSSi4713GPIOReset'])) as resetPin:
       resetPin.on()
       sleep(0.01)
@@ -101,7 +101,7 @@ class Si4713(Transmitter):
     # TODO: Make a function to use in status?
     self._send_command(self.CMD_TX_RDS_BUFF, [0, 0, 0, 0, 0, 0, 0], True)
     rdsBuffData = self.I2C.read(0x00, 6, True)
-    logging.debug('Circular Buffer: %d/%d, Fifo Buffer: %d/%d',
+    logging.info('Circular Buffer: %d/%d, Fifo Buffer: %d/%d',
                   rdsBuffData[3], rdsBuffData[2] + rdsBuffData[3],
                   rdsBuffData[5], rdsBuffData[4] + rdsBuffData[5])
     self.totalCircularBuffers = rdsBuffData[2] + rdsBuffData[3]
@@ -175,6 +175,7 @@ class Si4713(Transmitter):
     self.startup()
 
   def status(self):
+    # TODO: Review before Si4713 support is done
     # Get transmitter status
     self._send_command(self.CMD_TX_TUNE_STATUS, [0x01])  # Clear interrupt
     status_data = self.I2C.read(0x00, 8)
@@ -197,19 +198,19 @@ class Si4713(Transmitter):
       self._updatePS(PSdata)
       self._updateRT(RTdata)
       # Initial burst of RT groups to get it displayed quickly
-      logging.debug('Lambda: RT group burst')
+      logging.debug('RT group burst')
       self._set_property(self.PROP_TX_RDS_PS_MIX, 0x02)  # Mix mode
-      Timer(1, lambda: (logging.debug('Lambda: RT group burst done'), self._set_property(self.PROP_TX_RDS_PS_MIX, 0x05))).start()
+      Timer(1, lambda: [logging.debug('RT group burst done'), self._set_property(self.PROP_TX_RDS_PS_MIX, 0x05)]).start()
 
   def _updatePS(self, psText):
-    logging.info('Called _updatePS')
+    logging.debug('Si4713 _updatePS')
     if len(psText) > 96:
-      logging.error('PS text too long: %d (max 96) - truncating', len(psText))
+      logging.warning('PS text too long: %d (max 96) - truncating', len(psText))
       psText = psText[:96]
 
     # Ensure psText is a multiple of 8 in length
     psText = psText.ljust((len(psText) + 7) // 8 * 8)
-    logging.info('PS %s', psText)
+    logging.info('PS \'%s\'', psText)
 
     for block in range(len(psText) // 4):
       start = block * 4
@@ -223,21 +224,21 @@ class Si4713(Transmitter):
     self._set_property(self.PROP_TX_RDS_PS_MESSAGE_COUNT, (len(psText) // 8))
 
   def _updateRT(self, rtText):
-    logging.info('RT length: %d', len(rtText))
+    logging.debug('Si4713 _updateRT')
 
     # Calculate max number of complete BCD groups * 4 chars per group, down to the nearest 32, back to characters
     rtMaxLength = self.totalCircularBuffers // 3 * 4 // 32 * 32
-    logging.info('Abs Max Length: %d', rtMaxLength)
+    logging.debug('RT length: %d, Abs Max Length: %d', len(rtText), rtMaxLength)
 
     if len(rtText) > rtMaxLength:
       rtText = rtText[:rtMaxLength]
-      logging.info('RT text too long: %d (max %d) - truncating', len(rtText), rtMaxLength)
+      logging.warning('RT text too long: %d (max %d) - truncating', len(rtText), rtMaxLength)
 
     # Pad the last group so transmitting takes the same time as prior blocks
     if len(rtText) % 32 != 0:
         rtText = rtText.ljust((len(rtText) + 31) // 32 * 32)
 
-    logging.info('Adj RT %d \'%s\'', len(rtText), rtText.replace('\r','<0d>'))
+    logging.info('RT \'%s\'', rtText.replace('\r','<0d>'))
 
     # Empty circular buffer
     self._send_command(self.CMD_TX_RDS_BUFF, [0b00000010, 0, 0, 0, 0, 0, 0])
@@ -255,9 +256,7 @@ class Si4713(Transmitter):
       self._send_command(self.CMD_TX_RDS_BUFF, rtBytes)
       rdsBuffData = self.I2C.read(0x00, 6)
       segmentOffset += 1
-    logging.debug('Circular Buffer: %d/%d, Fifo Buffer: %d/%d',
-                  rdsBuffData[3], rdsBuffData[2] + rdsBuffData[3],
-                  rdsBuffData[5], rdsBuffData[4] + rdsBuffData[5])
+    logging.info('Circular Buffer: %d/%d', rdsBuffData[3], rdsBuffData[2] + rdsBuffData[3])
 
   def sendNextRDSGroup(self):
     logging.excessive('Si4713 sendNextRDSGroup')

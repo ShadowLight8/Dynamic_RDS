@@ -1,3 +1,4 @@
+
 #!/usr/bin/python3
 
 import logging
@@ -35,8 +36,8 @@ read_config_from_file()
 
 logging.getLogger().setLevel(config['DynRDSCallbackLogLevel'])
 
-logging.info('---')
-logging.debug('Arguments %s', argv[1:])
+logging.debug('---')
+logging.debug('Args %s', argv[1:])
 
 # RPi.GPIO is used for software PWM on the RPi, fail if it is missing
 # TODO: Look at switching to gpiozero
@@ -50,7 +51,7 @@ if os.getenv('FPPPLATFORM', '') == 'Raspberry Pi' and config['DynRDSTransmitter'
 # Environ has a few useful items when FPPD runs callbacks.py, but logging it all the time, even at debug, is too much
 #logging.debug('Environ %s', os.environ)
 
-# Always start the Engine since it does the real work for all command
+# Always try to start the Engine since it does the real work for all command
 updater_path = script_dir + '/Dynamic_RDS_Engine.py'
 engineStarted = False
 proc = None
@@ -96,9 +97,9 @@ if proc is not None and proc.poll() is not None:
 
 with open(fifo_path, 'w', encoding='UTF-8') as fifo:
   if len(argv) >= 4:
-    logging.info('Processing %s %s %s', argv[1], argv[2], argv[3])
+    logging.info('Args %s %s %s', argv[1], argv[2], argv[3])
   else:
-    logging.info('Processing %s', argv[1])
+    logging.info('Args %s', argv[1])
 
   # If Engine was started AND the argument isn't --list, INIT must be sent to Engine before the requested argument
   if engineStarted and argv[1] != '--list':
@@ -123,7 +124,6 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
     fifo.write('EXIT\n')
 
   elif argv[1] == '--type' and argv[2] == 'media':
-    logging.debug('Type media')
     try:
       j = json.loads(argv[4])
     except Exception:
@@ -161,8 +161,6 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
     fifo.write('L' + media_length + '\n') # Length is always sent last for media-based updates to optimize when the Engine has to update the RDS Data
 
   elif argv[1] == '--type' and argv[2] == 'playlist':
-    logging.debug('Type playlist')
-
     try:
       j = json.loads(argv[4])
     except ValueError:
@@ -170,12 +168,14 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
 
     playlist_action = j['Action'] if 'Action' in j else 'stop'
 
-    logging.info('Playlist action %s', j['Action'])
+    logging.info('Action %s', j['Action'])
 
     if playlist_action == 'start': # or playlist_action == 'playing':
       fifo.write('START\n')
     elif playlist_action == 'stop':
       fifo.write('STOP\n')
+      sys.exit()
+    elif playlist_action == 'query_next': # Skip this
       sys.exit()
 
     if j['Section'] == 'MainPlaylist':
