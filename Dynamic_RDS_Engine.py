@@ -334,4 +334,4 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
 
     if transmitter is None or not transmitter.active:
       logging.debug('Sleeping...')
-      sleep(3)
+      time.sleep(3)
