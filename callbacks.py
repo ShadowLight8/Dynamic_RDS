@@ -103,7 +103,7 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
 
   # If Engine was started AND the argument isn't --list, INIT must be sent to Engine before the requested argument
   if engineStarted and argv[1] != '--list':
-    logging.info('Engine restart detected, sending INIT')
+    logging.info(' Engine restart detected, sending INIT')
     fifo.write('INIT\n')
 
   if argv[1] == '--list':
@@ -126,7 +126,7 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
 
     timeout = 5
     startTime = time.monotonic()
-    logging.info('Waiting for Engine to shutdown (timeout: %ss)', timeout)
+    logging.info(' Waiting for Engine to shutdown (timeout: %ss)', timeout)
 
     # Poll the socket lock until it's released
     while time.monotonic() - startTime < timeout:
@@ -137,7 +137,7 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
         lock_socket.close()
         # Successfully bound = Engine has shut down
         elapsed = time.monotonic() - startTime
-        logging.info('Engine shutdown after %.2fs', elapsed)
+        logging.info(' Engine shutdown after %.2fs', elapsed)
         sys.exit()
       except socket.error:
         # Lock still held by Engine, continue waiting
@@ -190,7 +190,7 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
 
     playlist_action = j['Action'] if 'Action' in j else 'stop'
 
-    logging.info('Action %s', j['Action'])
+    logging.info(' Action %s', j['Action'])
 
     if playlist_action == 'start': # or playlist_action == 'playing':
       fifo.write('START\n')
