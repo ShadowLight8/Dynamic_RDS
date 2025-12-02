@@ -1,8 +1,16 @@
 # Dynamic_RDS - FM Transmitter Plugin for Falcon Player
 
-Created for Falcon Player 6.0+ (FPP) as a plugin to generate RDS (radio data system) messages similar to what is seen from typical FM stations. The RDS messages are fully customizable with static text, breaks, and grouping along with the supported file tag data fields of title, artist, album, genre, track number, and track length, as well as main playlist position and item count. Currently, the plugin supports the QN8066 chip and there are plans to add the Si4173 in the future. The chips are controlled via the I<sup>2</sup>C bus.
+> [!NOTE]
+> Supports **QN8066** and **Si4713** FM transmitter chips
 
-## Recommended QN8066 transmitter board
+Created for Falcon Player 6.0+ (FPP) as a plugin to generate RDS (radio data system) messages similar to what is seen from typical FM stations. The RDS messages are fully customizable with static text, breaks, and grouping along with the supported file tag data fields of title, artist, album, genre, track number, and track length, as well as main playlist position and item count. Currently, the plugin supports the QN8066 chip and the Si4173 chip. The chips are controlled via the I<sup>2</sup>C bus.
+
+## Si4713 transmitter board
+Originally, the Si4713 breakout board was available from [AdaFruit](https://www.adafruit.com/product/1958) but it now out of stock. There are many clones of this board that can be found on [AliExpress](https://www.aliexpress.us/w/wholesale-Si4713-transmitter.html) or by a [Google Search](https://www.google.com/search?q=Si4713+transmitter)
+
+![Si4713 Breakout Board](images/Si4713-transmitter.jpg)
+
+## QN8066 transmitter board
 > [!IMPORTANT]
 > There are other similar looking boards, so double check for the QN8066 chip. For a detailed look at identifying QN8066 boards, check out [Spectraman's video](https://www.youtube.com/watch?v=i8re0nc_FdY&t=1017s).
 
@@ -12,7 +20,7 @@ Created for Falcon Player 6.0+ (FPP) as a plugin to generate RDS (radio data sys
 ![Radio Board](images/radio_board.jpeg)
 ![Radio Board Pinout](images/radio_board_pinout.jpeg)
 
-## Antenna
+### Antenna
 The QN8066 transmitter board needs an antenna for safe operations.
 
 * Small bench testing option - https://www.amazon.com/gp/product/B07K7DBVX9
@@ -23,11 +31,11 @@ The QN8066 transmitter board needs an antenna for safe operations.
 
 (More detail to be added)
 
-## Cables, Connectors, and Shielding
+### Cables, Connectors, and Shielding
 > [!CAUTION]
 > Do not run the PWM wire along side the I<sup>2</sup>C wires. During testing this caused failures in the I<sup>2</sup>C commands as soon as PWM was enabled.
 
-### Connector info
+#### Connector info
 * The connection on the transmitter board is a 5-pin JST-XH type connector, 2.54mm.
 * The Raspberry Pis use a female Dupont connector and we recommended using a 2 x 6 block connector.
 * The BeagleBone Blacks (BBB) use a male Dupont connector (recommendation pending BBB support work in progress).
@@ -42,7 +50,7 @@ Pre-crimped wires are also an options
 * JST-XH Pre-crimped wires - https://www.amazon.com/dp/B0BW9TJN21
 * Dupont Pre-crimped wires - https://www.amazon.com/dp/B07GD1W1VL
 
-### Cable for a Raspberry Pi
+#### Cable for a Raspberry Pi
 
 ![Raspberry Pi Connection](images/raspberry_pi_connection.jpeg)
 ![Raspberry Pi to Radio](images/radio_board_and_pi_pinout.jpeg)
@@ -50,15 +58,15 @@ Pre-crimped wires are also an options
 
 The green PWM wire runs next to yellow 3.3V and orange GND wire until right before the end to eliminate issue with interference. Keeping the cable as short as possible helps to reduce interference.
 
-### Cable for a BeagleBone Black (BBB)
+#### Cable for a BeagleBone Black (BBB)
 (Support for the BBB is still in progress)
 
-### Shielding and RF interference
+#### Shielding and RF interference
 Given the nature of an FM transmitter, interference is potential problem. This interference commonly shows up as I<sup>2</sup>C errors which become more frequent as transmitter power increases. Moving the antenna away from the RPi/BBB and the transmitter board can reduce this. A significantly more robust setup it to locate the RPi/BBB and transmitter board inside a grounded, metal case such as was done by @chrkov here:
 ![Grounded case setup](images/pi_transmitter_setup1.jpg)
 ![Grounded case setup](images/pi_transmitter_setup2.jpg)
 
-## Using Hardware PWM on Raspberry Pi
+### Using Hardware PWM on Raspberry Pi
 The recommended QN8066 transmitter board can take a PWM signal to increase its power output. Be sure to comply with all applicable laws related to FM broadcasts.
 
 > [!CAUTION]
