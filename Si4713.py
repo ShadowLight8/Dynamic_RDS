@@ -236,7 +236,7 @@ class Si4713(Transmitter):
 
     # Pad the last group so transmitting takes the same time as prior blocks
     if len(rtText) % 32 != 0:
-        rtText = rtText.ljust((len(rtText) + 31) // 32 * 32)
+      rtText = rtText.ljust((len(rtText) + 31) // 32 * 32)
 
     logging.info('RT \'%s\'', rtText.replace('\r','<0d>'))
 

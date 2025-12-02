@@ -1,4 +1,3 @@
-
 #!/usr/bin/python3
 
 import logging
@@ -8,8 +7,9 @@ import errno
 import subprocess
 import socket
 import sys
-from sys import argv
+import time
 
+from sys import argv
 from config import config,read_config_from_file
 
 def logUnhandledException(eType, eValue, eTraceback):
@@ -92,7 +92,7 @@ except OSError as oe:
   logging.debug('Fifo already exists')
 
 if proc is not None and proc.poll() is not None:
-  logging.error('%s failed to stay running - %s', updater_path, proc.stderr.read().decode())
+  logging.error('%s failed to stay running - %s', updater_path, proc.stderr.read())
   sys.exit(1)
 
 with open(fifo_path, 'w', encoding='UTF-8') as fifo:
@@ -122,6 +122,28 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
   elif argv[1] == '--exit' or (argv[1] == '--type' and argv[2] == 'lifecycle' and argv[3] == 'shutdown'):
     # Used by FPPD lifecycle shutdown. Also useful for testing or scripting
     fifo.write('EXIT\n')
+    fifo.flush()
+
+    timeout = 5
+    startTime = time.monotonic()
+    logging.info('Waiting for Engine to shutdown (timeout: %ss)', timeout)
+
+    # Poll the socket lock until it's released
+    while time.monotonic() - startTime < timeout:
+      try:
+        # Try to acquire the lock - if successful, Engine has released it
+        lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        lock_socket.bind('\0Dynamic_RDS_Engine')
+        lock_socket.close()
+        # Successfully bound = Engine has shut down
+        elapsed = time.monotonic() - startTime
+        logging.info('Engine shutdown after %.2fs', elapsed)
+        sys.exit()
+      except socket.error:
+        # Lock still held by Engine, continue waiting
+        time.sleep(0.05)  # Sleep 50ms between attempts
+        continue
+    logging.warning('Engine shutdown timeout after %ss', timeout)
 
   elif argv[1] == '--type' and argv[2] == 'media':
     try:
