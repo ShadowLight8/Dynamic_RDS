@@ -8,8 +8,9 @@ import atexit
 import socket
 import sys
 import subprocess
+import time
 import unicodedata
-from time import sleep
+
 from datetime import date, datetime, timedelta
 from urllib.request import urlopen
 from urllib.parse import quote
@@ -131,7 +132,8 @@ def rdsStyleToString(rdsStyle, groupSize):
 
 # Setup logging
 script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-logging.basicConfig(stream=sys.stderr, level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
+
+#logging.basicConfig(stream=sys.stderr, level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
 logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
 
 # Adding in excessive log level below debug for very noisy items
@@ -182,10 +184,21 @@ transmitter = None
 mqtt = None
 activePlaylist = False
 nextMPCUpdate = datetime.now()
+pendingPlaylistUpdate = False
+pendingMediaUpdate = False
+lastUpdateTime = None
 
 # Check if new information is in the FIFO and process accordingly
 with open(fifo_path, 'r', encoding='UTF-8') as fifo:
   while True:
+    if ((pendingPlaylistUpdate and pendingMediaUpdate) or
+       ((pendingPlaylistUpdate or pendingMediaUpdate) and (lastUpdateTime is not None and (time.monotonic() - lastUpdateTime) >= 0.3))):
+      logging.info('Updating pending RDS Data: playlist=%s, media=%s', pendingPlaylistUpdate, pendingMediaUpdate)
+      updateRDSData()
+      pendingPlaylistUpdate = False
+      pendingMediaUpdate = False
+      lastUpdateTime = None
+
     line = fifo.readline().rstrip()
     if len(line) > 0:
       logging.debug('line %s', line)
@@ -281,7 +294,8 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
       elif line[0] == 'P':
         logging.debug('Processing playlist position')
         rdsValues['{P}'] = line[1:]
-        updateRDSData() # Always follows MAINLIST, so only a single update is needed
+        pendingPlaylistUpdate = True
+        lastUpdateTime = time.monotonic()
 
       # rdsValues that need additional parsing
       elif line[0] == 'L':
@@ -295,8 +309,8 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
 
         # TANL is always sent together with L being last item, so we only need to update the RDS Data once with the new values
         # TODO: This will likely change as more data is added, so a new way will have to be determined
-        updateRDSData()
-        #activePlaylist = True # TODO: Is this needed still?
+        pendingMediaUpdate = True
+        lastUpdateTime = time.monotonic()
         transmitter.status()
 
       # All of the rdsValues that are stored as is
