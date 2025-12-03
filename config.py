@@ -4,10 +4,10 @@ import logging
 config = {
 'DynRDSEnableRDS': '1',
 'DynRDSPSUpdateRate': '4',
-'DynRDSPSStyle': 'Merry|Christ-|  -mas!|{T}|{A}|[{N} of {C}]',
+'DynRDSPSStyle': '{T}|{A}[|{P} of {C}]|Merry|Christ-|  -mas!',
 'DynRDSRTUpdateRate': '8',
 'DynRDSRTSize': '32',
-'DynRDSRTStyle': 'Merry Christmas!|{T}[ by {A}]|[Track {N} of {C}]',
+'DynRDSRTStyle': '{T}[ by {A}][ - Track {P} of {C}]|Merry Christmas!',
 'DynRDSPty': '2',
 'DynRDSPICode': '819b',
 'DynRDSTransmitter': 'None',
