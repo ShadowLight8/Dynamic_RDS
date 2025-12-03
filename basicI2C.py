@@ -23,7 +23,6 @@ class basicI2C():
       self.bus = smbus2.SMBus(bus)
     except Exception:
       logging.exception('SMBus Init Error')
-    #sleep(2) # TODO: Is this sleep still needed for the bus to init?
 
   def write(self, address, values, isFatal = False):
     # Simple i2c write - Always takes an list, even for 1 byte

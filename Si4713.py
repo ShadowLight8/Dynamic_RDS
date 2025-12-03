@@ -75,8 +75,6 @@ class Si4713(Transmitter):
 
     logging.info('Executing Reset with Pin %s', config['DynRDSSi4713GPIOReset'])
     with DigitalOutputDevice(int(config['DynRDSSi4713GPIOReset'])) as resetPin:
-      resetPin.on()
-      sleep(0.01)
       resetPin.off()
       sleep(0.01)
       resetPin.on()
@@ -84,7 +82,7 @@ class Si4713(Transmitter):
 
     # Power up in transmit mode (Crystal oscillator and Analog audio input)
     self.I2C.write(self.CMD_POWER_UP, [0b00010010, 0b01010000], True)
-    sleep(0.11) # Wait for power up
+    sleep(0.5) # Wait for power up
     if not self._wait_for_cts():
       logging.error('Si4713 failed to be read after power up')
       sys.exit(-1)
