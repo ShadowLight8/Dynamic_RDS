@@ -6,7 +6,7 @@ Created for Falcon Player 6.0+ (FPP) as a plugin to generate RDS (radio data sys
 > [!IMPORTANT]
 > There are other similar looking boards, so double check for the QN8066 chip. For a detailed look at identifying QN8066 boards, check out [Spectraman's video](https://www.youtube.com/watch?v=i8re0nc_FdY&t=1017s).
 
-[Aliexpress link to purchase QN8066 FM Transmitter](https://a.aliexpress.com/_mLTpVqO)
+[Aliexpress link to search for QN8066 FM Transmitter](https://www.aliexpress.us/w/wholesale-5W-PLL-FM-Stereo-Transmitter-Max-power-7W.html)
 
 ![Radio Board with Screen](images/radio_board_w_screen.jpeg)
 ![Radio Board](images/radio_board.jpeg)
