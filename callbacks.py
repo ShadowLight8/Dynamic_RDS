@@ -16,6 +16,14 @@ def logUnhandledException(eType, eValue, eTraceback):
   logging.error('Unhandled exception', exc_info=(eType, eValue, eTraceback))
 sys.excepthook = logUnhandledException
 
+def check_engine_running():
+  try:
+    with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as sock:
+      sock.bind('\0Dynamic_RDS_Engine')
+      return False  # Not running
+  except socket.error:
+    return True  # Running
+
 if len(argv) <= 1:
   print('Usage:')
   print('   --list                              | Used by FPPD at startup. Starts Dynamic_RDS_Engine.py')
@@ -55,13 +63,11 @@ if os.getenv('FPPPLATFORM', '') == 'Raspberry Pi' and config['DynRDSTransmitter'
 updater_path = script_dir + '/Dynamic_RDS_Engine.py'
 engineStarted = False
 proc = None
-try:
-  logging.debug('Checking for socket lock by %s', updater_path)
-  lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-  lock_socket.bind('\0Dynamic_RDS_Engine')
-  lock_socket.close()
+logging.debug('Checking for socket lock by %s', updater_path)
+if check_engine_running():
+  logging.debug('Lock found — %s is already running', updater_path)
+else:
   logging.debug('Lock not found')
-
   # Short circuit if Engine isn't running and command is to shut it down
   if argv[1] == '--exit' or (argv[1] == '--type' and argv[2] == 'lifecycle' and argv[3] == 'shutdown'):
     logging.info('Exit, but not running')
@@ -77,9 +83,6 @@ try:
   except subprocess.TimeoutExpired:
     # Timeout means process is STILL RUNNING / success
     engineStarted = True
-except socket.error:
-  logging.debug('Lock found — %s is already running', updater_path)
-  engineStarted = False
 
 # Always setup FIFO - Expects Engine to be running to open the read side of the FIFO
 fifo_path = script_dir + '/Dynamic_RDS_FIFO'
@@ -130,19 +133,11 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
 
     # Poll the socket lock until it's released
     while time.monotonic() - startTime < timeout:
-      try:
-        # Try to acquire the lock - if successful, Engine has released it
-        lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-        lock_socket.bind('\0Dynamic_RDS_Engine')
-        lock_socket.close()
-        # Successfully bound = Engine has shut down
+      if not check_engine_running():
         elapsed = time.monotonic() - startTime
         logging.info(' Engine shutdown after %.2fs', elapsed)
         sys.exit()
-      except socket.error:
-        # Lock still held by Engine, continue waiting
-        time.sleep(0.05)  # Sleep 50ms between attempts
-        continue
+      time.sleep(0.05)  # Sleep 50ms between attempts
     logging.warning('Engine shutdown timeout after %ss', timeout)
 
   elif argv[1] == '--type' and argv[2] == 'media':
