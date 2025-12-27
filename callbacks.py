@@ -145,6 +145,7 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
       j = json.loads(argv[4])
     except Exception:
       logging.exception('Media JSON')
+      j = {}
 
     # When default values are sent over fifo, other side more or less ignores them
     media_type = j['type'] if 'type' in j else 'pause'
