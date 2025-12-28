@@ -47,14 +47,6 @@ logging.getLogger().setLevel(config['DynRDSCallbackLogLevel'])
 logging.debug('---')
 logging.debug('Args %s', argv[1:])
 
-# gpiozero is used for software PWM on the RPi, fail if it is missing
-if os.getenv('FPPPLATFORM', '') == 'Raspberry Pi' and config['DynRDSTransmitter'] == "QN8066":
-  try:
-    import gpiozero
-  except ImportError as impErr:
-    logging.error("Failed to import gpiozero %s", impErr.args[0])
-    sys.exit(1)
-
 # Environ has a few useful items when FPPD runs callbacks.py, but logging it all the time, even at debug, is too much
 #logging.debug('Environ %s', os.environ)
 
@@ -73,7 +65,7 @@ else:
     sys.exit()
   logging.info('Starting %s', updater_path)
   with open(os.devnull, 'w', encoding='UTF-8') as devnull:
-    # Start Engine process in background - intentionally not using 'with' 
+    # Start Engine process in background - intentionally not using 'with'
     # statement as we need the process to continue running after this script exits
     proc = subprocess.Popen( # pylint: disable=consider-using-with
       ['python3', updater_path], stdin=devnull, stdout=devnull, stderr=subprocess.PIPE, text=True, close_fds=True)
@@ -88,6 +80,7 @@ else:
 
 # Always setup FIFO - Expects Engine to be running to open the read side of the FIFO
 fifo_path = script_dir + '/Dynamic_RDS_FIFO'
+# pylint: disable=duplicate-code
 try:
   logging.debug('Creating fifo %s', fifo_path)
   os.mkfifo(fifo_path)
@@ -95,6 +88,7 @@ except OSError as oe:
   if oe.errno != errno.EEXIST:
     raise
   logging.debug('Fifo already exists')
+# pylint: enable=duplicate-code
 
 if proc is not None and proc.poll() is not None:
   logging.error('%s failed to stay running - %s', updater_path, proc.stderr.read())

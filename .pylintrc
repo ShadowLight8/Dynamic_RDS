@@ -3,7 +3,7 @@ indent-string='  '
 max-line-length = 250
 
 [MESSAGES CONTROL]
-disable = import-outside-toplevel, global-statement, missing-docstring, invalid-name, fixme, bare-except, broad-exception-caught
+disable = import-outside-toplevel, global-statement, missing-docstring, invalid-name, fixme, bare-except, broad-exception-caught, import-error
 
 [DESIGN]
 max-branches=15

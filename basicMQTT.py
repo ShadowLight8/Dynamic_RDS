@@ -37,7 +37,7 @@ class pahoMQTT(basicMQTT):
 
     if self.MQTTSettings['MQTTHost'] == '':
       logging.warning('MQTT Broker Host is not set. Check FPP Settings -> MQTT -> Broker Host value')
-      raise Exception('Missing MQTT Host')
+      raise Exception('Missing MQTT Host') # pylint: disable=broad-exception-raised
 
     for setting in mqttInfo['children']['*']:
       settingInfo = self.readAPISetting(setting)
