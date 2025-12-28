@@ -282,19 +282,13 @@ function renderDynamicRDSStatus(
 
     // Check dependencies
     if (!DependencyChecker::isPython3SmbusInstalled()) {
-        $status->addError('python3-smbus is missing <button name="ReinstallScript" onClick="DynRDSScriptStream(\'dependencies\')">Reinstall plugin dependencies</button>');
+        $status->addError('python3-smbus2 is missing <button name="ReinstallScript" onClick="DynRDSScriptStream(\'dependencies\')">Reinstall plugin dependencies</button>');
     }
 
     // Detect I2C bus
     $i2cBus = I2CBusDetector::detectBus($platform);
     if ($i2cBus === -1) {
         $status->addError('Unable to find an I<sup>2</sup>C bus - On RPi, check <code>/boot/firmware/config.txt</code> for I<sup>2</sup>C entry');
-    }
-
-    // Check engine status
-    $engineRunning = DependencyChecker::isEngineRunning();
-    if (!$engineRunning) {
-        $status->addError('Dynamic RDS Engine is not running - Check logs for errors - Restart of FPPD is recommended');
     }
 
     // Detect transmitter
@@ -306,7 +300,7 @@ function renderDynamicRDSStatus(
 
             if ($transmitterType === TransmitterType::NONE) {
                 $status->addError(
-                    'No transmitter detected on I<sup>2</sup>C bus ' . $i2cBus . 
+                    'No transmitter detected on I<sup>2</sup>C bus ' . $i2cBus .
                     ' at addresses 0x21 (QN8066) or 0x63 (Si4713)<br />' .
                     'Power cycle or reset of transmitter is recommended. ' .
                     'SSH into FPP and run <code>i2cdetect -y -r ' . $i2cBus . '</code> to check I<sup>2</sup>C status',
@@ -315,6 +309,12 @@ function renderDynamicRDSStatus(
         } catch (\Exception $e) {
             $status->addError('Error detecting transmitter: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
         }
+    }
+
+    // Check engine status
+    $engineRunning = DependencyChecker::isEngineRunning();
+    if (!$engineRunning) {
+        $status->addError('Dynamic RDS Engine is not running - Check logs for errors - Restart of FPPD is recommended');
     }
 
     if ($platform === PlatformType::RASPBERRY_PI) {
@@ -453,6 +453,7 @@ window.onload = function() {
         transmitterSelect.value = <?php echo json_encode($transmitterType->value, JSON_HEX_TAG | JSON_HEX_AMP); ?>;
         transmitterSelect.onchange();
     }
+    DynRDSTransmitterFrequencyUpdate();
 };
 
 function DynRDSTransmitterFrequencyUpdate() {
