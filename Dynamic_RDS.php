@@ -463,7 +463,24 @@ window.onload = function() {
         transmitterSelect.onchange();
     }
     DynRDSTransmitterFrequencyUpdate();
+
+    if (transmitterSelect) {
+        transmitterSelect.addEventListener('change', function() {
+            updateAudioSettingsVisibility();
+        });
+        // IMPORTANT: Run immediately on page load to set initial state
+        updateAudioSettingsVisibility();
+    }
 };
+
+function updateAudioSettingsVisibility() {
+    var transmitterSelect = document.getElementById("DynRDSTransmitter");
+    var audioWrapper = document.getElementById("DynRDSAudioSettingsWrapper");
+    
+    if (audioWrapper && transmitterSelect) {
+        audioWrapper.style.display = (transmitterSelect.value === 'Si4713') ? 'none' : '';
+    }
+}
 
 function DynRDSTransmitterFrequencyUpdate() {
     var iconHTML = " <i class='fas fa-fw fa-nbsp ui-level-0'></i>";
@@ -519,9 +536,12 @@ function displaySettingsGroups(array $settings): void {
 
     PrintSettingGroup("DynRDSTransmitterSettings", "", "", 1, "Dynamic_RDS", "DynRDSTransmitterFrequencyUpdate");
 
+    // Wrap Audio in div id to make it easy to hide/show for Si4713
+    echo '<div id="DynRDSAudioSettingsWrapper">';
     PrintSettingGroup("DynRDSAudioSettings", "",
         "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i>indicates a live change to transmitter, no FPP restart required",
         1, "Dynamic_RDS", "DynRDSFastUpdate");
+    echo '</div>';
 
     PrintSettingGroup("DynRDSPowerSettings", "", "", 1, "Dynamic_RDS", "DynRDSPiBootUpdate");
 
