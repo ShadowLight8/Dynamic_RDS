@@ -154,6 +154,11 @@ class DependencyChecker {
         return !ShellCommandExecutor::isEmpty($output);
     }
 
+    public static function isPython3gpiozeroInstalled(): bool {
+        $output = ShellCommandExecutor::execute('dpkg -s python3-gpiozero | grep installed');
+        return !ShellCommandExecutor::isEmpty($output);
+    }
+
     public static function isEngineRunning(): bool {
         $output = ShellCommandExecutor::execute('ps -ef | grep python.*Dynamic_RDS_Engine.py | grep -v grep');
         if (!ShellCommandExecutor::isEmpty($output))
@@ -283,6 +288,10 @@ function renderDynamicRDSStatus(
     // Check dependencies
     if (!DependencyChecker::isPython3SmbusInstalled()) {
         $status->addError('python3-smbus2 is missing <button name="ReinstallScript" onClick="DynRDSScriptStream(\'dependencies\')">Reinstall plugin dependencies</button>');
+    }
+
+    if ($platform === PlatformType::RASPBERRY_PI && !DependencyChecker::isPython3gpiozeroInstalled()) {
+        $status->addError('python3-gpiozero is missing <button name="ReinstallScript" onClick="DynRDSScriptStream(\'dependencies\')">Reinstall plugin dependencies</button>');
     }
 
     // Detect I2C bus

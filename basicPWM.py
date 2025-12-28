@@ -59,35 +59,58 @@ class hardwarePWM(basicPWM):
 
 class softwarePWM(basicPWM):
   def __init__(self, pinToUse=7):
-    logging.info('Initializing software PWM on pin %s', pinToUse)
-    global GPIO
-    from RPi import GPIO
+    logging.info('Initializing software PWM on GPIO pin %s (board pin %s)', self._board_to_bcm(pinToUse), pinToUse)
+    global PWMLED
+    from gpiozero import PWMLED
+    # Convert board pin to BCM GPIO number
+    bcm_pin = self._board_to_bcm(pinToUse)
     self.pinToUse = pinToUse
+    self.bcm_pin = bcm_pin
     self.pwm = None
-    # TODO: Ponder if import RPi.GPIO as GPIO is a good idea
-    # TODO: Look at switching to gpiozero
-    GPIO.setmode(GPIO.BOARD)
-    GPIO.setup(self.pinToUse, GPIO.OUT)
-    GPIO.output(self.pinToUse,0)
+
+    # Create PWMLED device (starts at 0% duty cycle, off)
+    self.pwm = PWMLED(bcm_pin, initial_value=0)
     super().__init__()
 
+  def _board_to_bcm(self, board_pin):
+    """Convert board pin number to BCM GPIO number."""
+    # Mapping for 40-pin Raspberry Pi header (board -> BCM)
+    board_to_bcm_map = {
+      7: 4,   8: 14,  10: 15,  11: 17,  12: 18,  13: 27,
+      15: 22, 16: 23, 18: 24,  19: 10,  21: 9,   22: 25,
+      23: 11, 24: 8,  26: 7,   27: 0,   28: 1,   29: 5,
+      31: 6,  32: 12, 33: 13,  35: 19,  36: 16,  37: 26,
+      38: 20, 40: 21
+    }
+
+    if board_pin not in board_to_bcm_map:
+      raise ValueError(f'Invalid board pin number: {board_pin}')
+
+    return board_to_bcm_map[board_pin]
+
   def startup(self, period=10000, dutyCycle=0):
-    logging.debug('Starting software PWM on pin %s with period of %s', self.pinToUse, period)
-    self.pwm = GPIO.PWM(self.pinToUse, period)
-    logging.info('Updating software PWM on pin %s initial duty cycle to %s', self.pinToUse, round(dutyCycle/3,2))
-    self.pwm.start(dutyCycle/3)
+    # gpiozero uses frequency in Hz, convert from period in microseconds
+    # frequency = 1 / (period / 1,000,000)
+    frequency = 1_000_000 / period
+    logging.debug('Starting software PWM on GPIO %s (board pin %s) with frequency %.2f Hz',self.bcm_pin, self.pinToUse, frequency)
+    self.pwm.frequency = frequency
+    initial_value = (dutyCycle / 3) / 100
+    logging.info('Setting software PWM on GPIO %s initial duty cycle to %.2f%%', self.bcm_pin, dutyCycle / 3)
+    self.pwm.value = initial_value
     super().startup()
 
   def update(self, dutyCycle=0):
-    logging.info('Updating software PWM on pin %s duty cycle to %s', self.pinToUse, round(dutyCycle/3,2))
-    self.pwm.ChangeDutyCycle(dutyCycle/3)
+    value = (dutyCycle / 3) / 100
+    logging.info('Updating software PWM on GPIO %s duty cycle to %.2f%%', self.bcm_pin, dutyCycle / 3)
+    self.pwm.value = value
     super().update()
 
   def shutdown(self):
-    logging.debug('Shutting down software PWM on pin %s', self.pinToUse)
-    self.pwm.stop()
-    logging.info('Cleaning up software PWM on pin %s', self.pinToUse)
-    GPIO.cleanup()
+    logging.debug('Shutting down software PWM on GPIO %s (board pin %s)', self.bcm_pin, self.pinToUse)
+    self.pwm.off()
+    logging.info('Cleaning up software PWM on GPIO %s', self.bcm_pin)
+    # gpiozero handles cleanup automatically, but explicitly close
+    self.pwm.close()
     super().shutdown()
 
 class hardwareBBBPWM(basicPWM):

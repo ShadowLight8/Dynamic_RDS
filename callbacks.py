@@ -47,13 +47,12 @@ logging.getLogger().setLevel(config['DynRDSCallbackLogLevel'])
 logging.debug('---')
 logging.debug('Args %s', argv[1:])
 
-# RPi.GPIO is used for software PWM on the RPi, fail if it is missing
-# TODO: Look at switching to gpiozero
+# gpiozero is used for software PWM on the RPi, fail if it is missing
 if os.getenv('FPPPLATFORM', '') == 'Raspberry Pi' and config['DynRDSTransmitter'] == "QN8066":
   try:
-    import RPi.GPIO
+    import gpiozero
   except ImportError as impErr:
-    logging.error("Failed to import RPi.GPIO %s", impErr.args[0])
+    logging.error("Failed to import gpiozero %s", impErr.args[0])
     sys.exit(1)
 
 # Environ has a few useful items when FPPD runs callbacks.py, but logging it all the time, even at debug, is too much
