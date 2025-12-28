@@ -188,7 +188,7 @@
             "description": "Chip Power (88-120)",
             "tip": "Adjust the power output from the transmitter chip. Voltage accuracy above 115dB&mu;V is not guaranteed.",
             "suffix": "dB&mu;V",
-            "restart": 0,
+            "restart": 1,
             "reboot": 0,
             "type": "number",
             "min": 88,
