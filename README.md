@@ -8,10 +8,10 @@ Created for Falcon Player 6.0+ (FPP) as a plugin to generate RDS (radio data sys
 ## Si4713 transmitter board
 Originally, the Si4713 breakout board was available from [AdaFruit](https://www.adafruit.com/product/1958) but it now out of stock. There are many clones of this board that can be found on [AliExpress](https://www.aliexpress.us/w/wholesale-Si4713-transmitter.html) or by a [Google Search](https://www.google.com/search?q=Si4713+transmitter)
 
-![Si4713 Breakout Board](images/Si4713-transmitter.jpg)
-
 > [!NOTE]
 > To reduce system load, the on-board buffers of the Si4713 are used by this plugin. The trade off is not being able to directly control the timing of each RDS message.
+
+![Si4713 Breakout Board](images/Si4713-transmitter.jpg)
 
 ## QN8066 transmitter board
 > [!IMPORTANT]
