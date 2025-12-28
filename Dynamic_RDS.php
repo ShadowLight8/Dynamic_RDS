@@ -468,7 +468,6 @@ window.onload = function() {
         transmitterSelect.addEventListener('change', function() {
             updateAudioSettingsVisibility();
         });
-        // IMPORTANT: Run immediately on page load to set initial state
         updateAudioSettingsVisibility();
     }
 };
@@ -476,7 +475,7 @@ window.onload = function() {
 function updateAudioSettingsVisibility() {
     var transmitterSelect = document.getElementById("DynRDSTransmitter");
     var audioWrapper = document.getElementById("DynRDSAudioSettingsWrapper");
-    
+
     if (audioWrapper && transmitterSelect) {
         audioWrapper.style.display = (transmitterSelect.value === 'Si4713') ? 'none' : '';
     }
@@ -532,7 +531,7 @@ function ScriptStreamProgressDialogDone() {
  * Display all settings groups
  */
 function displaySettingsGroups(array $settings): void {
-    PrintSettingGroup("DynRDSRDSSettings", getRDSStyleGuideHTML(), "", 1, "Dynamic_RDS");
+    PrintSettingGroup("DynRDSRDSSettings", getRDSStyleGuideHTML(), "", 1, "Dynamic_RDS", "UpdateDynRDSTransmitterChildren");
 
     PrintSettingGroup("DynRDSTransmitterSettings", "", "", 1, "Dynamic_RDS", "DynRDSTransmitterFrequencyUpdate");
 

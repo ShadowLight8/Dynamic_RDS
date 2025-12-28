@@ -104,8 +104,11 @@ class Si4713(Transmitter):
                   rdsBuffData[5], rdsBuffData[4] + rdsBuffData[5])
     self.totalCircularBuffers = rdsBuffData[2] + rdsBuffData[3]
 
-    # Enable stereo, pilot, and RDS
-    self._set_property(self.PROP_TX_COMPONENT_ENABLE, 0x0007)
+    # Enable pilot, stereo, and RDS (if enabled)
+    if config['DynRDSEnableRDS'] == "1":
+      self._set_property(self.PROP_TX_COMPONENT_ENABLE, 0x0007)
+    else:
+      self._set_property(self.PROP_TX_COMPONENT_ENABLE, 0x0003)
 
     # Set pre-emphasis
     if config['DynRDSPreemphasis'] == "50us":
