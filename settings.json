@@ -92,6 +92,8 @@
             "default": "None",
             "children": {
                 "QN8066": [
+                  "DynRDSPSUpdateRate",
+                  "DynRDSRTUpdateRate",
                   "DynRDSQN8066Gain",
                   "DynRDSQN8066SoftClipping",
                   "DynRDSQN8066AGC",

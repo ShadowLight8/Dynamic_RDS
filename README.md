@@ -10,6 +10,9 @@ Originally, the Si4713 breakout board was available from [AdaFruit](https://www.
 
 ![Si4713 Breakout Board](images/Si4713-transmitter.jpg)
 
+> [!NOTE]
+> To reduce system load, the on-board buffers of the Si4713 are used by this plugin. The trade off is not being able to directly control the timing of each RDS message.
+
 ## QN8066 transmitter board
 > [!IMPORTANT]
 > There are other similar looking boards, so double check for the QN8066 chip. For a detailed look at identifying QN8066 boards, check out [Spectraman's video](https://www.youtube.com/watch?v=i8re0nc_FdY&t=1017s).
