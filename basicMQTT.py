@@ -79,7 +79,7 @@ class pahoMQTT(basicMQTT):
   def status(self):
     pass
 
-  def on_connect(self, client, userdata, flags, rc):
+  def on_connect(self, _client, _userdata, _flags, _rc):
     logging.info('Connected to broker with pahoMQTT')
     # TODO: Deal with rc for failures
     super().connect()

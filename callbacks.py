@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import logging
 import json
@@ -73,7 +73,10 @@ else:
     sys.exit()
   logging.info('Starting %s', updater_path)
   with open(os.devnull, 'w', encoding='UTF-8') as devnull:
-    proc = subprocess.Popen(['python3', updater_path], stdin=devnull, stdout=devnull, stderr=subprocess.PIPE, text=True, close_fds=True)
+    # Start Engine process in background - intentionally not using 'with' 
+    # statement as we need the process to continue running after this script exits
+    proc = subprocess.Popen( # pylint: disable=consider-using-with
+      ['python3', updater_path], stdin=devnull, stdout=devnull, stderr=subprocess.PIPE, text=True, close_fds=True)
   try:
     # Wait up to 1 second to see if the process exits
     proc.wait(timeout=1)
