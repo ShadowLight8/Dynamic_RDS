@@ -332,7 +332,7 @@
             "type": "text",
             "size": 32,
             "maxlength": 64,
-            "default": "{T}|{A}[|{P} of {C}]|Merry|Christ-|  -mas!"
+            "default": "{T}|{A}[|{P} of {C}]|Merry|Christ-|   -mas!"
         },
         "DynRDSPSUpdateRate": {
             "name": "DynRDSPSUpdateRate",
@@ -350,18 +350,18 @@
         "DynRDSRTStyle": {
             "name": "DynRDSRTStyle",
             "description": "RT Style Text",
-            "tip": "Sent up to 64 characters at a time. Radio Text is intended for longer message with a slower update rate.",
+            "tip": "Recommended to send 32 characters at a time, but can send up to 64 characters. Radio Text is intended for longer message with a slower update rate.",
             "restart": 1,
             "reboot": 0,
             "type": "text",
             "size": 64,
             "maxlength": 256,
-            "default": "{T}[ by {A}][ - Track {P} of {C}]|Merry Christmas!"
+            "default": "{T}[ by {A}][|Track {P} of {C}  ]Merry Christmas!"
         },
         "DynRDSRTUpdateRate": {
             "name": "DynRDSRTUpdateRate",
             "description": "RT Update Rate",
-            "tip": "Interval between updating the 64 characters being sent. It takes ~4 seconds to send the 64 characters and some radios only display the text after receiving the full group twice.",
+            "tip": "Interval between updating the 32-64 characters being sent. It takes ~4 seconds to send the 64 characters and some radios only display the text after receiving the full group twice.",
             "suffix": "seconds",
             "restart": 1,
             "reboot": 0,
@@ -374,7 +374,7 @@
         "DynRDSRTSize": {
             "name": "DynRDSRTSize",
             "description": "RT Update Size",
-            "tip": "While RadioText (RT) can be up to 64 characters at a time, not all radios will display everything at the same time. A smaller setting is recommended.",
+            "tip": "While RadioText (RT) can be up to 64 characters at a time, not all radios will display everything at the same time. A setting of 32 characters is recommended.",
             "restart": 1,
             "reboot": 0,
             "type": "number",
