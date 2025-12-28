@@ -563,7 +563,8 @@ Values from File Tags or Track Info
 <li>{L} = Track Length as 0:00</li></ul>
 Main Playlist Section Values
 <ul><li>{C} = Item count in Main Playlist section</li>
-<li>{P} = Item position or number in Main Playlist section</li></ul>
+<li>{P} = Item position or number in Main Playlist section</li>
+<ul><li>Note: {P} is set empty when it and {C} are both 1 to prevent &quot;Track 1 of 1&quot; messages</li></ul></ul>
 Any static text can be used<br />
 | (pipe) will split between RDS groups, like a line break<br />
 [ ] creates a subgroup such that if <b>ANY</b> substitution in the subgroup is empty, the entire subgroup is omitted<br />

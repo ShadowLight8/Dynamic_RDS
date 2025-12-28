@@ -294,6 +294,8 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
       elif line[0] == 'P':
         logging.debug('Processing playlist position')
         rdsValues['{P}'] = line[1:]
+        if rdsValues['{P}'] == '1' && rdsValues['{C}'] == '1':
+          rdsValues['{P}'] = ''
         pendingPlaylistUpdate = True
         lastUpdateTime = time.monotonic()
 
