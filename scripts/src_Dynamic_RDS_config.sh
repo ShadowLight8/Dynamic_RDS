@@ -4,10 +4,10 @@
 ###############################################################################
 
 # Set the PS text (set to '' or comment out to leave unchanged)
-PS='{T}|{A}[|{P} of {C}]|Merry|Christ-|  -mas!'
+PS='{T}|{A}[|{P} of {C}]|Merry|Christ-|   -mas!'
 
 # Set the RT text (set to '' or comment out to leave unchanged)
-RT='{T}[ by {A}][ - Track {P} of {C}]|Merry Christmas!'
+RT='{T}[ by {A}][ - Track {P} of {C}  ]|Merry Christmas!'
 
 if [ "$PS" != "" ]; then
 echo 'Setting PS Style Text to: '$PS
