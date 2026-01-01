@@ -1,12 +1,11 @@
 import logging
 import sys
-import os
 from time import sleep
 from datetime import datetime
 
 from config import config
 from basicI2C import basicI2C
-from basicPWM import createPWM, basicPWM, hardwarePWM, softwarePWM, hardwareBBBPWM
+from basicPWM import createPWM
 from Transmitter import Transmitter
 
 class QN8066(Transmitter):

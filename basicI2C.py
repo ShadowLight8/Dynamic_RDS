@@ -1,8 +1,9 @@
 import logging
 import os
-import smbus2
 import sys
 from time import sleep
+
+import smbus2
 
 # ===============
 # Basic I2C Class

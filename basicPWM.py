@@ -1,10 +1,11 @@
-from config import config
 import logging
 import os
 import re
 import subprocess
 import sys
-from typing import Optional
+
+from config import config
+
 
 PWM_FULL_RE = re.compile(
     r"(PWM\d+)(?:_CHAN(\d+)|_(\d+))",
@@ -22,12 +23,11 @@ def createPWM() -> 'basicPWM':
       if ',' in config['DynRDSAdvPIPWMPin']:
         logging.info('Using hardware PWM config: %s', config['DynRDSAdvPIPWMPin'])
         return hardwarePWM(int(config['DynRDSAdvPIPWMPin'].split(',', 1)[0]))
-      else:
-        logging.info('Using software PWM pin: %s', config['DynRDSAdvPIPWMPin'])
-        return softwarePWM(int(config['DynRDSAdvPIPWMPin']))
+      logging.info('Using software PWM pin: %s', config['DynRDSAdvPIPWMPin'])
+      return softwarePWM(int(config['DynRDSAdvPIPWMPin']))
     case 'BeagleBone Black':
-        logging.info('Using BBB hardware PWM config: %s', config['DynRDSAdvBBBPWMPin'])
-        return hardwareBBBPWM(config['DynRDSAdvBBBPWMPin'])
+      logging.info('Using BBB hardware PWM config: %s', config['DynRDSAdvBBBPWMPin'])
+      return hardwareBBBPWM(config['DynRDSAdvBBBPWMPin'])
     case _:
       logging.warning('Unknown platform: %s, PWM disabled', platform)
       return basicPWM()
@@ -69,7 +69,7 @@ class hardwarePWM(basicPWM):
 
     super().__init__()
 
-  def _getPWMInfoFromPinctrl(eslf, gpioPin=18):
+  def _getPWMInfoFromPinctrl(self, gpioPin=18):
     try:
       result = subprocess.run(
                  ["pinctrl", "get", str(gpioPin)],
