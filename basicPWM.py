@@ -1,5 +1,36 @@
-import os
+from config import config
 import logging
+import os
+import re
+import subprocess
+import sys
+from typing import Optional
+
+PWM_FULL_RE = re.compile(
+    r"(PWM\d+)(?:_CHAN(\d+)|_(\d+))",
+    re.IGNORECASE
+)
+
+def createPWM() -> 'basicPWM':
+  # Check if PWM is enabled
+  if config['DynRDSQN8066PIPWM'] != '1':
+    return basicPWM()
+
+  platform = os.getenv('FPPPLATFORM', '')
+  match platform:
+    case 'Raspberry Pi':
+      if ',' in config['DynRDSAdvPIPWMPin']:
+        logging.info('Using hardware PWM config: %s', config['DynRDSAdvPIPWMPin'])
+        return hardwarePWM(int(config['DynRDSAdvPIPWMPin'].split(',', 1)[0]))
+      else:
+        logging.info('Using software PWM pin: %s', config['DynRDSAdvPIPWMPin'])
+        return softwarePWM(int(config['DynRDSAdvPIPWMPin']))
+    case 'BeagleBone Black':
+        logging.info('Using BBB hardware PWM config: %s', config['DynRDSAdvBBBPWMPin'])
+        return hardwareBBBPWM(config['DynRDSAdvBBBPWMPin'])
+    case _:
+      logging.warning('Unknown platform: %s, PWM disabled', platform)
+      return basicPWM()
 
 class basicPWM:
   def __init__(self):
@@ -19,32 +50,55 @@ class basicPWM:
     pass
 
 class hardwarePWM(basicPWM):
-  def __init__(self, pwmToUse=0):
-    self.pwmToUse = pwmToUse
+  def __init__(self, pwmGPIOPin=18):
+    pwmInfo = self._getPWMInfoFromPinctrl(pwmGPIOPin)
+    if pwmInfo is None:
+      logging.error('Unable to determine PWM channel for GPIO%s', pwmGPIOPin)
+      sys.exit(-1)
+
+    self.pwmToUse = pwmInfo
     if os.path.isdir('/sys/class/pwm/pwmchip0') and os.access('/sys/class/pwm/pwmchip0/export', os.W_OK):
-      logging.info('Initializing hardware PWM%s', self.pwmToUse)
+      logging.info('Initializing hardware PWM channel %s on GPIO%s', self.pwmToUse, pwmGPIOPin)
     else:
-      raise RuntimeError('Unable to access /sys/class/pwm/pwmchip0')
+      raise RuntimeError('Unable to access /sys/class/pwm/pwmchip0 or export')
 
     if not os.path.isdir(f'/sys/class/pwm/pwmchip0/pwm{self.pwmToUse}'):
-      logging.debug('Exporting hardware PWM%s', pwmToUse)
+      logging.debug('Exporting hardware PWM channel %s', self.pwmToUse)
       with open('/sys/class/pwm/pwmchip0/export', 'w', encoding='UTF-8') as p:
-        p.write(f'{pwmToUse}\n')
+        p.write(f'{self.pwmToUse}\n')
 
     super().__init__()
 
+  def _getPWMInfoFromPinctrl(eslf, gpioPin=18):
+    try:
+      result = subprocess.run(
+                 ["pinctrl", "get", str(gpioPin)],
+                 capture_output=True,
+                 text=True,
+                 check=True,
+               )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+      return None
+
+    m = PWM_FULL_RE.search(result.stdout)
+    if not m:
+      return None
+
+    return m.group(2) or m.group(3)
+    # "pwm": m.group(1).lower()
+
   def startup(self, period=18300, dutyCycle=0):
-    logging.debug('Starting hardware PWM%s with period of %s', self.pwmToUse, period)
+    logging.debug('Starting hardware PWM channel %s with period of %s', self.pwmToUse, period)
     with open(f'/sys/class/pwm/pwmchip0/pwm{self.pwmToUse}/period', 'w', encoding='UTF-8') as p:
       p.write(f'{period}\n')
     self.update(dutyCycle)
-    logging.info('Enabling hardware PWM%s', self.pwmToUse)
+    logging.info('Enabling hardware PWM channel %s', self.pwmToUse)
     with open(f'/sys/class/pwm/pwmchip0/pwm{self.pwmToUse}/enable', 'w', encoding='UTF-8') as p:
       p.write('1\n')
     super().startup()
 
   def update(self, dutyCycle=0):
-    logging.info('Updating hardware PWM%s duty cycle to %s', self.pwmToUse, dutyCycle*61)
+    logging.info('Updating hardware PWM channel %s duty cycle to %s', self.pwmToUse, dutyCycle*61)
     with open(f'/sys/class/pwm/pwmchip0/pwm{self.pwmToUse}/duty_cycle', 'w', encoding='UTF-8') as p:
       p.write(f'{dutyCycle*61}\n')
     super().update()
@@ -52,7 +106,7 @@ class hardwarePWM(basicPWM):
   def shutdown(self):
     logging.debug('Shutting down hardware PWM%s', self.pwmToUse)
     self.update() #Duty Cycle to 0
-    logging.info('Disabling hardware PWM%s', self.pwmToUse)
+    logging.info('Disabling hardware PWM channel %s', self.pwmToUse)
     with open(f'/sys/class/pwm/pwmchip0/pwm{self.pwmToUse}/enable', 'w', encoding='UTF-8') as p:
       p.write('0\n')
     super().shutdown()

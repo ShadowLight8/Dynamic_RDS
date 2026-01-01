@@ -1,8 +1,8 @@
 import logging
 import os
+import smbus2
 import sys
 from time import sleep
-import smbus2
 
 # ===============
 # Basic I2C Class
@@ -22,7 +22,7 @@ class basicI2C():
     try:
       self.bus = smbus2.SMBus(bus)
     except Exception:
-      logging.exception('SMBus Init Error')
+      logging.exception('SMBus2 Init Error')
 
   def write(self, address, values, isFatal = False):
     # Simple i2c write - Always takes an list, even for 1 byte
