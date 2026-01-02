@@ -79,7 +79,7 @@ On the Raspberry Pi, in order to use the hardware PWM, the built-in analog audio
 
 From the Dynamic RDS configuration page, under the Power Settings, enable PWM.
 
-This will automatically modify the /boot/config.txt:
+This will automatically modify the /boot/firmware/config.txt:
 1. Comment out all ```dtparm=audio=on``` lines with a #
 2. Add the line ```dtoverlay=pwm,pin=18,func=2``` by default
 Under the Advanced Options at the bottom of the configuration page, the output pin can be selected. This is also where Software PWM can be selected on most other pins.
