@@ -1,12 +1,11 @@
 import logging
 import sys
-import os
 from time import sleep
 from datetime import datetime
 
 from config import config
 from basicI2C import basicI2C
-from basicPWM import basicPWM, hardwarePWM, softwarePWM, hardwareBBBPWM
+from basicPWM import createPWM
 from Transmitter import Transmitter
 
 class QN8066(Transmitter):
@@ -16,7 +15,7 @@ class QN8066(Transmitter):
     self.I2C = basicI2C(0x21)
     self.PS = self.PSBuffer(self, ' ', int(config['DynRDSPSUpdateRate']))
     self.RT = self.RTBuffer(self, ' ', int(config['DynRDSRTUpdateRate']))
-    self.basicPWM = basicPWM()
+    self.basicPWM = createPWM()
 
   def startup(self):
     logging.info('Starting QN8066 transmitter')
@@ -61,25 +60,7 @@ class QN8066(Transmitter):
     self.update()
     super().startup()
 
-    # With everything started up, select and enable needed PWM type
-    if os.getenv('FPPPLATFORM', '') == 'Raspberry Pi':
-      if config['DynRDSQN8066PIPWM'] == '1':
-        if config['DynRDSAdvPIPWMPin'] in {'18,2' , '12,4'}:
-          self.basicPWM = hardwarePWM(0)
-          self.basicPWM.startup(18300, int(config['DynRDSQN8066AmpPower']))
-        elif config['DynRDSAdvPIPWMPin'] in {'13,4' , '19,2'}:
-          self.basicPWM = hardwarePWM(1)
-          self.basicPWM.startup(18300, int(config['DynRDSQN8066AmpPower']))
-        else:
-          self.basicPWM = softwarePWM(int(config['DynRDSAdvPIPWMPin']))
-          self.basicPWM.startup(10000, int(config['DynRDSQN8066AmpPower']))
-      #else:
-        #self.basicPWM.startup()
-    elif os.getenv('FPPPLATFORM', '') == 'BeagleBone Black':
-      self.basicPWM = hardwareBBBPWM(config['DynRDSAdvBBBPWMPin'])
-      self.basicPWM.startup(18300, int(config['DynRDSQN8066AmpPower']))
-    #else:
-      #self.basicPWM.startup()
+    self.basicPWM.startup(dutyCycle=int(config['DynRDSQN8066AmpPower']))
 
   def update(self):
     # Try without 0x25 0b01111101 - TX Freq Dev of 86.25KHz
@@ -147,7 +128,7 @@ class QN8066(Transmitter):
     rdsStatusByte = self.I2C.read(0x01, 1)[0]
     rdsSendToggleBit = rdsStatusByte >> 1 & 0b1
     rdsSentStatusToggleBit = self.I2C.read(0x1a, 1)[0] >> 2 & 0b1
-    logging.excessive('Transmit %s - Send Bit %s - Status Bit %s', ' '.join('0x{:02x}'.format(a) for a in rdsBytes), rdsSendToggleBit, rdsSentStatusToggleBit)
+    logging.excessive('Transmit %s - Send Bit %s - Status Bit %s', ' '.join(f'0x{a:02x}' for a in rdsBytes), rdsSendToggleBit, rdsSentStatusToggleBit)
     self.I2C.write(0x1c, rdsBytes)
     self.I2C.write(0x01, [rdsStatusByte ^ 0b10])
     # RDS specifications indicate 87.6ms to send a group

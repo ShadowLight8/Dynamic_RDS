@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import logging
 import json
@@ -8,14 +8,16 @@ import atexit
 import socket
 import sys
 import subprocess
+import time
 import unicodedata
-from time import sleep
+
 from datetime import date, datetime, timedelta
 from urllib.request import urlopen
 from urllib.parse import quote
 
 from config import config, read_config_from_file
 from QN8066 import QN8066
+from Si4713 import Si4713
 from basicMQTT import basicMQTT, pahoMQTT
 
 def logUnhandledException(eType, eValue, eTraceback):
@@ -68,10 +70,10 @@ def read_config():
 
 def updateRDSData():
   # Take the data from FPP and the configuration to build the actual RDS string
-  logging.info('New RDS Data')
   logging.debug('RDS Values %s', rdsValues)
 
   # TODO: DynRDSRTSize functionally works, but I think this should source from the RTBuffer class post initialization
+  # TODO: Check if transmitter is active?
   transmitter.updateRDSData(rdsStyleToString(config['DynRDSPSStyle'], 8), rdsStyleToString(config['DynRDSRTStyle'], int(config['DynRDSRTSize'])))
 
   if config['DynRDSmqttEnable'] == '1':
@@ -90,7 +92,7 @@ def rdsStyleToString(rdsStyle, groupSize):
 
   try:
     for i, v in enumerate(rdsStyle):
-      logging.debug("i {} - v {} - squStart {} - skip {} - outputRDS {}".format(i,v,squStart,skip,outputRDS))
+      #logging.excessive("rdsSytle i %s - v %s - squStart %s - skip %s - outputRDS %s", i, v, squStart, skip, outputRDS)
       if skip:
         skip -= 1
       elif v == '\\' and i < len(rdsStyle) - 1:
@@ -130,7 +132,8 @@ def rdsStyleToString(rdsStyle, groupSize):
 
 # Setup logging
 script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-#logging.basicConfig(stream=sys.stderr, level=logging.DEBUG, format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+
+#logging.basicConfig(stream=sys.stderr, level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
 logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
 
 # Adding in excessive log level below debug for very noisy items
@@ -181,10 +184,21 @@ transmitter = None
 mqtt = None
 activePlaylist = False
 nextMPCUpdate = datetime.now()
+pendingPlaylistUpdate = False
+pendingMediaUpdate = False
+lastUpdateTime = None
 
 # Check if new information is in the FIFO and process accordingly
 with open(fifo_path, 'r', encoding='UTF-8') as fifo:
   while True:
+    if ((pendingPlaylistUpdate and pendingMediaUpdate) or
+       ((pendingPlaylistUpdate or pendingMediaUpdate) and (lastUpdateTime is not None and (time.monotonic() - lastUpdateTime) >= 0.3))):
+      logging.info('Updating pending RDS Data: playlist=%s, media=%s', pendingPlaylistUpdate, pendingMediaUpdate)
+      updateRDSData()
+      pendingPlaylistUpdate = False
+      pendingMediaUpdate = False
+      lastUpdateTime = None
+
     line = fifo.readline().rstrip()
     if len(line) > 0:
       logging.debug('line %s', line)
@@ -210,7 +224,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
         if config['DynRDSTransmitter'] == "QN8066":
           transmitter = QN8066()
         elif config['DynRDSTransmitter'] == "Si4713":
-          transmitter = None # To be implemented later
+          transmitter = Si4713()
 
         if transmitter is None:
           logging.error('Transmitter not set. Check Transmitter Type.')
@@ -280,7 +294,10 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
       elif line[0] == 'P':
         logging.debug('Processing playlist position')
         rdsValues['{P}'] = line[1:]
-        updateRDSData() # Always follows MAINLIST, so only a single update is needed
+        if rdsValues['{P}'] == '1' and rdsValues['{C}'] == '1':
+          rdsValues['{P}'] = ''
+        pendingPlaylistUpdate = True
+        lastUpdateTime = time.monotonic()
 
       # rdsValues that need additional parsing
       elif line[0] == 'L':
@@ -294,8 +311,8 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
 
         # TANL is always sent together with L being last item, so we only need to update the RDS Data once with the new values
         # TODO: This will likely change as more data is added, so a new way will have to be determined
-        updateRDSData()
-        #activePlaylist = True # TODO: Is this needed still?
+        pendingMediaUpdate = True
+        lastUpdateTime = time.monotonic()
         transmitter.status()
 
       # All of the rdsValues that are stored as is
@@ -319,4 +336,4 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
 
     if transmitter is None or not transmitter.active:
       logging.debug('Sleeping...')
-      sleep(3)
+      time.sleep(3)

@@ -4,10 +4,10 @@
 ###############################################################################
 
 # Set the PS text (set to '' or comment out to leave unchanged)
-PS='Merry|Christ-|  -mas!|{T}|{A}|[{N} of {C}]'
+PS='{T}|{A}[|{P} of {C}]|Merry|Christ-|   -mas!'
 
 # Set the RT text (set to '' or comment out to leave unchanged)
-RT='Merry Christmas! {T}[ by {A}]|[Track {N} of {C}]'
+RT='{T}[ by {A}][ - Track {P} of {C}  ]|Merry Christmas!'
 
 if [ "$PS" != "" ]; then
 echo 'Setting PS Style Text to: '$PS
@@ -21,7 +21,7 @@ curl -d "$RT" -X POST http://localhost/api/plugin/Dynamic_RDS/settings/DynRDSRTS
 echo -e '\n'
 fi
 
-echo 'Applying changes'
+echo 'Applying changes...'
 
 curl http://localhost/api/plugin/Dynamic_RDS/FastUpdate
 

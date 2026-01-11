@@ -2,7 +2,8 @@ import logging
 import os
 import sys
 from time import sleep
-import smbus
+
+import smbus2
 
 # ===============
 # Basic I2C Class
@@ -20,26 +21,25 @@ class basicI2C():
       bus = 0
     logging.info('Using i2c bus %s', bus)
     try:
-      self.bus = smbus.SMBus(bus)
+      self.bus = smbus2.SMBus(bus)
     except Exception:
-      logging.exception("SMBus Init Error")
-    sleep(2) # TODO: Is this sleep still needed for the bus to init?
+      logging.exception('SMBus2 Init Error')
 
   def write(self, address, values, isFatal = False):
     # Simple i2c write - Always takes an list, even for 1 byte
-    logging.excessive('I2C write at 0x%02x of %s', address, ' '.join('0x{:02x}'.format(a) for a in values))
+    logging.excessive('I2C write at 0x%02x of %s', address, ' '.join(f'0x{b:02X}' for b in values))
     for i in range(8):
       try:
         self.bus.write_i2c_block_data(self.address, address, values)
       except Exception:
-        logging.exception("write_i2c_block_data error")
+        logging.exception('write_i2c_block_data error')
         if i >= 1:
           sleep(i * .25)
         continue
       else:
         break
     else:
-      logging.error("failed to write after multiple attempts")
+      logging.error('failed to write after multiple attempts')
       if isFatal:
         sys.exit(-1)
 
@@ -48,17 +48,17 @@ class basicI2C():
     for i in range(8):
       try:
         retVal = self.bus.read_i2c_block_data(self.address, address, num_bytes)
-        logging.excessive('I2C read at 0x%02x of %s byte(s) returned %s', address, num_bytes, ' '.join('0x{:02x}'.format(a) for a in retVal))
+        logging.excessive('I2C read at 0x%02x of %s byte(s) returned %s', address, num_bytes, ' '.join(f'0x{b:02X}' for b in retVal))
         return retVal
       except Exception:
-        logging.exception("read_i2c_block_data error")
+        logging.exception('read_i2c_block_data error')
         if i >= 1:
           sleep(i * .25)
         continue
       else:
         break
     else:
-      logging.error("failed to read after multiple attempts")
+      logging.error('failed to read after multiple attempts')
       if isFatal:
         sys.exit(-1)
       return []

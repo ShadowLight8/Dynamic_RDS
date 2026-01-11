@@ -32,7 +32,7 @@ function DynRDSPiBootChange() {
            if (strcmp($myPluginSettings[$settingName],'1') == 0) {
               exec("sudo sed -i -e 's/^dtparam=audio=on/#dtparam=audio=on/' /boot/firmware/config.txt");
               if (is_numeric(strpos($myPluginSettings['DynRDSAdvPIPWMPin'], ','))) {
-                exec("sudo sed -i -e '/^#dtparam=audio=on/a dtoverlay=pwm,pin=" . str_replace(",", ",func=", $myPluginSettings['DynRDSAdvPIPWMPin']) . "' /boot/firmware/config.txt");
+                exec("sudo sed -i -e '/^#dtparam=audio=on/a dtoverlay=pwm,pin=" . escapeshellarg(str_replace(",", ",func=", $myPluginSettings['DynRDSAdvPIPWMPin'])) . "' /boot/firmware/config.txt");
               }
            } else {
               exec("sudo sed -i -e '/^dtoverlay=pwm/d' /boot/firmware/config.txt");
@@ -43,7 +43,7 @@ function DynRDSPiBootChange() {
         case 'DynRDSAdvPIPWMPin':
            if (is_numeric(strpos($myPluginSettings['DynRDSAdvPIPWMPin'], ','))) {
               exec("sudo sed -i -e 's/^#dtoverlay=pwm/dtoverlay=pwm/' /boot/firmware/config.txt");
-              exec("sudo sed -i -e '/^dtoverlay=pwm/c dtoverlay=pwm,pin=" . str_replace(",", ",func=", $myPluginSettings['DynRDSAdvPIPWMPin']) . "' /boot/firmware/config.txt");
+              exec("sudo sed -i -e '/^dtoverlay=pwm/c dtoverlay=pwm,pin=" . escapeshellarg(str_replace(",", ",func=", $myPluginSettings['DynRDSAdvPIPWMPin'])) . "' /boot/firmware/config.txt");
            } else {
               exec("sudo sed -i -e 's/^dtoverlay=pwm/#dtoverlay=pwm/' /boot/firmware/config.txt");
            }

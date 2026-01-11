@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import logging
 import json
@@ -8,13 +8,21 @@ import subprocess
 import socket
 import sys
 import time
-from sys import argv
 
+from sys import argv
 from config import config,read_config_from_file
 
 def logUnhandledException(eType, eValue, eTraceback):
-  logging.error("Unhandled exception", exc_info=(eType, eValue, eTraceback))
+  logging.error('Unhandled exception', exc_info=(eType, eValue, eTraceback))
 sys.excepthook = logUnhandledException
+
+def check_engine_running():
+  try:
+    with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as sock:
+      sock.bind('\0Dynamic_RDS_Engine')
+      return False  # Not running
+  except socket.error:
+    return True  # Running
 
 if len(argv) <= 1:
   print('Usage:')
@@ -36,53 +44,43 @@ read_config_from_file()
 
 logging.getLogger().setLevel(config['DynRDSCallbackLogLevel'])
 
-logging.info('---')
-logging.debug('Arguments %s', argv[1:])
-
-# If smbus is missing, don't try to start up the Engine as it will fail
-try:
-  import smbus
-except ImportError as impErr:
-  logging.error("Failed to import smbus %s", impErr.args[0])
-  sys.exit(1)
-
-# RPi.GPIO is used for software PWM on the RPi, fail if it is missing
-if os.getenv('FPPPLATFORM', '') == 'Raspberry Pi' and config['DynRDSTransmitter'] == "QN8066":
-  try:
-    import RPi.GPIO
-  except ImportError as impErr:
-    logging.error("Failed to import RPi.GPIO %s", impErr.args[0])
-    sys.exit(1)
+logging.debug('---')
+logging.debug('Args %s', argv[1:])
 
 # Environ has a few useful items when FPPD runs callbacks.py, but logging it all the time, even at debug, is too much
 #logging.debug('Environ %s', os.environ)
 
-# Always start the Engine since it does the real work for all command
+# Always try to start the Engine since it does the real work for all command
 updater_path = script_dir + '/Dynamic_RDS_Engine.py'
 engineStarted = False
 proc = None
-try:
-  logging.debug('Checking for socket lock by %s', updater_path)
-  lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-  lock_socket.bind('\0Dynamic_RDS_Engine')
-  lock_socket.close()
+logging.debug('Checking for socket lock by %s', updater_path)
+if check_engine_running():
+  logging.debug('Lock found — %s is already running', updater_path)
+else:
   logging.debug('Lock not found')
-
   # Short circuit if Engine isn't running and command is to shut it down
   if argv[1] == '--exit' or (argv[1] == '--type' and argv[2] == 'lifecycle' and argv[3] == 'shutdown'):
     logging.info('Exit, but not running')
     sys.exit()
-
   logging.info('Starting %s', updater_path)
   with open(os.devnull, 'w', encoding='UTF-8') as devnull:
-    proc = subprocess.Popen(['python3', updater_path], stdin=devnull, stdout=devnull, stderr=subprocess.PIPE, close_fds=True)
-  time.sleep(1) # Allow engine a second to start or fail before checking status
-  engineStarted = True
-except socket.error:
-  logging.debug('Lock found - %s is running', updater_path)
+    # Start Engine process in background - intentionally not using 'with'
+    # statement as we need the process to continue running after this script exits
+    proc = subprocess.Popen( # pylint: disable=consider-using-with
+      ['python3', updater_path], stdin=devnull, stdout=devnull, stderr=subprocess.PIPE, text=True, close_fds=True)
+  try:
+    # Wait up to 1 second to see if the process exits
+    proc.wait(timeout=1)
+    logging.error('%s exited early - %s', updater_path, proc.returncode)
+    engineStarted = False
+  except subprocess.TimeoutExpired:
+    # Timeout means process is STILL RUNNING / success
+    engineStarted = True
 
 # Always setup FIFO - Expects Engine to be running to open the read side of the FIFO
 fifo_path = script_dir + '/Dynamic_RDS_FIFO'
+# pylint: disable=duplicate-code
 try:
   logging.debug('Creating fifo %s', fifo_path)
   os.mkfifo(fifo_path)
@@ -90,20 +88,21 @@ except OSError as oe:
   if oe.errno != errno.EEXIST:
     raise
   logging.debug('Fifo already exists')
+# pylint: enable=duplicate-code
 
 if proc is not None and proc.poll() is not None:
-  logging.error('%s failed to stay running - %s', updater_path, proc.stderr.read().decode())
+  logging.error('%s failed to stay running - %s', updater_path, proc.stderr.read())
   sys.exit(1)
 
 with open(fifo_path, 'w', encoding='UTF-8') as fifo:
   if len(argv) >= 4:
-    logging.info('Processing %s %s %s', argv[1], argv[2], argv[3])
+    logging.info('Args %s %s %s', argv[1], argv[2], argv[3])
   else:
-    logging.info('Processing %s', argv[1])
+    logging.info('Args %s', argv[1])
 
   # If Engine was started AND the argument isn't --list, INIT must be sent to Engine before the requested argument
   if engineStarted and argv[1] != '--list':
-    logging.info('Engine restart detected, sending INIT')
+    logging.info(' Engine restart detected, sending INIT')
     fifo.write('INIT\n')
 
   if argv[1] == '--list':
@@ -122,13 +121,27 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
   elif argv[1] == '--exit' or (argv[1] == '--type' and argv[2] == 'lifecycle' and argv[3] == 'shutdown'):
     # Used by FPPD lifecycle shutdown. Also useful for testing or scripting
     fifo.write('EXIT\n')
+    fifo.flush()
+
+    timeout = 5
+    startTime = time.monotonic()
+    logging.info(' Waiting for Engine to shutdown (timeout: %ss)', timeout)
+
+    # Poll the socket lock until it's released
+    while time.monotonic() - startTime < timeout:
+      if not check_engine_running():
+        elapsed = time.monotonic() - startTime
+        logging.info(' Engine shutdown after %.2fs', elapsed)
+        sys.exit()
+      time.sleep(0.05)  # Sleep 50ms between attempts
+    logging.warning('Engine shutdown timeout after %ss', timeout)
 
   elif argv[1] == '--type' and argv[2] == 'media':
-    logging.debug('Type media')
     try:
       j = json.loads(argv[4])
     except Exception:
       logging.exception('Media JSON')
+      j = {}
 
     # When default values are sent over fifo, other side more or less ignores them
     media_type = j['type'] if 'type' in j else 'pause'
@@ -162,8 +175,6 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
     fifo.write('L' + media_length + '\n') # Length is always sent last for media-based updates to optimize when the Engine has to update the RDS Data
 
   elif argv[1] == '--type' and argv[2] == 'playlist':
-    logging.debug('Type playlist')
-
     try:
       j = json.loads(argv[4])
     except ValueError:
@@ -171,12 +182,14 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
 
     playlist_action = j['Action'] if 'Action' in j else 'stop'
 
-    logging.info('Playlist action %s', j['Action'])
+    logging.info(' Action %s', j['Action'])
 
     if playlist_action == 'start': # or playlist_action == 'playing':
       fifo.write('START\n')
     elif playlist_action == 'stop':
       fifo.write('STOP\n')
+      sys.exit()
+    elif playlist_action == 'query_next': # Skip this
       sys.exit()
 
     if j['Section'] == 'MainPlaylist':

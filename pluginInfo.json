@@ -2,8 +2,7 @@
 	"repoName": "Dynamic_RDS",
 	"name": "Dynamic RDS",
 	"author": "Nick Anderson (ShadowLight8)",
-	"description": "Manage an FM Transmitter and generate customizable RDS messages similar to typical FM stations. Reads multiple fields from the media's metadata and playlist. Run on Raspberry Pi and BBB. Supports the QN8066 chip.",
-
+	"description": "Manage a QN8066 or Si4713 FM Transmitter and generate customizable RDS messages similar to typical FM stations. Reads multiple fields from the media's metadata and playlist. Run on Raspberry Pi and BBB.",
 	"homeURL": "https://github.com/ShadowLight8/Dynamic_RDS",
 	"srcURL": "https://github.com/ShadowLight8/Dynamic_RDS.git",
 	"bugURL": "https://github.com/ShadowLight8/Dynamic_RDS/issues",
@@ -22,13 +21,13 @@
 		"maxFPPVersion": "7.99",
 		"branch": "main",
 		"sha": "5dfa0bf88e5b948c0cf130e4a8b6363f7d5b6126",
-		"allowUpdates": 1
+		"allowUpdates": 0
 	},
 	{
 		"minFPPVersion": "8.0",
 		"maxFPPVersion": "8.99",
 		"branch": "main",
-		"sha": "",
+		"sha": "7d77e66d82cb10c7784452ea3a5426dfcf7ecd1e",
 		"allowUpdates": 1
 	},
 	{

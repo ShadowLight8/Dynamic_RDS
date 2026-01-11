@@ -10,5 +10,3 @@ else
  echo -e "\nLeaving modified optional config script"
 fi
 
-echo -e "\nYou can manually uninstall python3-smbus if nothing else uses it."
-echo "Command is: sudo apt-get remove -y python3-smbus"
