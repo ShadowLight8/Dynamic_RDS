@@ -145,7 +145,17 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
 
     # When default values are sent over fifo, other side more or less ignores them
     media_type = j['type'] if 'type' in j else 'pause'
-    media_title = j['title'] if 'title' in j else ''
+    # Extract title with fallback to Media or Sequence filename without extension
+    if 'title' in j and j['title']:
+        media_title = j['title']
+    elif 'Media' in j and j['Media']:
+        # Remove file extension from Media filename
+        media_title = os.path.splitext(j['Media'])[0]
+    elif 'Sequence' in j and j['Sequence']:
+        # Remove file extension from Sequence filename
+        media_title = os.path.splitext(j['Sequence'])[0]
+    else:
+        media_title = ''
     media_artist = j['artist'] if 'artist' in j else ''
     media_album = j['album'] if 'album' in j else ''
     media_genre = j['genre'] if 'genre' in j else ''
