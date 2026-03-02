@@ -74,7 +74,7 @@ def updateRDSData():
 
   # TODO: DynRDSRTSize functionally works, but I think this should source from the RTBuffer class post initialization
   # TODO: Check if transmitter is active?
-  transmitter.updateRDSData(rdsStyleToString(config['DynRDSPSStyle'], 8), rdsStyleToString(config['DynRDSRTStyle'], int(config['DynRDSRTSize'])))
+  transmitter.updateRDSData(rdsStyleToString(config['DynRDSPSStyle'], 8), rdsStyleToString(config['DynRDSRTStyle'], int(config['DynRDSRTSize']) - 1))
 
   if config['DynRDSmqttEnable'] == '1':
     mqttStatus = {}

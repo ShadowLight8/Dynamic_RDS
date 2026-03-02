@@ -178,15 +178,14 @@ class QN8066(Transmitter):
     # Max fragment size of 64, Groups send 4 characters at a time
     def __init__(self, outer, data, delay=7):
       self.ab = 0
-      super().__init__(data, int(config['DynRDSRTSize']), 4, delay)
+      super().__init__(data, int(config['DynRDSRTSize']) - 1, 4, delay)
       self.outer = outer
 
     def updateData(self, data):
       super().updateData(data)
-      # Add 0x0d to end of last fragment to indicate RT is done
-      # TODO: This isn't quite correct - Should put 0x0d where a break is indicated in the rdsStyleText
-      if len(self.fragments[-1]) < self.frag_size:
-        self.fragments[-1] += chr(0x0d)
+      # Add 0x0d to end of all fragments to indicate RT is done
+      for i in range(len(self.fragments)):
+        self.fragments[i] += chr(0x0d)
       self.ab = not self.ab
       logging.info('RT %s', self.fragments)
 
