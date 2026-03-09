@@ -178,7 +178,7 @@ class QN8066(Transmitter):
     # Max fragment size of 64, Groups send 4 characters at a time
     def __init__(self, outer, data, delay=7):
       self.ab = 0
-      super().__init__(data, int(config['DynRDSRTSize']) - 1, 4, delay)
+      super().__init__(data, int(config['DynRDSRTSize']), 4, delay)
       self.outer = outer
 
     def updateData(self, data):
