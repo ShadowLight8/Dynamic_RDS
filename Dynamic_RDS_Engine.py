@@ -136,7 +136,7 @@ script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
 log_dir = os.environ.get('LOGDIR', '/home/fpp/media/logs')
 
 #logging.basicConfig(stream=sys.stderr, level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
-logging.basicConfig(filename=os.path.join(log_dir, 'plugin-Dynamic_RDS.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
+logging.basicConfig(filename=os.path.join(log_dir, 'plugin-Dynamic_RDS.log'), level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
 
 # Adding in excessive log level below debug for very noisy items
 # Allow for debug to be reasonable
