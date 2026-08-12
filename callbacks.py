@@ -38,7 +38,8 @@ if len(argv) <= 1:
 
 script_dir = os.path.dirname(os.path.abspath(argv[0]))
 
-logging.basicConfig(filename=script_dir + '/Dynamic_RDS_callbacks.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
+log_dir = os.environ.get('LOGDIR', '/home/fpp/media/logs')
+logging.basicConfig(filename=os.path.join(log_dir, 'plugin-Dynamic_RDS.log'), level=logging.INFO, format='%(asctime)s C %(levelname)s %(message)s', datefmt='%H:%M:%S')
 
 read_config_from_file()
 

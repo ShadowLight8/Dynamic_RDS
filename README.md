@@ -119,7 +119,7 @@ During the plugin install, an example script is copied to the FPP `media/scripts
 
 ### Transmitter's RDS not working well
 - Enable Debug logging for the Engine
-- Check for read and/or write errors in Dynamic_RDS_Engine.log
+- Check for read and/or write errors in plugin-Dynamic_RDS.log
   - If too many errors happen, then I<sup>2</sup>C fails and the Engine exits
     - Reduce the Amp Power
     - Try using Software I<sup>2</sup>C
