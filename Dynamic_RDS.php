@@ -270,7 +270,6 @@ function renderDynamicRDSStatus(
 
     if (!$noPage) {
         echo '<div id="global" class="settings">';
-        echo '<style>code { color: black; background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px;}</style>';
         echo '<h1>Status</h1>';
     }
 
@@ -606,7 +605,7 @@ function displayMQTTSection(array $settings): void {
         echo '<button name="pahoInstall" onClick="DynRDSScriptStream(\'python3-paho-mqtt\');">Install python3-paho-mqtt</button></div>';
     } else {
         $mqttHost = htmlspecialchars($settings['MQTTHost'], ENT_QUOTES, 'UTF-8');
-        $mqttPort = htmlspecialchars($settings['MQTTPort'], ENT_QUOTES, 'UTF-8');
+        $mqttPort = htmlspecialchars((string)$settings['MQTTPort'], ENT_QUOTES, 'UTF-8');
         PrintSettingGroup("DynRDSmqtt", "",
             "Broker Host is <b>{$mqttHost}:{$mqttPort}</b>",
             1, "Dynamic_RDS", "");
