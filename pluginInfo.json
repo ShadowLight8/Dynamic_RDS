@@ -21,13 +21,13 @@
 		"minFPPVersion": "7.3",
 		"maxFPPVersion": "7.99",
 		"branch": "main",
-		"sha": "5dfa0bf88e5b948c0cf130e4a8b6363f7d5b6126",
+		"sha": "5dfa0bf88e5b948c0cf130e4a8b6363f7d5b6126"
 	},
 	{
 		"minFPPVersion": "8.0",
 		"maxFPPVersion": "8.99",
 		"branch": "main",
-		"sha": "7d77e66d82cb10c7784452ea3a5426dfcf7ecd1e",
+		"sha": "7d77e66d82cb10c7784452ea3a5426dfcf7ecd1e"
 	},
 	{
 		"minFPPVersion": "9.0",
