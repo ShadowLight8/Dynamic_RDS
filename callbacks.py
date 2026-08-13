@@ -38,7 +38,8 @@ if len(argv) <= 1:
 
 script_dir = os.path.dirname(os.path.abspath(argv[0]))
 
-logging.basicConfig(filename=script_dir + '/Dynamic_RDS_callbacks.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
+log_dir = os.environ.get('LOGDIR', '/home/fpp/media/logs')
+logging.basicConfig(filename=os.path.join(log_dir, 'plugin-Dynamic_RDS.log'), level=logging.INFO, format='%(asctime)s C %(levelname)s %(message)s', datefmt='%H:%M:%S')
 
 read_config_from_file()
 
@@ -147,15 +148,15 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
     media_type = j['type'] if 'type' in j else 'pause'
     # Extract title with fallback to Media or Sequence filename without extension
     if 'title' in j and j['title']:
-        media_title = j['title']
+      media_title = j['title']
     elif 'Media' in j and j['Media']:
-        # Remove file extension from Media filename
-        media_title = os.path.splitext(j['Media'])[0]
+      # Remove file extension from Media filename
+      media_title = os.path.splitext(j['Media'])[0]
     elif 'Sequence' in j and j['Sequence']:
-        # Remove file extension from Sequence filename
-        media_title = os.path.splitext(j['Sequence'])[0]
+      # Remove file extension from Sequence filename
+      media_title = os.path.splitext(j['Sequence'])[0]
     else:
-        media_title = ''
+      media_title = ''
     media_artist = j['artist'] if 'artist' in j else ''
     media_album = j['album'] if 'album' in j else ''
     media_genre = j['genre'] if 'genre' in j else ''

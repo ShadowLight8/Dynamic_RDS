@@ -89,7 +89,7 @@ class pahoMQTT(basicMQTT):
 
   def readAPISetting(self, settingName):
     try:
-      with urlopen(f'http://localhost/api/settings/{quote(settingName)}') as response:
+      with urlopen(f'http://localhost/api/settings/{quote(settingName)}', timeout=5) as response:
         return json.loads(response.read())
     except Exception:
       logging.exception("readAPISetting %s", settingName)

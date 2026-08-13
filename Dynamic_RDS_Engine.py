@@ -133,8 +133,10 @@ def rdsStyleToString(rdsStyle, groupSize):
 # Setup logging
 script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
 
+log_dir = os.environ.get('LOGDIR', '/home/fpp/media/logs')
+
 #logging.basicConfig(stream=sys.stderr, level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
-logging.basicConfig(filename=script_dir + '/Dynamic_RDS_Engine.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', datefmt='%H:%M:%S')
+logging.basicConfig(filename=os.path.join(log_dir, 'plugin-Dynamic_RDS.log'), level=logging.INFO, format='%(asctime)s E %(levelname)s %(message)s', datefmt='%H:%M:%S')
 
 # Adding in excessive log level below debug for very noisy items
 # Allow for debug to be reasonable
@@ -281,7 +283,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
           playlist_length = 1
           if '.' not in playlist_name: # Case where a sequence is directly run from the scheduler or status page, it ends in .fseq and . is not allowed in regular playlist names
             try:
-              with urlopen(f'http://localhost/api/playlist/{quote(playlist_name)}') as response:
+              with urlopen(f'http://localhost/api/playlist/{quote(playlist_name)}', timeout=5) as response:
                 data = response.read()
                 playlist_length = len(json.loads(data)['mainPlaylist'])
             except Exception:

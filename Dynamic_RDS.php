@@ -203,10 +203,12 @@ class RaspberryPiChecker {
 class ZipDownloader {
     private string $dynRDSDir;
     private string $configDirectory;
+    private string $logDirectory;
 
-    public function __construct(string $dynRDSDir, string $configDirectory) {
+    public function __construct(string $dynRDSDir, string $configDirectory, string $logDirectory) {
         $this->dynRDSDir = $dynRDSDir;
         $this->configDirectory = $configDirectory;
+        $this->logDirectory = $logDirectory;
     }
 
     public function createAndDownload(): void {
@@ -219,8 +221,10 @@ class ZipDownloader {
         }
 
         try {
-            $this->addFileToZip($zip, $this->dynRDSDir . "/Dynamic_RDS_callbacks.log", "Dynamic_RDS_callbacks.log");
-            $this->addFileToZip($zip, $this->dynRDSDir . "/Dynamic_RDS_Engine.log", "Dynamic_RDS_Engine.log");
+            $this->addFileToZip($zip, $this->logDirectory . "/plugin-Dynamic_RDS.log", "plugin-Dynamic_RDS.log");
+            foreach (glob($this->logDirectory . "/plugin-Dynamic_RDS.log.*") ?: [] as $rotatedLog) {
+                $this->addFileToZip($zip, $rotatedLog, basename($rotatedLog));
+            }
             $this->addFileToZip($zip, $this->configDirectory . "/plugin.Dynamic_RDS", "plugin.Dynamic_RDS");
             $this->addFileToZip($zip, "/boot/firmware/config.txt", "config.txt");
             $this->addFileToZip($zip, "/boot/uEnv.txt", "uEnv.txt");
@@ -270,7 +274,6 @@ function renderDynamicRDSStatus(
 
     if (!$noPage) {
         echo '<div id="global" class="settings">';
-        echo '<style>code { color: black; background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px;}</style>';
         echo '<h1>Status</h1>';
     }
 
@@ -280,7 +283,7 @@ function renderDynamicRDSStatus(
 
     // Handle ZIP download
     if (isset($_POST["DownloadZip"])) {
-        $zipDownloader = new ZipDownloader($dynRDSDir, $configDirectory);
+        $zipDownloader = new ZipDownloader($dynRDSDir, $configDirectory, $settings['logDirectory']);
         $zipDownloader->createAndDownload();
         exit;
     }
@@ -606,7 +609,7 @@ function displayMQTTSection(array $settings): void {
         echo '<button name="pahoInstall" onClick="DynRDSScriptStream(\'python3-paho-mqtt\');">Install python3-paho-mqtt</button></div>';
     } else {
         $mqttHost = htmlspecialchars($settings['MQTTHost'], ENT_QUOTES, 'UTF-8');
-        $mqttPort = htmlspecialchars($settings['MQTTPort'], ENT_QUOTES, 'UTF-8');
+        $mqttPort = htmlspecialchars((string)$settings['MQTTPort'], ENT_QUOTES, 'UTF-8');
         PrintSettingGroup("DynRDSmqtt", "",
             "Broker Host is <b>{$mqttHost}:{$mqttPort}</b>",
             1, "Dynamic_RDS", "");
@@ -620,15 +623,10 @@ function displayLogsSection(): void {
     ?>
 <h2>View Logs</h2>
 <div class="container-fluid settingsTable settingsGroupTable">
-<p>Dynamic_RDS_callbacks.log
-<input onclick="ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_callbacks.log', 'Dynamic_RDS/Dynamic_RDS_callbacks.log');"
+<p>
+<input onclick="ViewFileImpl('api/file/logs/plugin-Dynamic_RDS.log', 'plugin-Dynamic_RDS.log');"
        class="buttons" type="button" value="View All" />
-<input onclick="ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_callbacks.log?tail=50', 'Dynamic_RDS/Dynamic_RDS_callbacks.log');"
-       class="buttons" type="button" value="View Recent" /></p>
-<p>Dynamic_RDS_Engine.log
-<input onclick="ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_Engine.log', 'Dynamic_RDS/Dynamic_RDS_Engine.log');"
-       class="buttons" type="button" value="View All" />
-<input onclick="ViewFileImpl('api/file/plugins/Dynamic_RDS/Dynamic_RDS_Engine.log?tail=50', 'Dynamic_RDS/Dynamic_RDS_Engine.log');"
+<input onclick="ViewFileImpl('api/file/logs/plugin-Dynamic_RDS.log?tail=50', 'plugin-Dynamic_RDS.log');"
        class="buttons" type="button" value="View Recent" /></p>
 </div>
 <br />
@@ -651,7 +649,7 @@ function displayReportIssueSection(): void {
 <p>Increase the Log Levels to Debug, then create a new issue at <a href="https://github.com/ShadowLight8/Dynamic_RDS/issues"><b>https://github.com/ShadowLight8/Dynamic_RDS/issues</b></a>, describe what you're seeing, and attach the zip file.</p>
 Zip file includes:
 <ul>
-<li>Logs - <code>Dynamic_RDS_callbacks.log</code> and <code>Dynamic_RDS_Engine.log</code></li>
+<li>Log - <code>plugin-Dynamic_RDS.log</code> (plus rotated copies, if present)</li>
 <li>Config - <code>plugin.Dynamic_RDS</code></li>
 <li>Version from <code>git rev-parse --short HEAD</code></li>
 <li>Pi/BBB boot config - <code>/boot/firmware/config.txt</code> or <code>/boot/uEnv.txt</code></li>
