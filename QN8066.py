@@ -183,10 +183,11 @@ class QN8066(Transmitter):
 
     def updateData(self, data):
       super().updateData(data)
-      # Add 0x0d to end of last fragment to indicate RT is done
-      # TODO: This isn't quite correct - Should put 0x0d where a break is indicated in the rdsStyleText
-      if len(self.fragments[-1]) < self.frag_size:
-        self.fragments[-1] += chr(0x0d)
+      # Remove all trailing spaces and append chr(0x0d) if length < 64 (max RT fragment size)
+      for i in range(len(self.fragments)):
+        self.fragments[i] = self.fragments[i].rstrip()
+        if len(self.fragments[i]) < 64:
+          self.fragments[i] += chr(0x0d)
       self.ab = not self.ab
       logging.info('RT %s', self.fragments)
 
