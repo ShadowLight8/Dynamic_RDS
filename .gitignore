@@ -129,3 +129,7 @@ dmypy.json
 .pyre/
 
 *.py.swp
+
+# Dynamic_RDS runtime status
+Dynamic_RDS_Status.json
+Dynamic_RDS_Status.json.tmp

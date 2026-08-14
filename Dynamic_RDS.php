@@ -226,6 +226,7 @@ class ZipDownloader {
                 $this->addFileToZip($zip, $rotatedLog, basename($rotatedLog));
             }
             $this->addFileToZip($zip, $this->configDirectory . "/plugin.Dynamic_RDS", "plugin.Dynamic_RDS");
+            $this->addFileToZip($zip, $this->dynRDSDir . "/Dynamic_RDS_Status.json", "Dynamic_RDS_Status.json");
             $this->addFileToZip($zip, "/boot/firmware/config.txt", "config.txt");
             $this->addFileToZip($zip, "/boot/uEnv.txt", "uEnv.txt");
 
@@ -348,6 +349,9 @@ function renderDynamicRDSStatus(
 
     // Display all status messages
     $status->displayMessages();
+
+    // Display live RDS output
+    displayLiveRDSSection($engineRunning);
 
     // Output JavaScript
     outputJavaScript($transmitterType);
@@ -617,6 +621,213 @@ function displayMQTTSection(array $settings): void {
 }
 
 /**
+ * Display live RDS output section
+ */
+function displayLiveRDSSection(bool $engineRunning): void {
+    //if (!$engineRunning) {
+    //    return;
+    //}
+    ?>
+<div class="container-fluid settingsTable settingsGroupTable">
+<style>
+.DynRDSLive { --dynrds-rds: #8ec5ff;          /* RDS text colour - single swap point */
+              background: #333d4a; border: 1px solid #46525f; border-radius: 6px;
+              padding: 15px 17px; color: #d3dae2;
+              box-shadow: inset 0 1px 0 #4e5b6b, 0 1px 3px rgba(0,0,0,0.35); }
+.DynRDSLiveHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; }
+.DynRDSLiveTitle { font-size: 0.75em; letter-spacing: 0.16em; text-transform: uppercase; color: #a3b0be; }
+.DynRDSLiveOnAir { font-size: 0.68em; letter-spacing: 0.18em; padding: 3px 10px; border-radius: 10px;
+                   border: 1px solid #5a6774; color: #8996a5; transition: all 250ms ease; }
+.DynRDSLiveOnAir.lit { border-color: #e0674a; color: #ffd4c6; background: #6b2415;
+                       box-shadow: 0 0 10px rgba(224,103,74,0.45); }
+
+.DynRDSLiveRow { margin: 11px 0; }
+.DynRDSLiveRowTop { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.DynRDSLiveLabel { width: 2em; font-size: 0.7em; letter-spacing: 0.12em; color: #93a1b0; }
+.DynRDSLiveCells { display: flex; gap: 2px; }
+.DynRDSLiveCell { font-family: monospace; font-size: 1.2em; padding: 5px 7px; text-align: center;
+                  color: var(--dynrds-rds); background: #1a2028; border-radius: 2px; white-space: pre; }
+.DynRDSLiveText { font-family: monospace; font-size: 1.02em; white-space: pre; color: var(--dynrds-rds);
+                  background: #1a2028; padding: 7px 9px; border-radius: 3px;
+                  box-sizing: content-box; width: 64ch; flex: 0 0 auto; }
+.DynRDSLiveDots { margin-left: auto; font-size: 0.62em; color: #64717f; }
+.DynRDSLiveDot { padding: 0 1.5px; }
+.DynRDSLiveDot.cur { color: var(--dynrds-rds); }
+.DynRDSLiveBar { height: 2px; background: #2b333d; border-radius: 1px; margin-top: 6px; overflow: hidden; }
+.DynRDSLiveBar i { display: block; height: 100%; width: 0; background: var(--dynrds-rds); }
+
+.DynRDSLiveFull { margin-top: 15px; font-size: 0.82em; color: #b6c1cd; }
+.DynRDSLiveFull > div { margin: 5px 0; display: flex; align-items: baseline; gap: 8px; }
+.DynRDSLiveFull .lbl { flex: 0 0 4.5em; color: #93a1b0; }
+.DynRDSLiveSegs { font-family: monospace; white-space: pre-wrap; word-break: break-all;
+                  flex: 1 1 auto; min-width: 0; border-left: 1px solid #55626f; }
+.DynRDSLiveSeg { border-right: 1px solid #55626f; padding: 2px; }
+.DynRDSLiveNote { margin-top: 11px; font-size: 0.78em; color: #8b98a8; }
+
+@keyframes DynRDSSweep { from { width: 0; } to { width: 100%; } }
+@media (prefers-reduced-motion: reduce) {
+  .DynRDSLiveBar i { animation: none !important; }
+}
+</style>
+<div class="DynRDSLive">
+  <div class="DynRDSLiveHead">
+    <span class="DynRDSLiveTitle">Now Broadcasting</span>
+    <span class="DynRDSLiveOnAir" id="DynRDSLiveOnAir">ON AIR</span>
+  </div>
+  <div class="DynRDSLiveRow">
+    <div class="DynRDSLiveRowTop">
+      <span class="DynRDSLiveLabel">PS</span>
+      <span class="DynRDSLiveCells" id="DynRDSLivePS"></span>
+      <span class="DynRDSLiveDots" id="DynRDSLivePSDots"></span>
+    </div>
+    <div class="DynRDSLiveBar"><i id="DynRDSLivePSBar"></i></div>
+  </div>
+  <div class="DynRDSLiveRow">
+    <div class="DynRDSLiveRowTop">
+      <span class="DynRDSLiveLabel">RT</span>
+      <span class="DynRDSLiveText" id="DynRDSLiveRT"></span>
+      <span class="DynRDSLiveDots" id="DynRDSLiveRTDots"></span>
+    </div>
+    <div class="DynRDSLiveBar"><i id="DynRDSLiveRTBar"></i></div>
+  </div>
+  <div class="DynRDSLiveFull">
+    <div><span class="lbl">Full PS</span><span class="DynRDSLiveSegs" id="DynRDSLivePSText"></span></div>
+    <div><span class="lbl">Full RT</span><span class="DynRDSLiveSegs" id="DynRDSLiveRTText"></span></div>
+  </div>
+  <div class="DynRDSLiveNote" id="DynRDSLiveNote">Loading...</div>
+</div>
+</div>
+<br />
+<script>
+(function () {
+  var POLL_MS = 5000;
+  var data = null, index = { PS: 0, RT: 0 }, timers = { PS: null, RT: null }, pollTimer = null;
+
+  function el(id) { return document.getElementById(id); }
+
+  // True only when RDS groups are actually going out
+  function onAir() {
+    return !!(data && data.running && data.transmitterActive && data.RDSEnabled);
+  }
+
+  // Rebuild a container as one span per item, optionally marking one current.
+  // textContent per span keeps untrusted track metadata inert.
+  function fill(target, items, cls, current) {
+    target.innerHTML = '';
+    for (var i = 0; i < items.length; i++) {
+      var s = document.createElement('span');
+      s.className = cls + (i === current ? ' cur' : '');
+      s.textContent = items[i];
+      target.appendChild(s);
+    }
+  }
+
+  function chunk(text, size) {
+    var out = [];
+    for (var i = 0; i < text.length; i += size) { out.push(text.substr(i, size)); }
+    return out;
+  }
+
+  // 0x0d marks end-of-RT to receivers - strip for display only
+  function clean(s) { return s.replace(/\r/g, ''); }
+
+  // Restarting a CSS animation needs it cleared and a reflow forced.
+  // A zero duration just parks the bar at the start.
+  function sweep(target, seconds) {
+    target.style.animation = 'none';
+    target.style.width = '0';
+    if (!seconds) { return; }
+    void target.offsetWidth;
+    target.style.animation = 'DynRDSSweep ' + seconds + 's linear forwards';
+  }
+
+  // name is 'PS' or 'RT' - payload keys and element ids both follow it
+  function renderRow(name) {
+    var frags = data[name + 'fragments'];
+    var cur = frags.length ? index[name] % frags.length : 0;
+    var main = el('DynRDSLive' + name);
+
+    // PS shows one tile per character, RT a single fixed width line
+    if (name === 'PS') { fill(main, clean(frags[cur] || '').split(''), 'DynRDSLiveCell'); }
+    else { main.textContent = clean(frags[cur] || ''); }
+
+    var dots = [];
+    while (frags.length > 1 && dots.length < frags.length) { dots.push('\u25CF'); }
+    fill(el('DynRDSLive' + name + 'Dots'), dots, 'DynRDSLiveDot', cur);
+
+    fill(el('DynRDSLive' + name + 'Text'), frags.map(clean), 'DynRDSLiveSeg');
+
+    sweep(el('DynRDSLive' + name + 'Bar'), (onAir() && frags.length > 1) ? data[name + 'delay'] : 0);
+  }
+
+  function startCycling() {
+    ['PS', 'RT'].forEach(function (name) {
+      clearInterval(timers[name]);
+      index[name] = 0;
+      renderRow(name);
+      if (data[name + 'fragments'].length > 1) {
+        timers[name] = setInterval(function () {
+          index[name]++;
+          renderRow(name);
+        }, data[name + 'delay'] * 1000);
+      }
+    });
+  }
+
+  function fmtAge(s) {
+    if (s < 60) { return s + 's'; }
+    if (s < 3600) { return Math.floor(s / 60) + 'm'; }
+    return Math.floor(s / 3600) + 'h';
+  }
+
+  function note() {
+    if (!data.running)           { return 'Engine is not running - showing the last known output'; }
+    if (!data.RDSEnabled)        { return 'RDS is disabled - no RDS groups are being sent'; }
+    if (!data.transmitterActive) { return 'Transmitter is not active'; }
+    return 'Cycling at the configured PS/RT update rates - last change ' + fmtAge(data.age) + ' ago';
+  }
+
+  function apply(d) {
+    var isNew = !data || d.PStext !== data.PStext || d.RTtext !== data.RTtext;
+
+    d.PSfragments = d.PSfragments || [];
+    d.RTfragments = d.RTfragments || [];
+    d.PSdelay = d.PSdelay || 4;
+    d.RTdelay = d.RTdelay || 7;
+    // Si4713 exposes no fragment buffers - derive the same view from the sent
+    // text, which it pads to a multiple of 8 for PS and 32 for RT
+    if (!d.PSfragments.length && d.PStext) { d.PSfragments = chunk(d.PStext, 8); }
+    if (!d.RTfragments.length && d.RTtext) { d.RTfragments = chunk(d.RTtext, 32); }
+
+    data = d;
+    el('DynRDSLiveOnAir').classList.toggle('lit', onAir());
+    if (isNew) { startCycling(); }
+    else { renderRow('PS'); renderRow('RT'); }
+    el('DynRDSLiveNote').textContent = note();
+  }
+
+  function poll() {
+    $.getJSON('api/plugin/Dynamic_RDS/Status').done(function (d) {
+      if (d.error) { el('DynRDSLiveNote').textContent = d.error; return; }
+      apply(d);
+    }).fail(function () {
+      el('DynRDSLiveNote').textContent = 'Unable to reach the Dynamic RDS status endpoint';
+    });
+  }
+
+  // Only poll while the tab is visible
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { clearInterval(pollTimer); pollTimer = null; }
+    else if (!pollTimer) { poll(); pollTimer = setInterval(poll, POLL_MS); }
+  });
+
+  $(document).ready(function () { poll(); pollTimer = setInterval(poll, POLL_MS); });
+})();
+</script>
+    <?php
+}
+
+/**
  * Display logs section
  */
 function displayLogsSection(): void {
@@ -650,6 +861,7 @@ function displayReportIssueSection(): void {
 Zip file includes:
 <ul>
 <li>Log - <code>plugin-Dynamic_RDS.log</code> (plus rotated copies, if present)</li>
+<li>Last RDS output - <code>Dynamic_RDS_Status.json</code></li>
 <li>Config - <code>plugin.Dynamic_RDS</code></li>
 <li>Version from <code>git rev-parse --short HEAD</code></li>
 <li>Pi/BBB boot config - <code>/boot/firmware/config.txt</code> or <code>/boot/uEnv.txt</code></li>

@@ -3,6 +3,7 @@
 function getEndpointsDynamic_RDS() {
     $endpoints = array(
        array('method' => 'GET', 'endpoint' => 'FastUpdate', 'callback' => 'DynRDSFastUpdate'),
+       array('method' => 'GET', 'endpoint' => 'Status', 'callback' => 'DynRDSStatus'),
        array('method' => 'POST', 'endpoint' => 'PiBootChange/:SettingName', 'callback' => 'DynRDSPiBootChange'),
        array('method' => 'POST', 'endpoint' => 'ScriptStream', 'callback' => 'DynRDSScriptStream')
     );
@@ -11,6 +12,40 @@ function getEndpointsDynamic_RDS() {
 
 function DynRDSFastUpdate() {
     shell_exec("sudo /home/fpp/media/plugins/Dynamic_RDS/callbacks.py --update");
+}
+
+function DynRDSStatus() {
+    $statusFile = __DIR__ . '/Dynamic_RDS_Status.json';
+
+    if (!is_file($statusFile)) {
+        return json_encode(['error' => 'No status file - Dynamic RDS Engine may not have started']);
+    }
+
+    $status = json_decode(file_get_contents($statusFile), true);
+    if (!is_array($status)) {
+        return json_encode(['error' => 'Unable to parse status file']);
+    }
+
+    // Writes only happen when the broadcast content changes, so file age is not
+    // a heartbeat - minutes of silence during a long track is normal. Liveness
+    // comes from checking the recorded pid is still a running Engine.
+    $status['age'] = time() - filemtime($statusFile);
+    $status['running'] = DynRDSEngineAlive($status['pid'] ?? 0);
+
+    return json_encode($status);
+}
+
+function DynRDSEngineAlive($pid) {
+    $pid = (int)$pid;
+    if ($pid <= 0) {
+        return false;
+    }
+    $cmdline = @file_get_contents("/proc/{$pid}/cmdline");
+    if ($cmdline === false) {
+        return false;
+    }
+    // Guard against a recycled pid now belonging to an unrelated process
+    return str_contains($cmdline, 'Dynamic_RDS_Engine.py');
 }
 
 function DynRDSPiBootChange() {
