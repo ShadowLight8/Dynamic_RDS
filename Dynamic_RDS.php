@@ -46,7 +46,6 @@ enum PlatformType: string {
 class DynamicRDSStatus {
     private array $errors = [];
     private array $warnings = [];
-    private array $successes = [];
 
     public function addError(string $message): void {
         $this->errors[] = $message;
@@ -67,14 +66,6 @@ class DynamicRDSStatus {
 
         foreach ($this->warnings as $warning) {
             echo '<div class="callout callout-warning">' . $warning . '</div>';
-        }
-
-        if (!empty($this->successes)) {
-            echo '<div class="callout callout-success">';
-            foreach ($this->successes as $success) {
-                echo '<div>' . $success . '</div>';
-            }
-            echo '</div>';
         }
     }
 }
@@ -667,9 +658,7 @@ function displayLiveRDSSection(string $transmitterInfo): void {
 </style>
 <div class="DynRDSLive">
   <div class="DynRDSLiveHead">
-    <div>
-      <div class="DynRDSLiveTitle"><span>Now Broadcasting &middot; </span><span class="DynRDSLiveChip"><?php echo $transmitterInfo; ?></span></div>
-    </div>
+    <div class="DynRDSLiveTitle">Now Broadcasting &middot; <span class="DynRDSLiveChip"><?php echo $transmitterInfo; ?></span></div>
     <span class="DynRDSLiveOnAir" id="DynRDSLiveOnAir">ON AIR</span>
   </div>
   <div class="DynRDSLiveRow">
@@ -791,6 +780,7 @@ function displayLiveRDSSection(string $transmitterInfo): void {
   function apply(d) {
     var isNew = !data || d.PStext !== data.PStext || d.RTtext !== data.RTtext;
     var wasOnAir = onAir();
+    var alive = !!d.running;
 
     d.PSfragments = d.PSfragments || [];
     d.RTfragments = d.RTfragments || [];
@@ -802,11 +792,9 @@ function displayLiveRDSSection(string $transmitterInfo): void {
     if (!d.RTfragments.length && d.RTtext) { d.RTfragments = chunk(d.RTtext, 32); }
 
     data = d;
-    el('DynRDSLiveState').className = 'DynRDSLiveState ' + (!d.running ? 'err' : (onAir() ? 'ok' : 'warn'));
     el('DynRDSLiveOnAir').classList.toggle('lit', onAir());
     if (isNew) { startCycling(); }
     else if (onAir() !== wasOnAir) { renderRow('PS'); renderRow('RT'); }
-    var alive = !!d.running;
     el('DynRDSLiveState').className = 'DynRDSLiveState ' + (!alive ? 'err' : (onAir() ? 'ok' : 'warn'));
     el('DynRDSLiveStateLabel').textContent = alive ? 'Engine Active' : 'Engine Stopped';
     el('DynRDSLiveNoteText').textContent = note();
