@@ -101,7 +101,8 @@ def buildStatus():
     'RDSValues': rdsValues,
     'RDSEnabled': config['DynRDSEnableRDS'] == '1',
     'transmitterActive': transmitter.active,
-    'transmitterType': config['DynRDSTransmitter']
+    'transmitterType': config['DynRDSTransmitter'],
+    'pid': os.getpid()
   }
 
 def writeStatus():
@@ -293,6 +294,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
 
         if config['DynRDSStart'] == "FPPDStart":
           transmitter.startup()
+        writeStatus()
 
       elif line == 'UPDATE':
         read_config()
