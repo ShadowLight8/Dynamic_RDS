@@ -130,3 +130,88 @@ During the plugin install, an example script is copied to the FPP `media/scripts
     - Make sure the PWM wire does NOT run along side the I<sup>2</sup>C wires, interference can occur
     - Try to lower the Chip Power and Amp Power, RF interference can impact I<sup>2</sup>C
     - Move the antenna further away from the transmitter board and RPi/BBB
+
+## Plugin Settings
+All settings are on the plugin's config page, reachable from **Status/Control -> Dynamic RDS**. The page auto-detects your transmitter over I<sup>2</sup>C and hides the settings that don't apply to it.
+
+> [!NOTE]
+> Settings marked with a lightning bolt icon take effect immediately on the transmitter — no FPP restart needed.
+
+### RDS Settings
+| Setting | Default | Notes |
+| --- | --- | --- |
+| Enable RDS | On | Turns off all RDS transmission when unchecked |
+| PI Code | `819b` | Program Identification code. Some older receivers translate this to a callsign — `819b` is WRAP, `5F64` is WEBS |
+| Program Type | 2 - Information / Current Affairs | Standard PTY list; assignments differ between North America and Europe |
+| PS Style Text | `{T}\|{A}[\|{P} of {C}]\|Merry\|Christ-\|   -mas!` | Program Service, sent 8 characters at a time. This is what most radios display |
+| PS Update Rate | 4 sec | Interval between 8-character updates (3-60). It takes ~1 second to send 8 characters, and some radios only display text after receiving a group twice |
+| RT Style Text | `{T}[ by {A}][\|Track {P} of {C}  ]Merry Christmas!` | Radio Text — longer messages, slower update rate |
+| RT Update Size | 32 chars | RT supports up to 64, but not all radios display that much at once. 32 is recommended |
+| RT Update Rate | 8 sec | Interval between RT updates (3-60). Sending a full 64 characters takes ~4 seconds |
+
+### Style Text Substitutions
+The PS and RT style text fields accept substitutions that are filled in from the currently playing media:
+
+| Code | Value |
+| --- | --- |
+| `{T}` | Title |
+| `{A}` | Artist |
+| `{B}` | Album |
+| `{G}` | Genre |
+| `{N}` | Track Number |
+| `{L}` | Track Length, as 0:00 |
+| `{C}` | Item count in the Main Playlist section |
+| `{P}` | Item position in the Main Playlist section |
+
+Formatting rules:
+* Any static text can be mixed in freely
+* `|` (pipe) splits between RDS groups, acting like a line break
+* `[ ]` creates a subgroup — if **any** substitution inside is empty, the whole subgroup is dropped. This is how you avoid stray text like "by" with no artist
+* Use `\` in front of `| { } [ ]` to display those characters literally
+* The end of the style text implicitly acts as a line break
+* `{P}` is set empty when both it and `{C}` are 1, to prevent "Track 1 of 1" messages
+
+### Transmitter Type and Settings
+| Setting | Default | Notes |
+| --- | --- | --- |
+| Transmitter Type | Auto-selected | Set from I<sup>2</sup>C detection (QN8066 at 0x21, Si4713 at 0x63). Can be overridden manually |
+| Frequency | 100.10 | 60.00-108.00 for QN8066, 76.00-108.00 for Si4713 |
+| Preemphasis | 75 &mu;s | 75 &mu;s for the US and South Korea, 50 &mu;s for most of the rest of the world |
+| Antenna Tuning Capacitor *(Si4713)* | 0 | 0 lets the chip auto-tune; manual range is 1-191 |
+| Reset Pin / GPIO *(Si4713)* | Pin 7 / GPIO 4 | The Si4713 needs its reset pin high for normal operation |
+
+### Audio Settings (QN8066)
+| Setting | Default | Notes |
+| --- | --- | --- |
+| Gain Adjustment | 0 | Range -15 to +20. Too high or too low causes distortion, random dropouts, or silence |
+| Enable Soft Clipping | On | |
+| Enable AGC | Off | Not recommended |
+
+### Power Settings
+| Setting | Default | Notes |
+| --- | --- | --- |
+| Chip Power *(QN8066)* | 122 | Range 92-122 |
+| Chip Power *(Si4713)* | 115 | Range 88-120. Voltage accuracy above 115 dB&mu;V is not guaranteed |
+| Enable PWM *(QN8066)* | Off | Hardware PWM on Pin 12 / GPIO 18 by default, used to control amplifier power. Requires on-board audio to be disabled, so an external sound card is needed |
+| Amp Power *(QN8066)* | 0 | Range 0-100, controlled via PWM output |
+
+### Plugin Activation
+| Setting | Default | Notes |
+| --- | --- | --- |
+| Start with | FPPD Start | Or Playlist Start, or Never. On start the transmitter is reset, settings initialized, audio broadcast begins, and static RDS messages are sent |
+| Stop with | Never | Or Playlist Stop. On stop the transmitter is reset and listeners hear static |
+
+### MPC / After Hours Music
+Enable to pull `%title%` from mpc and display it as `{T}` when FPP is otherwise idle. Only appears if the After Hours Music Player plugin is installed.
+
+### MQTT
+Publishes plugin status to MQTT. Requires MQTT to be configured first under **FPP Settings -> MQTT**, and `python3-paho-mqtt`, which can be installed with a button on the config page.
+
+### Log Levels and Logs
+Callback and Engine logging levels are set separately (Errors Only / Warn / Info / Debug, plus Excessive for the Engine). Both write to `plugin-Dynamic_RDS.log`, viewable from the config page.
+
+### Report an Issue
+Set the log levels to Debug, reproduce the problem, then use **Download log and config zip** and attach the file to a [new issue](https://github.com/ShadowLight8/Dynamic_RDS/issues). The zip contains the log and rotated copies, the `plugin.Dynamic_RDS` config, the plugin version, and your Pi/BBB boot config.
+
+### Advanced Options
+Software I<sup>2</sup>C mode for the Raspberry Pi, and PWM pin selection for both the Pi and BeagleBone Black. Most setups won't need to touch these.
