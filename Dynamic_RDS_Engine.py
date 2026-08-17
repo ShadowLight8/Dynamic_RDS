@@ -32,11 +32,6 @@ def cleanup():
   except:
     pass
   try:
-    logging.debug('Cleaning up status file')
-    os.unlink(status_path)
-  except:
-    pass
-  try:
     transmitter.basicPWM.shutdown()
     if mqtt.connected:
       mqtt.disconnect()
@@ -104,6 +99,8 @@ def buildStatus():
     'transmitterType': config['DynRDSTransmitter'],
     'pid': os.getpid()
   }
+
+lastStatus = None
 
 def writeStatus():
   # Status file for Dynamic_RDS.php - written on RDS data changes and
@@ -205,7 +202,6 @@ except:
 
 # Status file for the web UI
 status_path = script_dir + '/Dynamic_RDS_Status.json'
-lastStatus = None
 
 # Setup fifo
 fifo_path = script_dir + "/Dynamic_RDS_FIFO"
