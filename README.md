@@ -3,7 +3,7 @@
 > [!NOTE]
 > Dynamic_RDS supports the **QN8066** and **Si4713** FM transmitter chips
 
-Originally created for Falcon Player 6.0 (FPP) and updated to support FPP 9.0+, the Dynamic_RDS plugin can generate RDS (radio data system) messages similar to what is seen from typical FM stations. The RDS messages are fully customizable with static text, breaks, and grouping along with the supported file tag data fields of title, artist, album, genre, track number, and track length, as well as main playlist position and item count. Currently, the plugin supports the QN8066 chip and the Si4173 chip. The chips are controlled via the I<sup>2</sup>C bus.
+Originally created for Falcon Player 6.0 (FPP) and updated to support FPP 10.0+, the Dynamic_RDS plugin can generate RDS (radio data system) messages similar to what is seen from typical FM stations. The RDS messages are fully customizable with static text, breaks, and grouping along with the supported file tag data fields of title, artist, album, genre, track number, and track length, as well as main playlist position and item count. Currently, the plugin run on Raspberry Pi or BBB and supports the QN8066 chip and the Si4713 chip. The chips are controlled via the I<sup>2</sup>C bus.
 
 ## Si4713 transmitter board
 Originally, the Si4713 breakout board was available from [AdaFruit](https://www.adafruit.com/product/1958) but it now out of stock. There are many clones of this board that can be found on [AliExpress](https://www.aliexpress.us/w/wholesale-Si4713-transmitter.html) or by a [Google Search](https://www.google.com/search?q=Si4713+transmitter)
