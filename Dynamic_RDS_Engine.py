@@ -381,6 +381,6 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
         rdsValues['{T}'] = mpcLatest
         updateRDSData()
 
-    if transmitter is None or not transmitter.active:
+    if len(line) == 0 and (transmitter is None or not transmitter.active):
       logging.debug('Sleeping...')
       time.sleep(3)
