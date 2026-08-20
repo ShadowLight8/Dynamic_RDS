@@ -3,7 +3,7 @@
 > [!NOTE]
 > Dynamic_RDS supports the **QN8066** and **Si4713** FM transmitter chips
 
-Originally created for Falcon Player 6.0 (FPP) and updated to support FPP 10.0+, the Dynamic_RDS plugin can generate RDS (radio data system) messages similar to what is seen from typical FM stations. The RDS messages are fully customizable with static text, breaks, and grouping along with the supported file tag data fields of title, artist, album, genre, track number, and track length, as well as main playlist position and item count. Currently, the plugin run on Raspberry Pi or BBB and supports the QN8066 chip and the Si4713 chip. The chips are controlled via the I<sup>2</sup>C bus.
+Originally created for Falcon Player 6.0 (FPP) and updated to support FPP 10.0+, the Dynamic_RDS plugin can generate RDS (radio data system) messages similar to what is seen from typical FM stations. The RDS messages are fully customizable with static text, breaks, and grouping along with the supported file tag data fields of title, artist, album, genre, track number, and track length, as well as main playlist position and item count. Currently, the plugin runs on Raspberry Pi or BBB and supports the QN8066 chip and the Si4713 chip. The chips are controlled via the I<sup>2</sup>C bus.
 
 ## Si4713 transmitter board
 Originally, the Si4713 breakout board was available from [AdaFruit](https://www.adafruit.com/product/1958) but it now out of stock. There are many clones of this board that can be found on [AliExpress](https://www.aliexpress.us/w/wholesale-Si4713-transmitter.html) or by a [Google Search](https://www.google.com/search?q=Si4713+transmitter)
@@ -145,9 +145,9 @@ All settings are on the plugin's config page, reachable from **Status/Control ->
 | Program Type | 2 - Information / Current Affairs | Standard PTY list; assignments differ between North America and Europe |
 | PS Style Text | `{T}\|{A}[\|{P} of {C}]\|Merry\|Christ-\|   -mas!` | Program Service, sent 8 characters at a time. This is what most radios display |
 | PS Update Rate | 4 sec | Interval between 8-character updates (3-60). It takes ~1 second to send 8 characters, and some radios only display text after receiving a group twice |
-| RT Style Text | `{T}[ by {A}][\|Track {P} of {C}  ]Merry Christmas!` | Radio Text — longer messages, slower update rate |
+| RT Style Text | `{T}[ by {A}][\|Track {P} of {C}] Merry Christmas!` | Radio Text — longer messages, slower update rate |
 | RT Update Size | 32 chars | RT supports up to 64, but not all radios display that much at once. 32 is recommended |
-| RT Update Rate | 8 sec | Interval between RT updates (3-60). Sending a full 64 characters takes ~4 seconds |
+| RT Update Rate | 7 sec | Interval between RT updates (3-60). Sending a full 64 characters takes ~4 seconds |
 
 ### Style Text Substitutions
 The PS and RT style text fields accept substitutions that are filled in from the currently playing media:
@@ -211,7 +211,7 @@ Publishes plugin status to MQTT. Requires MQTT to be configured first under **FP
 Callback and Engine logging levels are set separately (Errors Only / Warn / Info / Debug, plus Excessive for the Engine). Both write to `plugin-Dynamic_RDS.log`, viewable from the config page.
 
 ### Report an Issue
-Set the log levels to Debug, reproduce the problem, then use **Download log and config zip** and attach the file to a [new issue](https://github.com/ShadowLight8/Dynamic_RDS/issues). The zip contains the log and rotated copies, the `plugin.Dynamic_RDS` config, the plugin version, and your Pi/BBB boot config.
+Set the log levels to Debug, reproduce the problem, then use **Download log and config zip** and attach the file to a [new issue](https://github.com/ShadowLight8/Dynamic_RDS/issues). The zip contains the log and rotated copies, the `plugin.Dynamic_RDS` config, last RDS output, the plugin version, and your Pi/BBB boot config.
 
 ### Advanced Options
 Software I<sup>2</sup>C mode for the Raspberry Pi, and PWM pin selection for both the Pi and BeagleBone Black. Most setups won't need to touch these.

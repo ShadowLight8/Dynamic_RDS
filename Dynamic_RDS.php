@@ -608,52 +608,74 @@ function displayLiveRDSSection(string $transmitterInfo, bool $transmitterFound):
 ?>
 <div class="container-fluid settingsTable settingsGroupTable">
 <style>
-.DynRDSLive { --dynrds-rds: #8ec5ff;          /* RDS text colour - single swap point */
-              background: #333d4a; border: 1px solid #5c6a7a; border-radius: 8px;
-              padding: 15px 17px; color: #d3dae2;
-              box-shadow: inset 0 1px 0 #4e5b6b, 0 2px 6px rgba(0,0,0,0.45); }
+/* ============ Dynamic_RDS live panel ============ */
+.DynRDSLive {
+  /* Bezel follows the FPP theme; the screen stays dark in both so the panel
+     reads as a device readout rather than an inverted block of colour */
+  --dynrds-rds:        #8ec5ff;   /* RDS text colour - single swap point */
+  --dynrds-screen:     #1a2028;
+  --dynrds-bezel:      #dfe3e8;
+  --dynrds-bezel-edge: #b9c1ca;
+  --dynrds-bezel-top:  #f2f4f7;
+  --dynrds-label:      #59646f;
+  --dynrds-dim:        #78838f;
+  --dynrds-track:      #c6ccd3;
+ 
+  background: var(--dynrds-bezel);
+  border: 1px solid var(--dynrds-bezel-edge);
+  border-radius: 8px;
+  padding: 15px 17px;
+  color: var(--dynrds-label);
+  box-shadow: inset 0 1px 0 var(--dynrds-bezel-top), 0 2px 6px rgba(0,0,0,0.18);
+}
+[data-bs-theme="dark"] .DynRDSLive {
+  --dynrds-bezel:      #333d4a;
+  --dynrds-bezel-edge: #5c6a7a;
+  --dynrds-bezel-top:  #4e5b6b;
+  --dynrds-label:      #a3b0be;
+  --dynrds-dim:        #8b98a8;
+  --dynrds-track:      #2b333d;
+  box-shadow: inset 0 1px 0 var(--dynrds-bezel-top), 0 2px 6px rgba(0,0,0,0.45);
+}
+ 
 .DynRDSLiveHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; }
-.DynRDSLiveTitle { font-size: 0.85em; letter-spacing: 0.14em; text-transform: uppercase; color: #a3b0be; }
+.DynRDSLiveTitle { font-size: 0.85em; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dynrds-label); }
 .DynRDSLiveOnAir { font-size: 0.68em; letter-spacing: 0.18em; padding: 3px 10px; border-radius: 10px;
-                   border: 1px solid #5a6774; color: #8996a5; transition: all 250ms ease; }
+                   border: 1px solid var(--dynrds-bezel-edge); color: var(--dynrds-dim); transition: all 250ms ease; }
 .DynRDSLiveOnAir.lit { border-color: #ff7a55; color: #ffe0d4; background: #7d2916;
                        box-shadow: 0 0 6px rgba(255,122,85,0.65), 0 0 18px rgba(255,122,85,0.3); }
 .DynRDSLiveRow { margin: 11px 0; }
 .DynRDSLiveRowTop { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
-.DynRDSLiveLabel { width: 2em; font-size: 0.7em; letter-spacing: 0.12em; color: #93a1b0; }
+.DynRDSLiveLabel { width: 2em; font-size: 0.7em; letter-spacing: 0.12em; color: var(--dynrds-label); }
 .DynRDSLiveCells { display: flex; gap: 2px; }
 .DynRDSLiveCell { font-family: monospace; font-size: 1.2em; padding: 5px 7px; text-align: center;
-                  color: var(--dynrds-rds); background: #1a2028; border-radius: 2px; white-space: pre; }
+                  color: var(--dynrds-rds); background: var(--dynrds-screen); border-radius: 2px; white-space: pre; }
 .DynRDSLiveText { font-family: monospace; font-size: 1.02em; white-space: pre; color: var(--dynrds-rds);
-                  background: #1a2028; padding: 7px 9px; border-radius: 3px;
+                  background: var(--dynrds-screen); padding: 7px 9px; border-radius: 3px;
                   box-sizing: content-box; width: 64ch; height: 1.3em; line-height: 1.3;
-                  flex: 0 0 auto; }
-.DynRDSLiveDots { margin-left: auto; font-size: 0.62em; color: #64717f; }
+                  flex: 0 1 auto; max-width: 100%; overflow-x: auto; }
+.DynRDSLiveDots { margin-left: auto; font-size: 0.62em; color: var(--dynrds-dim); }
 .DynRDSLiveDot { padding: 0 1.5px; }
 .DynRDSLiveDot.cur { color: var(--dynrds-rds); }
-.DynRDSLiveBar { height: 2px; background: #2b333d; border-radius: 1px; margin-top: 6px; overflow: hidden; }
+.DynRDSLiveBar { height: 2px; background: var(--dynrds-track); border-radius: 1px; margin-top: 6px; overflow: hidden; }
 .DynRDSLiveBar i { display: block; height: 100%; width: 0; background: var(--dynrds-rds); }
-.DynRDSLiveFull { margin-top: 15px; font-size: 0.82em; color: #b6c1cd; }
+.DynRDSLiveFull { margin-top: 15px; font-size: 0.82em; color: var(--dynrds-label); }
 .DynRDSLiveFull > div { margin: 5px 0; display: flex; align-items: baseline; gap: 8px; min-height: 1.2em; }
-.DynRDSLiveFull .lbl { flex: 0 0 4.5em; color: #93a1b0; }
+.DynRDSLiveFull .lbl { flex: 0 0 4.5em; color: var(--dynrds-label); }
 .DynRDSLiveSegs { font-family: monospace; white-space: pre-wrap; word-break: break-all;
-                  flex: 1 1 auto; min-width: 0; border-left: 1px solid #55626f; }
-.DynRDSLiveSeg { border-right: 1px solid #55626f; padding: 2px; }
-.DynRDSLiveChip { font-size: 0.72em; color: #8b98a8; }
-.DynRDSLiveNote { margin-top: 11px; font-size: 0.78em; color: #8b98a8;
+                  flex: 1 1 auto; min-width: 0; border-left: 1px solid var(--dynrds-bezel-edge); }
+.DynRDSLiveSeg { border-right: 1px solid var(--dynrds-bezel-edge); padding: 2px; }
+.DynRDSLiveChip { font-size: 0.72em; color: var(--dynrds-dim); }
+.DynRDSLiveNote { margin-top: 11px; font-size: 0.78em; color: var(--dynrds-dim);
                   display: flex; align-items: center; gap: 7px; }
 .DynRDSLiveStateLabel { font-size: 0.72em; letter-spacing: 0.16em; text-transform: uppercase;
-                        color: #a3b0be; line-height: 1;}
+                        color: var(--dynrds-label); line-height: 1; }
 #DynRDSLiveNoteText { margin-left: auto; }
-.DynRDSLiveState { width: 9px; height: 9px; border-radius: 50%; background: #5a6774; flex: 0 0 auto; }
-.DynRDSLiveState.ok { background: #4ade80;
-                      box-shadow: 0 0 5px rgba(74,222,128,0.8), 0 0 12px rgba(74,222,128,0.4); }
-.DynRDSLiveState.err  { background: #c0392b; }
-
+.DynRDSLiveState { width: 9px; height: 9px; border-radius: 50%; background: var(--dynrds-dim); flex: 0 0 auto; }
+.DynRDSLiveState.ok { background: #4ade80; box-shadow: 0 0 5px rgba(74,222,128,0.8), 0 0 12px rgba(74,222,128,0.4); }
+.DynRDSLiveState.err { background: #c0392b; }
 @keyframes DynRDSSweep { from { width: 0; } to { width: 100%; } }
-@media (prefers-reduced-motion: reduce) {
-  .DynRDSLiveBar i { animation: none !important; }
-}
+@media (prefers-reduced-motion: reduce) { .DynRDSLiveBar i { animation: none !important; } }
 </style>
 <div class="DynRDSLive">
   <div class="DynRDSLiveHead">
@@ -859,7 +881,7 @@ function displayLiveRDSSection(string $transmitterInfo, bool $transmitterFound):
 
   // Only poll while the tab is visible
   document.addEventListener('visibilitychange', function () {
-    if (document.hidden) { clearInterval(pollTimer); pollTimer = null; }
+    if (document.hidden) { stopCycling(); clearInterval(pollTimer); pollTimer = null; }
     else if (!pollTimer) { poll(); pollTimer = setInterval(poll, POLL_MS); }
   });
 
@@ -870,6 +892,7 @@ function displayLiveRDSSection(string $transmitterInfo, bool $transmitterFound):
   });
 })();
 </script>
+</div>
     <?php
 }
 

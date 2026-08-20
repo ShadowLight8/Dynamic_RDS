@@ -26,6 +26,7 @@ sys.excepthook = logUnhandledException
 
 @atexit.register
 def cleanup():
+  # Intentionally keep the RDS status file around for zip file and for UI to know things aren't running
   try:
     logging.debug('Cleaning up fifo')
     os.unlink(fifo_path)
@@ -105,7 +106,7 @@ lastStatus = None
 def writeStatus():
   # Status file for Dynamic_RDS.php - written on RDS data changes and
   # transmitter state transitions, so mtime reflects the last real change
-  global lastStatus # pylint: disable=global-statement
+  global lastStatus
   if transmitter is None:
     return
   try:
@@ -300,6 +301,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
             rdsValues[key] = ''
           updateRDSData()
           transmitter.update()
+        writeStatus()
 
       elif line == 'START':
         logging.info('Processing start')
@@ -381,6 +383,6 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
         rdsValues['{T}'] = mpcLatest
         updateRDSData()
 
-    if len(line) == 0 and (transmitter is None or not transmitter.active):
+    if len(line) == 0 and (transmitter is None or not transmitter.active or config['DynRDSEnableRDS'] != "1"):
       logging.debug('Sleeping...')
       time.sleep(3)

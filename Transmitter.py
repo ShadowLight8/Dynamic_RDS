@@ -78,11 +78,11 @@ class Transmitter:
       self.pi_byte1 = int('0x' + config['DynRDSPICode'][0:2], 16)
       self.pi_byte2 = int('0x' + config['DynRDSPICode'][2:4], 16)
       self.pty = int(config['DynRDSPty'])
-      self.updateData(data)
       self.fragments = []
       self.currentFragment = 0
-      self.lastFragmentTime = 0
+      self.lastFragmentTime = datetime.now()
       self.currentGroup = 0
+      self.updateData(data)
 
     def updateData(self, data):
       logging.debug('RDSBuffer updateData')
