@@ -356,7 +356,7 @@
             "type": "text",
             "size": 64,
             "maxlength": 256,
-            "default": "{T}[ by {A}][|Track {P} of {C}  ]Merry Christmas!"
+            "default": "{T}[ by {A}][|Track {P} of {C}] Merry Christmas!"
         },
         "DynRDSRTUpdateRate": {
             "name": "DynRDSRTUpdateRate",
@@ -369,7 +369,7 @@
             "min": 3,
             "max": 60,
             "step": 1,
-            "default": 8
+            "default": 7
         },
         "DynRDSRTSize": {
             "name": "DynRDSRTSize",

@@ -46,7 +46,6 @@ enum PlatformType: string {
 class DynamicRDSStatus {
     private array $errors = [];
     private array $warnings = [];
-    private array $successes = [];
 
     public function addError(string $message): void {
         $this->errors[] = $message;
@@ -54,10 +53,6 @@ class DynamicRDSStatus {
 
     public function addWarning(string $message): void {
         $this->warnings[] = $message;
-    }
-
-    public function addSuccess(string $message): void {
-        $this->successes[] = $message;
     }
 
     public function hasErrors(): bool {
@@ -71,14 +66,6 @@ class DynamicRDSStatus {
 
         foreach ($this->warnings as $warning) {
             echo '<div class="callout callout-warning">' . $warning . '</div>';
-        }
-
-        if (!empty($this->successes)) {
-            echo '<div class="callout callout-success">';
-            foreach ($this->successes as $success) {
-                echo '<div>' . $success . '</div>';
-            }
-            echo '</div>';
         }
     }
 }
@@ -226,6 +213,7 @@ class ZipDownloader {
                 $this->addFileToZip($zip, $rotatedLog, basename($rotatedLog));
             }
             $this->addFileToZip($zip, $this->configDirectory . "/plugin.Dynamic_RDS", "plugin.Dynamic_RDS");
+            $this->addFileToZip($zip, $this->dynRDSDir . "/Dynamic_RDS_Status.json", "Dynamic_RDS_Status.json");
             $this->addFileToZip($zip, "/boot/firmware/config.txt", "config.txt");
             $this->addFileToZip($zip, "/boot/uEnv.txt", "uEnv.txt");
 
@@ -333,21 +321,18 @@ function renderDynamicRDSStatus(
         checkRaspberryPiConfiguration($status, $pluginSettings);
     }
 
-    // Add success messages
-    if ($engineRunning) {
-        $status->addSuccess('Dynamic RDS Engine is running');
-    }
-
+    $transmitterInfo = 'No transmitter detected';
     if ($transmitterType !== TransmitterType::NONE) {
         $i2cType = determineI2CType($platform, $pluginSettings);
-        $status->addSuccess(
-            'Detected <b>' . $transmitterType->value . '</b> on I<sup>2</sup>C ' . 
-            $i2cType . ' bus ' . $i2cBus . ' at address ' . $transmitterType->getAddressHex()
-        );
+        $transmitterInfo = $transmitterType->value . ' &middot; I<sup>2</sup>C ' .
+            $i2cType . ' bus ' . $i2cBus . ' &middot; ' . $transmitterType->getAddressHex();
     }
 
     // Display all status messages
     $status->displayMessages();
+
+    // Display live RDS output
+    displayLiveRDSSection($transmitterInfo, $transmitterType !== TransmitterType::NONE);
 
     // Output JavaScript
     outputJavaScript($transmitterType);
@@ -617,6 +602,301 @@ function displayMQTTSection(array $settings): void {
 }
 
 /**
+ * Display live RDS output section
+ */
+function displayLiveRDSSection(string $transmitterInfo, bool $transmitterFound): void {
+?>
+<div class="container-fluid settingsTable settingsGroupTable">
+<style>
+/* ============ Dynamic_RDS live panel ============ */
+.DynRDSLive {
+  /* Bezel follows the FPP theme; the screen stays dark in both so the panel
+     reads as a device readout rather than an inverted block of colour */
+  --dynrds-rds:        #8ec5ff;   /* RDS text colour - single swap point */
+  --dynrds-screen:     #1a2028;
+  --dynrds-bezel:      #dfe3e8;
+  --dynrds-bezel-edge: #b9c1ca;
+  --dynrds-bezel-top:  #f2f4f7;
+  --dynrds-label:      #59646f;
+  --dynrds-dim:        #78838f;
+  --dynrds-track:      #c6ccd3;
+ 
+  background: var(--dynrds-bezel);
+  border: 1px solid var(--dynrds-bezel-edge);
+  border-radius: 8px;
+  padding: 15px 17px;
+  color: var(--dynrds-label);
+  box-shadow: inset 0 1px 0 var(--dynrds-bezel-top), 0 2px 6px rgba(0,0,0,0.18);
+}
+[data-bs-theme="dark"] .DynRDSLive {
+  --dynrds-bezel:      #333d4a;
+  --dynrds-bezel-edge: #5c6a7a;
+  --dynrds-bezel-top:  #4e5b6b;
+  --dynrds-label:      #a3b0be;
+  --dynrds-dim:        #8b98a8;
+  --dynrds-track:      #2b333d;
+  box-shadow: inset 0 1px 0 var(--dynrds-bezel-top), 0 2px 6px rgba(0,0,0,0.45);
+}
+ 
+.DynRDSLiveHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; }
+.DynRDSLiveTitle { font-size: 0.85em; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dynrds-label); }
+.DynRDSLiveOnAir { font-size: 0.68em; letter-spacing: 0.18em; padding: 3px 10px; border-radius: 10px;
+                   border: 1px solid var(--dynrds-bezel-edge); color: var(--dynrds-dim); transition: all 250ms ease; }
+.DynRDSLiveOnAir.lit { border-color: #ff7a55; color: #ffe0d4; background: #7d2916;
+                       box-shadow: 0 0 6px rgba(255,122,85,0.65), 0 0 18px rgba(255,122,85,0.3); }
+.DynRDSLiveRow { margin: 11px 0; }
+.DynRDSLiveRowTop { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.DynRDSLiveLabel { width: 2em; font-size: 0.7em; letter-spacing: 0.12em; color: var(--dynrds-label); }
+.DynRDSLiveCells { display: flex; gap: 2px; }
+.DynRDSLiveCell { font-family: monospace; font-size: 1.2em; padding: 5px 7px; text-align: center;
+                  color: var(--dynrds-rds); background: var(--dynrds-screen); border-radius: 2px; white-space: pre; }
+.DynRDSLiveText { font-family: monospace; font-size: 1.02em; white-space: pre; color: var(--dynrds-rds);
+                  background: var(--dynrds-screen); padding: 7px 9px; border-radius: 3px;
+                  box-sizing: content-box; width: 64ch; height: 1.3em; line-height: 1.3;
+                  flex: 0 1 auto; max-width: 100%; overflow-x: auto; }
+.DynRDSLiveDots { margin-left: auto; font-size: 0.62em; color: var(--dynrds-dim); }
+.DynRDSLiveDot { padding: 0 1.5px; }
+.DynRDSLiveDot.cur { color: var(--dynrds-rds); }
+.DynRDSLiveBar { height: 2px; background: var(--dynrds-track); border-radius: 1px; margin-top: 6px; overflow: hidden; }
+.DynRDSLiveBar i { display: block; height: 100%; width: 0; background: var(--dynrds-rds); }
+.DynRDSLiveFull { margin-top: 15px; font-size: 0.82em; color: var(--dynrds-label); }
+.DynRDSLiveFull > div { margin: 5px 0; display: flex; align-items: baseline; gap: 8px; min-height: 1.2em; }
+.DynRDSLiveFull .lbl { flex: 0 0 4.5em; color: var(--dynrds-label); }
+.DynRDSLiveSegs { font-family: monospace; white-space: pre-wrap; word-break: break-all;
+                  flex: 1 1 auto; min-width: 0; border-left: 1px solid var(--dynrds-bezel-edge); }
+.DynRDSLiveSeg { border-right: 1px solid var(--dynrds-bezel-edge); padding: 2px; }
+.DynRDSLiveChip { font-size: 0.72em; color: var(--dynrds-dim); }
+.DynRDSLiveNote { margin-top: 11px; font-size: 0.78em; color: var(--dynrds-dim);
+                  display: flex; align-items: center; gap: 7px; }
+.DynRDSLiveStateLabel { font-size: 0.72em; letter-spacing: 0.16em; text-transform: uppercase;
+                        color: var(--dynrds-label); line-height: 1; }
+#DynRDSLiveNoteText { margin-left: auto; }
+.DynRDSLiveState { width: 9px; height: 9px; border-radius: 50%; background: var(--dynrds-dim); flex: 0 0 auto; }
+.DynRDSLiveState.ok { background: #4ade80; box-shadow: 0 0 5px rgba(74,222,128,0.8), 0 0 12px rgba(74,222,128,0.4); }
+.DynRDSLiveState.err { background: #c0392b; }
+@keyframes DynRDSSweep { from { width: 0; } to { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .DynRDSLiveBar i { animation: none !important; } }
+</style>
+<div class="DynRDSLive">
+  <div class="DynRDSLiveHead">
+    <div class="DynRDSLiveTitle">Now Broadcasting &middot; <span class="DynRDSLiveChip"><?php echo $transmitterInfo; ?></span></div>
+    <span class="DynRDSLiveOnAir" id="DynRDSLiveOnAir">ON AIR</span>
+  </div>
+  <div class="DynRDSLiveRow">
+    <div class="DynRDSLiveRowTop">
+      <span class="DynRDSLiveLabel">PS</span>
+      <span class="DynRDSLiveCells" id="DynRDSLivePS"></span>
+      <span class="DynRDSLiveDots" id="DynRDSLivePSDots"></span>
+    </div>
+    <div class="DynRDSLiveBar"><i id="DynRDSLivePSBar"></i></div>
+  </div>
+  <div class="DynRDSLiveRow">
+    <div class="DynRDSLiveRowTop">
+      <span class="DynRDSLiveLabel">RT</span>
+      <span class="DynRDSLiveText" id="DynRDSLiveRT"></span>
+      <span class="DynRDSLiveDots" id="DynRDSLiveRTDots"></span>
+    </div>
+    <div class="DynRDSLiveBar"><i id="DynRDSLiveRTBar"></i></div>
+  </div>
+  <div class="DynRDSLiveFull">
+    <div><span class="lbl">Full PS</span><span class="DynRDSLiveSegs" id="DynRDSLivePSText"></span></div>
+    <div><span class="lbl">Full RT</span><span class="DynRDSLiveSegs" id="DynRDSLiveRTText"></span></div>
+  </div>
+  <div class="DynRDSLiveNote">
+    <i class="DynRDSLiveState" id="DynRDSLiveState"></i>
+    <span class="DynRDSLiveStateLabel" id="DynRDSLiveStateLabel">&nbsp;</span>
+    <span id="DynRDSLiveNoteText">Loading...</span>
+  </div>
+</div>
+<br />
+<script>
+(function () {
+  var POLL_MS = 4000;   // Independent of the PS/RT update rates
+  // Transmitter detection is server side and cannot change without a page reload
+  var hasTransmitter = <?php echo $transmitterFound ? 'true' : 'false'; ?>;
+  var data = null, index = { PS: 0, RT: 0 }, timers = { PS: null, RT: null }, pollTimer = null;
+
+  function el(id) { return document.getElementById(id); }
+
+  // RDS groups are only going out when all of these hold. RDS data is displayed
+  // only in this state, so nothing on screen can imply a broadcast that is not
+  // happening.
+  function onAir() {
+    return !!(data && hasTransmitter && data.running && data.transmitterActive && data.RDSEnabled);
+  }
+
+  // Rebuild a container as one span per item, optionally marking one current.
+  // textContent per span keeps untrusted track metadata inert.
+  function fill(target, items, cls, current) {
+    target.innerHTML = '';
+    for (var i = 0; i < items.length; i++) {
+      var s = document.createElement('span');
+      s.className = cls + (i === current ? ' cur' : '');
+      s.textContent = items[i];
+      target.appendChild(s);
+    }
+  }
+
+  function chunk(text, size) {
+    var out = [];
+    for (var i = 0; i < text.length; i += size) { out.push(text.substr(i, size)); }
+    return out;
+  }
+
+  // 0x0d marks end-of-RT to receivers - strip for display only
+  function clean(s) { return s.replace(/\r/g, ''); }
+
+  // Restarting a CSS animation needs it cleared and a reflow forced.
+  // A zero duration just parks the bar at the start.
+  function sweep(target, seconds) {
+    target.style.animation = 'none';
+    target.style.width = '0';
+    if (!seconds) { return; }
+    void target.offsetWidth;
+    target.style.animation = 'DynRDSSweep ' + seconds + 's linear forwards';
+  }
+
+  // name is 'PS' or 'RT' - payload keys and element ids both follow it.
+  // Only reached while on air.
+  function renderRow(name) {
+    var frags = data[name + 'fragments'];
+    var cur = frags.length ? index[name] % frags.length : 0;
+    var main = el('DynRDSLive' + name);
+
+    // PS shows one tile per character, always 8 wide so the row cannot resize.
+    // RT is a single line in a fixed width box.
+    if (name === 'PS') { fill(main, (clean(frags[cur] || '') + '        ').slice(0, 8).split(''), 'DynRDSLiveCell'); }
+    else { main.textContent = clean(frags[cur] || ''); }
+
+    var dots = [];
+    while (frags.length > 1 && dots.length < frags.length) { dots.push('\u25CF'); }
+    fill(el('DynRDSLive' + name + 'Dots'), dots, 'DynRDSLiveDot', cur);
+
+    fill(el('DynRDSLive' + name + 'Text'), frags.map(clean), 'DynRDSLiveSeg');
+
+    sweep(el('DynRDSLive' + name + 'Bar'), data[name + 'delay']);
+  }
+
+  function stopCycling() {
+    clearInterval(timers.PS); clearInterval(timers.RT);
+    timers.PS = timers.RT = null;
+  }
+
+  function startCycling() {
+    stopCycling();
+    ['PS', 'RT'].forEach(function (name) {
+      index[name] = 0;
+      renderRow(name);
+      if (data[name + 'fragments'].length) {
+        timers[name] = setInterval(function () {
+          index[name]++;
+          renderRow(name);
+        }, data[name + 'delay'] * 1000);
+      }
+    });
+  }
+
+  // Everything off. Layout is held by the 8 empty PS tiles, the fixed size RT
+  // box and the min-height on the full text rows.
+  function blank() {
+    stopCycling();
+    fill(el('DynRDSLivePS'), '        '.split(''), 'DynRDSLiveCell');
+    el('DynRDSLiveRT').textContent = '';
+    ['PS', 'RT'].forEach(function (name) {
+      fill(el('DynRDSLive' + name + 'Dots'), [], 'DynRDSLiveDot');
+      fill(el('DynRDSLive' + name + 'Text'), [], 'DynRDSLiveSeg');
+      sweep(el('DynRDSLive' + name + 'Bar'), 0);
+    });
+    el('DynRDSLiveOnAir').classList.remove('lit');
+  }
+
+  function setState(cls, label, message) {
+    el('DynRDSLiveState').className = 'DynRDSLiveState ' + cls;
+    el('DynRDSLiveStateLabel').textContent = label;
+    el('DynRDSLiveNoteText').textContent = message;
+  }
+
+  function fmtAge(s) {
+    if (s < 60) { return s + 's'; }
+    if (s < 3600) { return Math.floor(s / 60) + 'm'; }
+    return Math.floor(s / 3600) + 'h';
+  }
+
+  // Why ON AIR is or is not lit, given the Engine is running
+  function note() {
+    if (!hasTransmitter)         { return 'No transmitter detected'; }
+    if (!data.transmitterActive) { return 'Transmitter is not active'; }
+    if (!data.RDSEnabled)        { return 'RDS is disabled - no RDS groups are being sent'; }
+    return 'Cycling at the configured PS/RT update rates - last change ' + fmtAge(data.age) + ' ago';
+  }
+
+  function normalize(d) {
+    d.PSfragments = d.PSfragments || [];
+    d.RTfragments = d.RTfragments || [];
+    d.PSdelay = d.PSdelay || 4;
+    d.RTdelay = d.RTdelay || 7;
+    // Si4713 exposes no fragment buffers - derive the same view from the sent
+    // text, which it pads to a multiple of 8 for PS and 32 for RT
+    if (!d.PSfragments.length && d.PStext) { d.PSfragments = chunk(d.PStext, 8); }
+    if (!d.RTfragments.length && d.RTtext) { d.RTfragments = chunk(d.RTtext, 32); }
+  }
+
+  function apply(d) {
+    var isNew = !data || d.PStext !== data.PStext || d.RTtext !== data.RTtext;
+    normalize(d);
+    data = d;
+
+    // The dot reflects Engine liveness only - broadcast state is the ON AIR badge
+    if (!d.running) {
+      blank();
+      setState('err', 'Engine Not Running', 'Engine is not running');
+      return;
+    }
+
+    setState('ok', 'Engine Active', note());
+
+    if (!onAir()) { blank(); return; }
+
+    el('DynRDSLiveOnAir').classList.add('lit');
+    // !timers.PS covers coming back on air with unchanged content
+    if (isNew || !timers.PS) { startCycling(); }
+  }
+
+  function poll() {
+    $.getJSON('api/plugin/Dynamic_RDS/Status').done(function (d) {
+      if (d.error) {
+        data = null;
+        blank();
+        setState('err', 'Engine Not Running', d.error);
+        return;
+      }
+      apply(d);
+    }).fail(function () {
+      // The endpoint is unreachable, so the Engine state is genuinely unknown
+      data = null;
+      blank();
+      setState('err', 'Status Unavailable', 'Unable to reach the Dynamic RDS status endpoint');
+    });
+  }
+
+  // Only poll while the tab is visible
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { stopCycling(); clearInterval(pollTimer); pollTimer = null; }
+    else if (!pollTimer) { poll(); pollTimer = setInterval(poll, POLL_MS); }
+  });
+
+  $(document).ready(function () {
+    blank();
+    poll();
+    pollTimer = setInterval(poll, POLL_MS);
+  });
+})();
+</script>
+</div>
+    <?php
+}
+
+/**
  * Display logs section
  */
 function displayLogsSection(): void {
@@ -650,6 +930,7 @@ function displayReportIssueSection(): void {
 Zip file includes:
 <ul>
 <li>Log - <code>plugin-Dynamic_RDS.log</code> (plus rotated copies, if present)</li>
+<li>Last RDS output - <code>Dynamic_RDS_Status.json</code></li>
 <li>Config - <code>plugin.Dynamic_RDS</code></li>
 <li>Version from <code>git rev-parse --short HEAD</code></li>
 <li>Pi/BBB boot config - <code>/boot/firmware/config.txt</code> or <code>/boot/uEnv.txt</code></li>

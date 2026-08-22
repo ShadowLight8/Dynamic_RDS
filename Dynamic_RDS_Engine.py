@@ -26,6 +26,7 @@ sys.excepthook = logUnhandledException
 
 @atexit.register
 def cleanup():
+  # Intentionally keep the RDS status file around for zip file and for UI to know things aren't running
   try:
     logging.debug('Cleaning up fifo')
     os.unlink(fifo_path)
@@ -77,13 +78,50 @@ def updateRDSData():
   transmitter.updateRDSData(rdsStyleToString(config['DynRDSPSStyle'], 8), rdsStyleToString(config['DynRDSRTStyle'], int(config['DynRDSRTSize'])))
 
   if config['DynRDSmqttEnable'] == '1':
-    mqttStatus = {}
-    mqttStatus['PStext'] = transmitter.PStext
-    mqttStatus['RTtext'] = transmitter.RTtext
-    mqttStatus['PSfragments'] = transmitter.PS.fragments
-    mqttStatus['RTfragments'] = transmitter.RT.fragments
-    mqttStatus['RDSValues'] = rdsValues
-    mqtt.publish('status', json.dumps(mqttStatus, indent=8))
+    mqtt.publish('status', json.dumps(buildStatus(), indent=8))
+
+  writeStatus()
+
+def buildStatus():
+  # Single source of truth for what is being broadcast - used by MQTT and the web UI
+  # Si4713 writes PS/RT directly to the chip and has no buffer objects
+  PSbuffer = getattr(transmitter, 'PS', None)
+  RTbuffer = getattr(transmitter, 'RT', None)
+  return {
+    'PStext': transmitter.PStext,
+    'RTtext': transmitter.RTtext,
+    'PSfragments': PSbuffer.fragments if PSbuffer is not None else [],
+    'RTfragments': RTbuffer.fragments if RTbuffer is not None else [],
+    'PSdelay': int(config.get('DynRDSPSUpdateRate', 4)),
+    'RTdelay': int(config.get('DynRDSRTUpdateRate', 7)),
+    'RDSValues': rdsValues,
+    'RDSEnabled': config['DynRDSEnableRDS'] == '1',
+    'transmitterActive': transmitter.active,
+    'transmitterType': config['DynRDSTransmitter'],
+    'pid': os.getpid()
+  }
+
+lastStatus = None
+
+def writeStatus():
+  # Status file for Dynamic_RDS.php - written on RDS data changes and
+  # transmitter state transitions, so mtime reflects the last real change
+  global lastStatus
+  if transmitter is None:
+    return
+  try:
+    payload = json.dumps(buildStatus(), indent=2)
+    if payload == lastStatus:
+      logging.excessive('Status unchanged, skipping write')
+      return
+    # Write to a temp file and replace so the web UI never reads a partial file
+    with open(status_path + '.tmp', 'w', encoding='UTF-8') as f:
+      f.write(payload)
+    os.replace(status_path + '.tmp', status_path)
+    lastStatus = payload
+    logging.excessive('Status file written')
+  except Exception:
+    logging.exception('writeStatus')
 
 def rdsStyleToString(rdsStyle, groupSize):
   outputRDS = []
@@ -163,6 +201,9 @@ except:
   logging.error('Unable to create lock. Another instance of Dynamic_RDS_Engine.py running?')
   sys.exit(1)
 
+# Status file for the web UI
+status_path = script_dir + '/Dynamic_RDS_Status.json'
+
 # Setup fifo
 fifo_path = script_dir + "/Dynamic_RDS_FIFO"
 try:
@@ -207,6 +248,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
       if line == 'EXIT':
         logging.info('Processing exit')
         transmitter.shutdown() # TODO: Can fail if transmitter wasn't set - Can fix with an if statement or look into using Transmitter base class initially
+        writeStatus()
         mqtt.disconnect()
         sys.exit()
 
@@ -217,6 +259,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
         transmitter.reset()
         if config['DynRDSStart'] == "FPPDStart":
           transmitter.startup()
+        writeStatus()
 
       elif line == 'INIT': # From --list with callback.py
         logging.info('Processing init')
@@ -248,6 +291,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
 
         if config['DynRDSStart'] == "FPPDStart":
           transmitter.startup()
+        writeStatus()
 
       elif line == 'UPDATE':
         read_config()
@@ -257,12 +301,14 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
             rdsValues[key] = ''
           updateRDSData()
           transmitter.update()
+        writeStatus()
 
       elif line == 'START':
         logging.info('Processing start')
         if config['DynRDSStart'] == "PlaylistStart" or not transmitter.active:
           transmitter.startup()
         activePlaylist = True
+        writeStatus()
 
       elif line == 'STOP':
         logging.info('Processing stop')
@@ -274,6 +320,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
         if config['DynRDSStop'] == "PlaylistStop":
           transmitter.shutdown()
           logging.info('Transmitter stopped')
+        writeStatus()
 
       elif line.startswith('MAINLIST'):
         logging.info('Processing MainPlaylist')
@@ -336,6 +383,6 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
         rdsValues['{T}'] = mpcLatest
         updateRDSData()
 
-    if transmitter is None or not transmitter.active:
+    if len(line) == 0 and (transmitter is None or not transmitter.active or config['DynRDSEnableRDS'] != "1"):
       logging.debug('Sleeping...')
       time.sleep(3)

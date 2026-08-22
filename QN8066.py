@@ -184,10 +184,11 @@ class QN8066(Transmitter):
     def updateData(self, data):
       super().updateData(data)
       # Remove all trailing spaces and append chr(0x0d) if length < 64 (max RT fragment size)
-      for i in range(len(self.fragments)):
-        self.fragments[i] = self.fragments[i].rstrip()
-        if len(self.fragments[i]) < 64:
-          self.fragments[i] += chr(0x0d)
+      for i, fragment in enumerate(self.fragments):
+        fragment = fragment.rstrip()
+        if len(fragment) < 64:
+          fragment += chr(0x0d)
+        self.fragments[i] = fragment
       self.ab = not self.ab
       logging.info('RT %s', self.fragments)
 
