@@ -491,11 +491,14 @@ function DynRDSFastUpdate() {
     $.get('api/plugin/Dynamic_RDS/FastUpdate');
 }
 
-// The RDS Settings group shares a single callback, but only the Style Text
-// fields are re-read by the Engine on UPDATE. Everything else in the group is
-// consumed when the transmitter is set up, so it still needs an FPP restart.
+// The RDS Settings group shares a single callback, but only the Style Text and
+// Update Rate fields are re-read by the Engine on UPDATE. Everything else in the
+// group is consumed when the transmitter is set up, so it still needs an FPP restart.
+var DynRDSLiveRDSSettings = ['DynRDSPSStyle', 'DynRDSRTStyle',
+                             'DynRDSPSUpdateRate', 'DynRDSRTUpdateRate'];
+
 function DynRDSRDSSettingsUpdate(key) {
-    if (key === 'DynRDSPSStyle' || key === 'DynRDSRTStyle') {
+    if (DynRDSLiveRDSSettings.indexOf(key) !== -1) {
         DynRDSFastUpdate();
     }
 }
