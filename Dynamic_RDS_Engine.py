@@ -294,11 +294,12 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
         writeStatus()
 
       elif line == 'UPDATE':
+        priorMPCEnable = config['DynRDSmpcEnable']
         read_config()
         mqtt.publish('config', json.dumps(config, indent=8))
+        if config['DynRDSmpcEnable'] != priorMPCEnable and not activePlaylist:
+          rdsValues['{T}'] = ''
         if (transmitter is not None and transmitter.active):
-          for key in rdsValues:
-            rdsValues[key] = ''
           updateRDSData()
           transmitter.update()
         writeStatus()
