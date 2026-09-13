@@ -387,9 +387,23 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
     if not activePlaylist and transmitter is not None and transmitter.active and config['DynRDSmpcEnable'] == "1" and datetime.now() > nextMPCUpdate:
       logging.debug('Processing mpc')
       nextMPCUpdate = datetime.now() + timedelta(seconds=12)
-      # TODO: Error handling might be needed here if the mpc execution has an issue
+
       # TODO: Future idea to handle multiple fields from mpc, but I've not seen them used yet. [{A}%artist%][{T}%title%][{N}%track%]
-      mpcLatest = subprocess.run(['mpc', 'current', '-f', '%title%'], stdout=subprocess.PIPE, check=False).stdout.decode('utf-8').strip()
+      try:
+        mpcLatest = subprocess.run(['mpc', 'current', '-f', '%title%'],
+                                   stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                   check=False, timeout=2,
+                                   encoding='utf-8', errors='replace').stdout.strip()
+      except subprocess.TimeoutExpired:
+        # mpc or MPD is wedged - back off so RDS group output isn't stalled every 12 seconds
+        logging.warning('mpc timed out - backing off for 60 seconds')
+        nextMPCUpdate = datetime.now() + timedelta(seconds=60)
+        mpcLatest = rdsValues['{T}']
+      except OSError as error:
+        logging.warning('mpc could not be run (%s) - backing off for 60 seconds', error)
+        nextMPCUpdate = datetime.now() + timedelta(seconds=60)
+        mpcLatest = rdsValues['{T}']
+
       if rdsValues['{T}'] != mpcLatest:
         rdsValues['{T}'] = mpcLatest
         updateRDSData()
