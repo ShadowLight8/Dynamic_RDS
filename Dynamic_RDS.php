@@ -491,6 +491,18 @@ function DynRDSFastUpdate() {
     $.get('api/plugin/Dynamic_RDS/FastUpdate');
 }
 
+// The RDS Settings group shares a single callback, but only the Style Text and
+// Update Rate fields are re-read by the Engine on UPDATE. Everything else in the
+// group is consumed when the transmitter is set up, so it still needs an FPP restart.
+var DynRDSLiveRDSSettings = ['DynRDSPSStyle', 'DynRDSRTStyle',
+                             'DynRDSPSUpdateRate', 'DynRDSRTUpdateRate'];
+
+function DynRDSRDSSettingsUpdate(key) {
+    if (DynRDSLiveRDSSettings.indexOf(key) !== -1) {
+        DynRDSFastUpdate();
+    }
+}
+
 function DynRDSPiBootUpdate(key) {
     $.post('api/plugin/Dynamic_RDS/PiBootChange/' + encodeURIComponent(key), 
            JSON.stringify(Object.assign({}, pluginSettings)));
@@ -519,15 +531,13 @@ function ScriptStreamProgressDialogDone() {
  * Display all settings groups
  */
 function displaySettingsGroups(array $settings): void {
-    PrintSettingGroup("DynRDSRDSSettings", getRDSStyleGuideHTML(), "", 1, "Dynamic_RDS", "UpdateDynRDSTransmitterChildren");
+    PrintSettingGroup("DynRDSRDSSettings", getRDSStyleGuideHTML(), "", 1, "Dynamic_RDS", "DynRDSRDSSettingsUpdate");
 
     PrintSettingGroup("DynRDSTransmitterSettings", "", "", 1, "Dynamic_RDS", "DynRDSTransmitterFrequencyUpdate");
 
     // Wrap Audio in div id to make it easy to hide/show for Si4713
     echo '<div id="DynRDSAudioSettingsWrapper">';
-    PrintSettingGroup("DynRDSAudioSettings", "",
-        "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i>indicates a live change to transmitter, no FPP restart required",
-        1, "Dynamic_RDS", "DynRDSFastUpdate");
+    PrintSettingGroup("DynRDSAudioSettings", "", "", 1, "Dynamic_RDS", "DynRDSFastUpdate");
     echo '</div>';
 
     PrintSettingGroup("DynRDSPowerSettings", "", "", 1, "Dynamic_RDS", "DynRDSPiBootUpdate");

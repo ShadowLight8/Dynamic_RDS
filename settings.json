@@ -174,7 +174,7 @@
             "name": "DynRDSQN8066AmpPower",
             "description": "Amp Power (0-100)",
             "tip": "Adjust the power output for the amplifier after the transmitter chip. This is controlled by PWM output.",
-            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i> - Controlled by PWM",
+            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i> - Controlled by PWM",
             "restart": 0,
             "reboot": 0,
             "type": "number",
@@ -273,7 +273,7 @@
             "max": 20,
             "step": 1,
             "default": 0,
-            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i>"
+            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i>"
         },
         "DynRDSQN8066SoftClipping": {
             "name": "DynRDSQN8066SoftClipping",
@@ -284,7 +284,7 @@
             "checkedValue": "1",
             "uncheckedValue": "0",
             "default": 1,
-            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i>"
+            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i>"
         },
         "DynRDSQN8066AGC": {
             "name": "DynRDSQN8066AGC",
@@ -295,7 +295,7 @@
             "checkedValue": "1",
             "uncheckedValue": "0",
             "default": 0,
-            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i>"
+            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i>"
         },
         "DynRDSSi4713TestAudio": {
             "name": "DynRDSSi4713TestAudio",
@@ -327,19 +327,20 @@
             "name": "DynRDSPSStyle",
             "description": "PS Style Text (8 chars per update)",
             "tip": "Sent 8 characters at a time. Program Service is the most commonly displayed part of RDS.",
-            "restart": 1,
+            "restart": 0,
             "reboot": 0,
             "type": "text",
             "size": 32,
             "maxlength": 64,
-            "default": "{T}|{A}[|{P} of {C}]|Merry|Christ-|   -mas!"
+            "default": "{T}|{A}[|{P} of {C}]|Merry|Christ-|   -mas!",
+            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i>"
         },
         "DynRDSPSUpdateRate": {
             "name": "DynRDSPSUpdateRate",
             "description": "PS Update Rate",
             "tip": "Interval between updating the 8 characters being sent. It takes ~1 second to send the 8 characters and some radios only display the text after receiving the full group twice.",
-            "suffix": "seconds",
-            "restart": 1,
+            "suffix": "seconds <i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i>",
+            "restart": 0,
             "reboot": 0,
             "type": "number",
             "min": 3,
@@ -351,19 +352,20 @@
             "name": "DynRDSRTStyle",
             "description": "RT Style Text",
             "tip": "Recommended to send 32 characters at a time, but can send up to 64 characters. Radio Text is intended for longer message with a slower update rate.",
-            "restart": 1,
+            "restart": 0,
             "reboot": 0,
             "type": "text",
             "size": 64,
             "maxlength": 256,
-            "default": "{T}[ by {A}][|Track {P} of {C}] Merry Christmas!"
+            "default": "{T}[ by {A}][|Track {P} of {C}] Merry Christmas!",
+            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i>"
         },
         "DynRDSRTUpdateRate": {
             "name": "DynRDSRTUpdateRate",
             "description": "RT Update Rate",
             "tip": "Interval between updating the 32-64 characters being sent. It takes ~4 seconds to send the 64 characters and some radios only display the text after receiving the full group twice.",
-            "suffix": "seconds",
-            "restart": 1,
+            "suffix": "seconds <i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i>",
+            "restart": 0,
             "reboot": 0,
             "type": "number",
             "min": 3,
@@ -476,7 +478,7 @@
             "checkedValue": "1",
             "uncheckedValue": "0",
             "default": 0,
-            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i>"
+            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i>"
         },
         "DynRDSmqttEnable": {
             "name": "DynRDSmqttEnable",
