@@ -491,6 +491,18 @@ function DynRDSFastUpdate() {
     $.get('api/plugin/Dynamic_RDS/FastUpdate');
 }
 
+// The RDS Settings group shares a single callback, but only the Style Text and
+// Update Rate fields are re-read by the Engine on UPDATE. Everything else in the
+// group is consumed when the transmitter is set up, so it still needs an FPP restart.
+var DynRDSLiveRDSSettings = ['DynRDSPSStyle', 'DynRDSRTStyle',
+                             'DynRDSPSUpdateRate', 'DynRDSRTUpdateRate'];
+
+function DynRDSRDSSettingsUpdate(key) {
+    if (DynRDSLiveRDSSettings.indexOf(key) !== -1) {
+        DynRDSFastUpdate();
+    }
+}
+
 function DynRDSPiBootUpdate(key) {
     $.post('api/plugin/Dynamic_RDS/PiBootChange/' + encodeURIComponent(key), 
            JSON.stringify(Object.assign({}, pluginSettings)));
@@ -519,15 +531,13 @@ function ScriptStreamProgressDialogDone() {
  * Display all settings groups
  */
 function displaySettingsGroups(array $settings): void {
-    PrintSettingGroup("DynRDSRDSSettings", getRDSStyleGuideHTML(), "", 1, "Dynamic_RDS", "UpdateDynRDSTransmitterChildren");
+    PrintSettingGroup("DynRDSRDSSettings", getRDSStyleGuideHTML(), "", 1, "Dynamic_RDS", "DynRDSRDSSettingsUpdate");
 
     PrintSettingGroup("DynRDSTransmitterSettings", "", "", 1, "Dynamic_RDS", "DynRDSTransmitterFrequencyUpdate");
 
     // Wrap Audio in div id to make it easy to hide/show for Si4713
     echo '<div id="DynRDSAudioSettingsWrapper">';
-    PrintSettingGroup("DynRDSAudioSettings", "",
-        "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i>indicates a live change to transmitter, no FPP restart required",
-        1, "Dynamic_RDS", "DynRDSFastUpdate");
+    PrintSettingGroup("DynRDSAudioSettings", "", "", 1, "Dynamic_RDS", "DynRDSFastUpdate");
     echo '</div>';
 
     PrintSettingGroup("DynRDSPowerSettings", "", "", 1, "Dynamic_RDS", "DynRDSPiBootUpdate");
@@ -906,7 +916,7 @@ function displayLogsSection(): void {
 <p>
 <input onclick="ViewFileImpl('api/file/logs/plugin-Dynamic_RDS.log', 'plugin-Dynamic_RDS.log');"
        class="buttons" type="button" value="View All" />
-<input onclick="ViewFileImpl('api/file/logs/plugin-Dynamic_RDS.log?tail=50', 'plugin-Dynamic_RDS.log');"
+<input onclick="ViewFileImpl('api/file/logs/plugin-Dynamic_RDS.log?tail=40', 'plugin-Dynamic_RDS.log');"
        class="buttons" type="button" value="View Recent" /></p>
 </div>
 <br />
@@ -918,15 +928,17 @@ function displayLogsSection(): void {
  */
 function displayReportIssueSection(): void {
     ?>
-<h2>Report an Issue</h2>
+<h2>Report an Issue / Make a Suggestion</h2>
 <div class="container-fluid settingsTable settingsGroupTable">
+<p>Have a suggestions to make Dynamic RDS better or more useful? Feel free to create a new issue at <a href="https://github.com/ShadowLight8/Dynamic_RDS/issues"><b>https://github.com/ShadowLight8/Dynamic_RDS/issues</b></a></p>
+<p>To report an issue<br />
+First, increase the Log Levels to Debug, then create a new issue at <a href="https://github.com/ShadowLight8/Dynamic_RDS/issues"><b>https://github.com/ShadowLight8/Dynamic_RDS/issues</b></a>, describe what you're seeing, and attach the zip file.</p>
 <p>
 <form action="plugin.php?_menu=status&plugin=Dynamic_RDS&page=Dynamic_RDS.php&nopage" method="post">
 <button name="DownloadZip" type="Submit" class="buttons" value="Download log and config zip">
 <i class="fas fa-fw fa-nbsp fa-download"></i>Download log and config zip
 </button>
 </form></p>
-<p>Increase the Log Levels to Debug, then create a new issue at <a href="https://github.com/ShadowLight8/Dynamic_RDS/issues"><b>https://github.com/ShadowLight8/Dynamic_RDS/issues</b></a>, describe what you're seeing, and attach the zip file.</p>
 Zip file includes:
 <ul>
 <li>Log - <code>plugin-Dynamic_RDS.log</code> (plus rotated copies, if present)</li>

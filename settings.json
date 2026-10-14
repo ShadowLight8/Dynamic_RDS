@@ -28,8 +28,7 @@
             "settings": [
                 "DynRDSQN8066Gain",
                 "DynRDSQN8066SoftClipping",
-                "DynRDSQN8066AGC",
-                "DynRDSSi4713TestAudio"
+                "DynRDSQN8066AGC"
             ]
         },
         "DynRDSPowerSettings": {
@@ -102,7 +101,6 @@
                   "DynRDSQN8066AmpPower"
                 ],
                 "Si4713": [
-                  "DynRDSSi4713TestAudio",
                   "DynRDSSi4713GPIOReset",
                   "DynRDSSi4713TuningCap",
                   "DynRDSSi4713ChipPower"
@@ -148,7 +146,7 @@
             "step": 1,
             "suffix": "dB&mu;V",
             "default": 122
-	},
+        },
         "DynRDSQN8066PIPWM": {
             "name": "DynRDSQN8066PIPWM",
             "description": "Enable PWM",
@@ -159,7 +157,7 @@
             "type": "checkbox",
             "checkedValue": "1",
             "uncheckedValue": "0",
-            "default": 0,
+            "default": "0",
             "children": {
                 "1": [
                     "DynRDSQN8066AmpPower",
@@ -174,7 +172,7 @@
             "name": "DynRDSQN8066AmpPower",
             "description": "Amp Power (0-100)",
             "tip": "Adjust the power output for the amplifier after the transmitter chip. This is controlled by PWM output.",
-            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i> - Controlled by PWM",
+            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i> - Controlled by PWM",
             "restart": 0,
             "reboot": 0,
             "type": "number",
@@ -182,7 +180,7 @@
             "max": 100,
             "step": 1,
             "default": 0
-	},
+        },
         "DynRDSSi4713ChipPower": {
             "name": "DynRDSSi4713ChipPower",
             "description": "Chip Power (88-120)",
@@ -195,7 +193,7 @@
             "max": 120,
             "step": 1,
             "default": 115
-	},
+        },
         "DynRDSFrequency": {
             "name": "DynRDSFrequency",
             "description": "Frequency (60.00-108.00)",
@@ -252,15 +250,19 @@
                 "Pin 15 / GPIO 22": "22",
                 "Pin 16 / GPIO 23": "23",
                 "Pin 18 / GPIO 24": "24",
-                "Pin 22 / GPIO 25": "22",
-                "Pin 27 / GPIO 0": "27",
-                "Pin 28 / GPIO 1": "28",
-                "Pin 29 / GPIO 5": "29",
-                "Pin 31 / GPIO 6": "31",
-                "Pin 36 / GPIO 16": "36",
-                "Pin 37 / GPIO 26": "37"
+                "Pin 22 / GPIO 25": "25",
+                "Pin 27 / GPIO 0": "0",
+                "Pin 28 / GPIO 1": "1",
+                "Pin 29 / GPIO 5": "5",
+                "Pin 31 / GPIO 6": "6",
+                "Pin 36 / GPIO 16": "16",
+                "Pin 37 / GPIO 26": "26",
+                "Pin 40 / GPIO 21": "21"
             },
-            "default": "4"
+            "default": "4",
+            "platforms": [
+                "Raspberry Pi"
+            ]
         },
         "DynRDSQN8066Gain": {
             "name": "DynRDSQN8066Gain",
@@ -273,7 +275,7 @@
             "max": 20,
             "step": 1,
             "default": 0,
-            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i>"
+            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i>"
         },
         "DynRDSQN8066SoftClipping": {
             "name": "DynRDSQN8066SoftClipping",
@@ -283,8 +285,8 @@
             "type": "checkbox",
             "checkedValue": "1",
             "uncheckedValue": "0",
-            "default": 1,
-            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i>"
+            "default": "0",
+            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i>"
         },
         "DynRDSQN8066AGC": {
             "name": "DynRDSQN8066AGC",
@@ -294,13 +296,8 @@
             "type": "checkbox",
             "checkedValue": "1",
             "uncheckedValue": "0",
-            "default": 0,
-            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i>"
-        },
-        "DynRDSSi4713TestAudio": {
-            "name": "DynRDSSi4713TestAudio",
-            "description": "Test Si4713 Setting",
-            "type": "text"
+            "default": "0",
+            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i>"
         },
         "DynRDSEnableRDS": {
             "name": "DynRDSEnableRDS",
@@ -310,7 +307,7 @@
             "type": "checkbox",
             "checkedValue": "1",
             "uncheckedValue": "0",
-            "default": 1,
+            "default": "1",
             "children": {
                 "1": [
                     "DynRDSPICode",
@@ -327,19 +324,20 @@
             "name": "DynRDSPSStyle",
             "description": "PS Style Text (8 chars per update)",
             "tip": "Sent 8 characters at a time. Program Service is the most commonly displayed part of RDS.",
-            "restart": 1,
+            "restart": 0,
             "reboot": 0,
             "type": "text",
             "size": 32,
             "maxlength": 64,
-            "default": "{T}|{A}[|{P} of {C}]|Merry|Christ-|   -mas!"
+            "default": "{T}|{A}[|{P} of {C}]|Merry|Christ-|   -mas!",
+            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i>"
         },
         "DynRDSPSUpdateRate": {
             "name": "DynRDSPSUpdateRate",
             "description": "PS Update Rate",
             "tip": "Interval between updating the 8 characters being sent. It takes ~1 second to send the 8 characters and some radios only display the text after receiving the full group twice.",
-            "suffix": "seconds",
-            "restart": 1,
+            "suffix": "seconds <i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i>",
+            "restart": 0,
             "reboot": 0,
             "type": "number",
             "min": 3,
@@ -351,19 +349,20 @@
             "name": "DynRDSRTStyle",
             "description": "RT Style Text",
             "tip": "Recommended to send 32 characters at a time, but can send up to 64 characters. Radio Text is intended for longer message with a slower update rate.",
-            "restart": 1,
+            "restart": 0,
             "reboot": 0,
             "type": "text",
             "size": 64,
             "maxlength": 256,
-            "default": "{T}[ by {A}][|Track {P} of {C}] Merry Christmas!"
+            "default": "{T}[ by {A}][|Track {P} of {C}] Merry Christmas!",
+            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i>"
         },
         "DynRDSRTUpdateRate": {
             "name": "DynRDSRTUpdateRate",
             "description": "RT Update Rate",
             "tip": "Interval between updating the 32-64 characters being sent. It takes ~4 seconds to send the 64 characters and some radios only display the text after receiving the full group twice.",
-            "suffix": "seconds",
-            "restart": 1,
+            "suffix": "seconds <i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i>",
+            "restart": 0,
             "reboot": 0,
             "type": "number",
             "min": 3,
@@ -392,38 +391,38 @@
             "reboot": 0,
             "type": "select",
             "options": {
-               "0 - None / None": 0,
-               "1 - News / News": 1,
-               "2 - Information / Current Affairs": 2,
-               "3 - Sport / Information": 3,
-               "4 - Talk / Sport": 4,
-               "5 - Rock / Education": 5,
-               "6 - Classic Rock / Drama": 6,
-               "7 - Adult Hits / Culture": 7,
-               "8 - Soft Rock / Science": 8,
-               "9 - Top 40 / Varied": 9,
-               "10 - Country / Pop": 10,
-               "11 - Oldies / Rock": 11,
-               "12 - Soft Music / Easy Listening": 12,
-               "13 - Nostalgia / Light Classical": 13,
-               "14 - Jazz / Serious Classical": 14,
-               "15 - Classical / Other Music": 15,
-               "16 - R&B / Weather": 16,
-               "17 - Soft R&B / Finance": 17,
-               "18 - Language / Childrens": 18,
-               "19 - Religious Music / Social Affairs": 19,
-               "20 - Religious Talk / Religion": 20,
-               "21 - Personality / Phone-In": 21,
-               "22 - Public / Travel": 22,
-               "23 - College / Leisure": 23,
-               "24 - Spanish Talk / Jazz": 24,
-               "25 - Spanish Music / Country": 25,
-               "26 - Hip Hop / National Music": 26,
-               "27 - --- / Oldies": 27,
-               "28 - --- / Folk": 28,
-               "29 - Weather / Documentary": 29
+               "0 - None / None": "0",
+               "1 - News / News": "1",
+               "2 - Information / Current Affairs": "2",
+               "3 - Sport / Information": "3",
+               "4 - Talk / Sport": "4",
+               "5 - Rock / Education": "5",
+               "6 - Classic Rock / Drama": "6",
+               "7 - Adult Hits / Culture": "7",
+               "8 - Soft Rock / Science": "8",
+               "9 - Top 40 / Varied": "9",
+               "10 - Country / Pop": "10",
+               "11 - Oldies / Rock": "11",
+               "12 - Soft Music / Easy Listening": "12",
+               "13 - Nostalgia / Light Classical": "13",
+               "14 - Jazz / Serious Classical": "14",
+               "15 - Classical / Other Music": "15",
+               "16 - R&B / Weather": "16",
+               "17 - Soft R&B / Finance": "17",
+               "18 - Language / Childrens": "18",
+               "19 - Religious Music / Social Affairs": "19",
+               "20 - Religious Talk / Religion": "20",
+               "21 - Personality / Phone-In": "21",
+               "22 - Public / Travel": "22",
+               "23 - College / Leisure": "23",
+               "24 - Spanish Talk / Jazz": "24",
+               "25 - Spanish Music / Country": "25",
+               "26 - Hip Hop / National Music": "26",
+               "27 - --- / Oldies": "27",
+               "28 - --- / Folk": "28",
+               "29 - Weather / Documentary": "29"
             },
-            "default": 2,
+            "default": "2",
             "suffix": "North America / Europe"
         },
         "DynRDSPICode": {
@@ -475,8 +474,8 @@
             "type": "checkbox",
             "checkedValue": "1",
             "uncheckedValue": "0",
-            "default": 0,
-            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1'></i>"
+            "default": "0",
+            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i>"
         },
         "DynRDSmqttEnable": {
             "name": "DynRDSmqttEnable",
@@ -487,19 +486,18 @@
             "type": "checkbox",
             "checkedValue": "1",
             "uncheckedValue": "0",
-            "default": 0,
-            "suffix": ""
+            "default": "0"
         },
         "DynRDSAdvPISoftwareI2C": {
             "name": "DynRDSAdvPISoftwareI2C",
             "description": "Use PI Software I<sup>2</sup>C",
-            "tip": "Switches PI from hardware I<sup>2</sup>C to software I<sup>2</sup>C in /boot/config.txt",
+            "tip": "Switches PI from hardware I<sup>2</sup>C to software I<sup>2</sup>C in /boot/firmware/config.txt",
             "restart": 0,
             "reboot": 1,
             "type": "checkbox",
             "checkedValue": "1",
             "uncheckedValue": "0",
-            "default": 0,
+            "default": "0",
             "platforms": [
                 "Raspberry Pi"
             ]

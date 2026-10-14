@@ -135,7 +135,7 @@ During the plugin install, an example script is copied to the FPP `media/scripts
 All settings are on the plugin's config page, reachable from **Status/Control -> Dynamic RDS**. The page auto-detects your transmitter over I<sup>2</sup>C and hides the settings that don't apply to it.
 
 > [!NOTE]
-> Settings marked with a lightning bolt icon take effect immediately on the transmitter — no FPP restart needed.
+> Settings marked with a lightning bolt icon take effect immediately — no FPP restart needed.
 
 ### RDS Settings
 | Setting | Default | Notes |

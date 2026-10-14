@@ -60,7 +60,7 @@ def read_config():
     config['DynRDSQN8066BufferGain'] = totalGain % 18 // 3
 
   if not (os.path.exists('/bin/mpc') or os.path.exists('/usr/bin/mpc')):
-    config['DynRDSmpcEnable'] = 0
+    config['DynRDSmpcEnable'] = '0'
 
   logging.getLogger().setLevel(config['DynRDSEngineLogLevel'])
   logging.info('Config %s', config)
@@ -294,13 +294,24 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
         writeStatus()
 
       elif line == 'UPDATE':
+        priorMPCEnable = config['DynRDSmpcEnable']
         read_config()
         mqtt.publish('config', json.dumps(config, indent=8))
-        if (transmitter is not None and transmitter.active):
-          for key in rdsValues:
-            rdsValues[key] = ''
+        # MPC only ever sources {T}, so toggling it while idle would otherwise leave
+        # the last polled title stale. During a playlist {T} comes from FPP media
+        # events, so leave it alone.
+        if config['DynRDSmpcEnable'] != priorMPCEnable and not activePlaylist:
+          rdsValues['{T}'] = ''
+          nextMPCUpdate = datetime.now()
+        if transmitter is not None:
+          # Buffers cache their delay at construction, so re-sync on config changes
+          # or the status panel and the chip disagree on the update rate
+          if getattr(transmitter, 'PS', None) is not None:
+            transmitter.PS.delay = int(config['DynRDSPSUpdateRate'])
+            transmitter.RT.delay = int(config['DynRDSRTUpdateRate'])
           updateRDSData()
-          transmitter.update()
+          if transmitter.active:
+            transmitter.update()
         writeStatus()
 
       elif line == 'START':
@@ -376,9 +387,23 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
     if not activePlaylist and transmitter is not None and transmitter.active and config['DynRDSmpcEnable'] == "1" and datetime.now() > nextMPCUpdate:
       logging.debug('Processing mpc')
       nextMPCUpdate = datetime.now() + timedelta(seconds=12)
-      # TODO: Error handling might be needed here if the mpc execution has an issue
+
       # TODO: Future idea to handle multiple fields from mpc, but I've not seen them used yet. [{A}%artist%][{T}%title%][{N}%track%]
-      mpcLatest = subprocess.run(['mpc', 'current', '-f', '%title%'], stdout=subprocess.PIPE, check=False).stdout.decode('utf-8').strip()
+      try:
+        mpcLatest = subprocess.run(['mpc', 'current', '-f', '%title%'],
+                                   stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                   check=False, timeout=2,
+                                   encoding='utf-8', errors='replace').stdout.strip()
+      except subprocess.TimeoutExpired:
+        # mpc or MPD is wedged - back off so RDS group output isn't stalled every 12 seconds
+        logging.warning('mpc timed out - backing off for 60 seconds')
+        nextMPCUpdate = datetime.now() + timedelta(seconds=60)
+        mpcLatest = rdsValues['{T}']
+      except OSError as error:
+        logging.warning('mpc could not be run (%s) - backing off for 60 seconds', error)
+        nextMPCUpdate = datetime.now() + timedelta(seconds=60)
+        mpcLatest = rdsValues['{T}']
+
       if rdsValues['{T}'] != mpcLatest:
         rdsValues['{T}'] = mpcLatest
         updateRDSData()

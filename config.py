@@ -33,8 +33,7 @@ config = {
 
 'DynRDSSi4713GPIOReset': '4',
 'DynRDSSi4713TuningCap': '0',
-'DynRDSSi4713ChipPower': '115',
-'DynRDSSi4713TestAudio': ''
+'DynRDSSi4713ChipPower': '115'
 }
 
 def read_config_from_file():
