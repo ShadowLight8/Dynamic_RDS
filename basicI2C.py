@@ -30,7 +30,11 @@ class basicI2C():
     logging.excessive('I2C write at 0x%02x of %s', address, ' '.join(f'0x{b:02X}' for b in values))
     for i in range(8):
       try:
-        if values:
+        if self.address == 0x63:
+          # Si4713 uses command bytes followed by arguments.
+          msg = smbus2.i2c_msg.write(self.address, [address] + list(values))
+          self.bus.i2c_rdwr(msg)
+        elif values:
           self.bus.write_i2c_block_data(self.address, address, values)
         else:
           # A zero-length I2C block write is rejected with EINVAL by kernels carrying
@@ -53,7 +57,13 @@ class basicI2C():
     # Simple i2c read - Always returns a list
     for i in range(8):
       try:
-        retVal = self.bus.read_i2c_block_data(self.address, address, num_bytes)
+        if self.address == 0x63:
+          # Read the command response without sending a register byte.
+          msg = smbus2.i2c_msg.read(self.address, num_bytes)
+          self.bus.i2c_rdwr(msg)
+          retVal = list(msg)
+        else:
+          retVal = self.bus.read_i2c_block_data(self.address, address, num_bytes)
         logging.excessive('I2C read at 0x%02x of %s byte(s) returned %s', address, num_bytes, ' '.join(f'0x{b:02X}' for b in retVal))
         return retVal
       except Exception:

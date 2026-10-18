@@ -14,6 +14,8 @@ class Si4713(Transmitter):
     super().__init__()
     self.I2C = basicI2C(0x63)  # Si4713 default I2C address
     self.totalCircularBuffers = 0
+    # Keep reset deasserted for the lifetime of this transmitter object.
+    self.resetPin = DigitalOutputDevice(int(config['DynRDSSi4713GPIOReset']), initial_value=True)
 
   # Si4713 Commands
   CMD_POWER_UP = 0x01
@@ -49,7 +51,8 @@ class Si4713(Transmitter):
   def _wait_for_cts(self, timeout=100):
     iterations = timeout  # Each iteration is ~1ms
     for _ in range(iterations):
-      if self.I2C.read(0x00, 1)[0] & self.STATUS_CTS:
+      response = self.I2C.read(0x00, 1)
+      if response and response[0] & self.STATUS_CTS:
         return True
       sleep(0.001)
     return False
@@ -74,11 +77,10 @@ class Si4713(Transmitter):
     logging.info('Starting Si4713 transmitter')
 
     logging.info('Executing Reset with Pin %s', config['DynRDSSi4713GPIOReset'])
-    with DigitalOutputDevice(int(config['DynRDSSi4713GPIOReset'])) as resetPin:
-      resetPin.off()
-      sleep(0.01)
-      resetPin.on()
-      sleep(0.11)
+    self.resetPin.off()
+    sleep(0.01)
+    self.resetPin.on()
+    sleep(0.11)
 
     # Power up in transmit mode (Crystal oscillator and Analog audio input)
     self.I2C.write(self.CMD_POWER_UP, [0b00010010, 0b01010000], True)
@@ -164,7 +166,9 @@ class Si4713(Transmitter):
   def shutdown(self):
     logging.info('Stopping Si4713 transmitter')
     # Power down the transmitter
-    self._send_command(self.CMD_POWER_DOWN, [])
+    if self.active:
+      self._send_command(self.CMD_POWER_DOWN, [])
+    self.resetPin.off()
     super().shutdown()
 
   def reset(self, resetdelay=1):
