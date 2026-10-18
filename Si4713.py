@@ -48,11 +48,13 @@ class Si4713(Transmitter):
   STATUS_CTS = 0x80
 
   def _wait_for_cts(self, timeout=100):
-    # Poll until the chip finishes the current command. Each iteration is ~1ms.
+    # Poll status-only reads until CTS is set (AN332 6.1). Each iteration is ~1ms.
+    # The loop covers a busy chip (read succeeds, CTS=0); an empty read means basicI2C
+    # already retried and the chip isn't answering, so give up immediately.
     for _ in range(timeout):
-      response = self.I2C.read(0x00, 1)
+      response = self.I2C.readRaw(1)
       if not response:
-        return False  # basicI2C already retried and logged; chip isn't answering
+        return False
       if response[0] & self.STATUS_CTS:
         return True
       sleep(0.001)
@@ -106,7 +108,7 @@ class Si4713(Transmitter):
 
     # Verify chip by getting revision
     self._send_command(self.CMD_GET_REV, [], True)
-    revData = self.I2C.read(0x00, 9, True)
+    revData = self.I2C.readRaw(9, True)
     logging.info('Si47%02d - FW %d.%d - Chip Rev %d',
                  revData[1], revData[2], revData[3], revData[8])
     if revData[1] != 13:
@@ -115,7 +117,7 @@ class Si4713(Transmitter):
 
     # TODO: Make a function to use in status?
     self._send_command(self.CMD_TX_RDS_BUFF, [0, 0, 0, 0, 0, 0, 0], True)
-    rdsBuffData = self.I2C.read(0x00, 6, True)
+    rdsBuffData = self.I2C.readRaw(6, True)
     logging.info('Circular Buffer: %d/%d, Fifo Buffer: %d/%d',
                   rdsBuffData[3], rdsBuffData[2] + rdsBuffData[3],
                   rdsBuffData[5], rdsBuffData[4] + rdsBuffData[5])
@@ -200,9 +202,9 @@ class Si4713(Transmitter):
     # TODO: Review before Si4713 support is done
     # Get transmitter status
     self._send_command(self.CMD_TX_TUNE_STATUS, [0x01])  # Clear interrupt
-    status_data = self.I2C.read(0x00, 8)
+    status_data = self.I2C.readRaw(8)
 
-    if status_data[0] & self.STATUS_CTS:
+    if status_data and status_data[0] & self.STATUS_CTS:
       freq = (status_data[2] << 8) | status_data[3]
       power = status_data[5]
       antenna_cap = status_data[6]
@@ -267,6 +269,7 @@ class Si4713(Transmitter):
 
     segmentOffset = 0
     ab_flag = True
+    rdsBuffData = []
     for i in range(0, len(rtText), 4):
       if i % 32 == 0:
         ab_flag = not ab_flag
@@ -276,8 +279,9 @@ class Si4713(Transmitter):
       rtBytes.extend(list(rtText[i:i+4].encode('ascii')))
       # TODO: Can add to buffer twice as a way to slow down update speed
       self._send_command(self.CMD_TX_RDS_BUFF, rtBytes)
-      rdsBuffData = self.I2C.read(0x00, 6)
+      rdsBuffData = self.I2C.readRaw(6)
       segmentOffset += 1
+  if rdsBuffData:
     logging.info('Circular Buffer: %d/%d', rdsBuffData[3], rdsBuffData[2] + rdsBuffData[3])
 
   def sendNextRDSGroup(self):
