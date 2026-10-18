@@ -14,6 +14,7 @@ class Si4713(Transmitter):
     super().__init__()
     self.I2C = basicI2C(0x63)  # Si4713 default I2C address
     self.totalCircularBuffers = 0
+    self.resetPin = None # Will claim in startup(), release in shutdown()
 
   # Si4713 Commands
   CMD_POWER_UP = 0x01
@@ -47,11 +48,17 @@ class Si4713(Transmitter):
   STATUS_CTS = 0x80
 
   def _wait_for_cts(self, timeout=100):
-    iterations = timeout  # Each iteration is ~1ms
-    for _ in range(iterations):
-      if self.I2C.read(0x00, 1)[0] & self.STATUS_CTS:
+    # Poll status-only reads until CTS is set (AN332 6.1). Each iteration is ~1ms.
+    # The loop covers a busy chip (read succeeds, CTS=0); an empty read means basicI2C
+    # already retried and the chip isn't answering, so give up immediately.
+    for _ in range(timeout):
+      response = self.I2C.readRaw(1)
+      if not response:
+        return False
+      if response[0] & self.STATUS_CTS:
         return True
       sleep(0.001)
+    logging.warning('Si4713 CTS timeout after ~%d ms', timeout)
     return False
 
   def _send_command(self, cmd, args = None, isFatal = False):
@@ -70,15 +77,27 @@ class Si4713(Transmitter):
     ]
     return self._send_command(self.CMD_SET_PROPERTY, args)
 
+  def _claimResetPin(self):
+    # Idempotent: startup() can be called on an already-active transmitter
+    if self.resetPin is None:
+      self.resetPin = DigitalOutputDevice(int(config['DynRDSSi4713GPIOReset']), initial_value=False)
+
+  def _releaseResetPin(self):
+    if self.resetPin is not None:
+      self.resetPin.off()
+      self.resetPin.close()
+      self.resetPin = None
+
   def startup(self):
     logging.info('Starting Si4713 transmitter')
-
     logging.info('Executing Reset with Pin %s', config['DynRDSSi4713GPIOReset'])
-    with DigitalOutputDevice(int(config['DynRDSSi4713GPIOReset'])) as resetPin:
-      resetPin.off()
-      sleep(0.01)
-      resetPin.on()
-      sleep(0.11)
+    # RST must stay driven high while the chip is running; a released pin can float or be pulled
+    # low and silently reset the chip. Held until shutdown().
+    self._claimResetPin()
+    self.resetPin.off()
+    sleep(0.01)
+    self.resetPin.on()
+    sleep(0.11)
 
     # Power up in transmit mode (Crystal oscillator and Analog audio input)
     self.I2C.write(self.CMD_POWER_UP, [0b00010010, 0b01010000], True)
@@ -89,7 +108,7 @@ class Si4713(Transmitter):
 
     # Verify chip by getting revision
     self._send_command(self.CMD_GET_REV, [], True)
-    revData = self.I2C.read(0x00, 9, True)
+    revData = self.I2C.readRaw(9, True)
     logging.info('Si47%02d - FW %d.%d - Chip Rev %d',
                  revData[1], revData[2], revData[3], revData[8])
     if revData[1] != 13:
@@ -98,7 +117,7 @@ class Si4713(Transmitter):
 
     # TODO: Make a function to use in status?
     self._send_command(self.CMD_TX_RDS_BUFF, [0, 0, 0, 0, 0, 0, 0], True)
-    rdsBuffData = self.I2C.read(0x00, 6, True)
+    rdsBuffData = self.I2C.readRaw(6, True)
     logging.info('Circular Buffer: %d/%d, Fifo Buffer: %d/%d',
                   rdsBuffData[3], rdsBuffData[2] + rdsBuffData[3],
                   rdsBuffData[5], rdsBuffData[4] + rdsBuffData[5])
@@ -164,8 +183,12 @@ class Si4713(Transmitter):
   def shutdown(self):
     logging.info('Stopping Si4713 transmitter')
     # Power down the transmitter
-    self._send_command(self.CMD_POWER_DOWN, [])
-    super().shutdown()
+    try:
+      if self.active:
+        self._send_command(self.CMD_POWER_DOWN, [])
+    finally:
+      self._releaseResetPin()
+      super().shutdown()
 
   def reset(self, resetdelay=1):
     # Used to restart the transmitter
@@ -179,9 +202,9 @@ class Si4713(Transmitter):
     # TODO: Review before Si4713 support is done
     # Get transmitter status
     self._send_command(self.CMD_TX_TUNE_STATUS, [0x01])  # Clear interrupt
-    status_data = self.I2C.read(0x00, 8)
+    status_data = self.I2C.readRaw(8)
 
-    if status_data[0] & self.STATUS_CTS:
+    if status_data and status_data[0] & self.STATUS_CTS:
       freq = (status_data[2] << 8) | status_data[3]
       power = status_data[5]
       antenna_cap = status_data[6]
@@ -246,6 +269,7 @@ class Si4713(Transmitter):
 
     segmentOffset = 0
     ab_flag = True
+    rdsBuffData = []
     for i in range(0, len(rtText), 4):
       if i % 32 == 0:
         ab_flag = not ab_flag
@@ -255,9 +279,10 @@ class Si4713(Transmitter):
       rtBytes.extend(list(rtText[i:i+4].encode('ascii')))
       # TODO: Can add to buffer twice as a way to slow down update speed
       self._send_command(self.CMD_TX_RDS_BUFF, rtBytes)
-      rdsBuffData = self.I2C.read(0x00, 6)
+      rdsBuffData = self.I2C.readRaw(6)
       segmentOffset += 1
-    logging.info('Circular Buffer: %d/%d', rdsBuffData[3], rdsBuffData[2] + rdsBuffData[3])
+    if rdsBuffData:
+      logging.info('Circular Buffer: %d/%d', rdsBuffData[3], rdsBuffData[2] + rdsBuffData[3])
 
   def sendNextRDSGroup(self):
     logging.excessive('Si4713 sendNextRDSGroup')

@@ -68,3 +68,23 @@ class basicI2C():
       if isFatal:
         sys.exit(-1)
       return []
+
+  def readRaw(self, num_bytes, isFatal = False):
+    # Plain i2c read with no register byte written first - Always returns a list
+    # For command-protocol devices (e.g. Si4713) that have no register map, where any
+    # written byte is interpreted as a new command. See Si4713 AN332 section 6.1.
+    for i in range(8):
+      try:
+        msg = smbus2.i2c_msg.read(self.address, num_bytes)
+        self.bus.i2c_rdwr(msg)
+        retVal = list(msg)
+        logging.excessive('I2C raw read of %s byte(s) returned %s', num_bytes, ' '.join(f'0x{b:02X}' for b in retVal))
+        return retVal
+      except Exception:
+        logging.exception('i2c raw read error')
+        if i >= 1:
+          sleep(i * .25)
+    logging.error('failed to raw read after multiple attempts')
+    if isFatal:
+      sys.exit(-1)
+    return []

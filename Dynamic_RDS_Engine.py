@@ -265,6 +265,8 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
         logging.info('Processing init')
         read_config()
 
+        if transmitter is not None:
+          transmitter.shutdown()
         transmitter = None
         if config['DynRDSTransmitter'] == "QN8066":
           transmitter = QN8066()
