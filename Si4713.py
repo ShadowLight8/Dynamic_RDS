@@ -14,8 +14,7 @@ class Si4713(Transmitter):
     super().__init__()
     self.I2C = basicI2C(0x63)  # Si4713 default I2C address
     self.totalCircularBuffers = 0
-    # Keep reset deasserted for the lifetime of this transmitter object.
-    self.resetPin = DigitalOutputDevice(int(config['DynRDSSi4713GPIOReset']), initial_value=True)
+    self.resetPin = None # Will claim in startup(), release in shutdown()
 
   # Si4713 Commands
   CMD_POWER_UP = 0x01
@@ -76,10 +75,23 @@ class Si4713(Transmitter):
     ]
     return self._send_command(self.CMD_SET_PROPERTY, args)
 
+  def _claimResetPin(self):
+    # Idempotent: startup() can be called on an already-active transmitter
+    if self.resetPin is None:
+      self.resetPin = DigitalOutputDevice(int(config['DynRDSSi4713GPIOReset']), initial_value=False)
+
+  def _releaseResetPin(self):
+    if self.resetPin is not None:
+      self.resetPin.off()
+      self.resetPin.close()
+      self.resetPin = None
+  
   def startup(self):
     logging.info('Starting Si4713 transmitter')
-
     logging.info('Executing Reset with Pin %s', config['DynRDSSi4713GPIOReset'])
+    # RST must stay driven high while the chip is running; a released pin can float or be pulled
+    # low and silently reset the chip. Held until shutdown().
+    self._claimResetPin()
     self.resetPin.off()
     sleep(0.01)
     self.resetPin.on()
@@ -169,10 +181,12 @@ class Si4713(Transmitter):
   def shutdown(self):
     logging.info('Stopping Si4713 transmitter')
     # Power down the transmitter
-    if self.active:
-      self._send_command(self.CMD_POWER_DOWN, [])
-    self.resetPin.off()
-    super().shutdown()
+    try:
+      if self.active:
+        self._send_command(self.CMD_POWER_DOWN, [])
+    finally:
+      self._releaseResetPin()
+      super().shutdown()
 
   def reset(self, resetdelay=1):
     # Used to restart the transmitter
