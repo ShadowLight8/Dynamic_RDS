@@ -49,12 +49,15 @@ class Si4713(Transmitter):
   STATUS_CTS = 0x80
 
   def _wait_for_cts(self, timeout=100):
-    iterations = timeout  # Each iteration is ~1ms
-    for _ in range(iterations):
+    # Poll until the chip finishes the current command. Each iteration is ~1ms.
+    for _ in range(timeout):
       response = self.I2C.read(0x00, 1)
-      if response and response[0] & self.STATUS_CTS:
+      if not response:
+        return False  # basicI2C already retried and logged; chip isn't answering
+      if response[0] & self.STATUS_CTS:
         return True
       sleep(0.001)
+    logging.warning('Si4713 CTS timeout after ~%d ms', timeout)
     return False
 
   def _send_command(self, cmd, args = None, isFatal = False):
