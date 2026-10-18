@@ -6,42 +6,94 @@
 	"homeURL": "https://github.com/ShadowLight8/Dynamic_RDS",
 	"srcURL": "https://github.com/ShadowLight8/Dynamic_RDS.git",
 	"bugURL": "https://github.com/ShadowLight8/Dynamic_RDS/issues",
-	"iconURL": "https://raw.githubusercontent.com/ShadowLight8/Dynamic_RDS/main/icon.png",	
+	"iconURL": "https://raw.githubusercontent.com/ShadowLight8/Dynamic_RDS/main/icon.png",
+	"allowUpdates": 1,
+	"releaseNotesStyle": "gitHistory",
+	"privacy": {
+		"summary": "Broadcasts the song title, artist and other text you set to FM radios nearby. Can also publish that text to your MQTT broker if you turn it on.",
+		"sends": [
+			{
+				"to": "anyone in FM range",
+				"what": "the song title, artist, album and other text you set",
+				"why": "to show what's playing on listeners' radios",
+				"alwaysOn": false
+			},
+			{
+				"to": "your MQTT broker",
+				"what": "what is being broadcast, the plugin's settings and status",
+				"why": "so other systems can follow what's on air",
+				"alwaysOn": false
+			}
+		],
+		"collects": [],
+		"sensors": [],
+		"remoteAccess": "none",
+		"systemChanges": [
+			{
+				"kind": "core-settings",
+				"what": "copies an example Dynamic_RDS_config.sh into FPP's scripts folder and asks FPP to restart after install"
+			},
+			{
+				"kind": "privilege",
+				"what": "edits the Pi boot config to switch I2C mode or enable hardware PWM when you change those advanced settings"
+			},
+			{
+				"kind": "download",
+				"what": "installs the python3-paho-mqtt package from Debian when you click to enable MQTT support"
+			}
+		],
+		"closedCode": false,
+		"other": "Settings pages on FPP's web server can change the boot config and install a package; they have the same protection as FPP's own pages."
+	},
+	"dependencies": {
+		"packages": [ "python3-smbus2" ]
+	},
 	"versions": [
-	{
-		"minFPPVersion": "6.0",
-		"maxFPPVersion": "7.2",
-		"branch": "main",
-		"sha": "d06b4e623afc1f083036277c248012e4f8f29d38",
-		"platforms": [
-			"Raspberry Pi"
-		]
-	},
-	{
-		"minFPPVersion": "7.3",
-		"maxFPPVersion": "7.99",
-		"branch": "main",
-		"sha": "5dfa0bf88e5b948c0cf130e4a8b6363f7d5b6126"
-	},
-	{
-		"minFPPVersion": "8.0",
-		"maxFPPVersion": "8.99",
-		"branch": "main",
-		"sha": "7d77e66d82cb10c7784452ea3a5426dfcf7ecd1e"
-	},
-	{
-		"minFPPVersion": "9.0",
-		"maxFPPVersion": "9.99",
-		"branch": "main",
-		"sha": "c4d29c033e9d13d5b707b8fa52d03cd2828d9b39",
-		"allowUpdates": 1
-	},
-	{
-		"minFPPVersion": "10.0",
-		"maxFPPVersion": "0",
-		"branch": "main",
-		"sha": "",
-		"allowUpdates": 1
-	}
+		{
+			"minFPPVersion": "6.0",
+			"maxFPPVersion": "7.2.99",
+			"branch": "main",
+			"sha": "d06b4e623afc1f083036277c248012e4f8f29d38",
+			"allowUpdates": 0,
+			"platforms": [ "Raspberry Pi" ]
+		},
+		{
+			"minFPPVersion": "7.3",
+			"maxFPPVersion": "7.99",
+			"branch": "main",
+			"sha": "5dfa0bf88e5b948c0cf130e4a8b6363f7d5b6126",
+			"allowUpdates": 0
+		},
+		{
+			"minFPPVersion": "8.0",
+			"maxFPPVersion": "8.99",
+			"branch": "main",
+			"sha": "7d77e66d82cb10c7784452ea3a5426dfcf7ecd1e",
+			"allowUpdates": 0
+		},
+		{
+			"minFPPVersion": "9.0",
+			"maxFPPVersion": "9.99",
+			"branch": "main",
+			"sha": "c4d29c033e9d13d5b707b8fa52d03cd2828d9b39",
+			"allowUpdates": 0
+		},
+		{
+			"minFPPVersion": "10.0",
+			"maxFPPVersion": "0",
+			"branch": "main",
+			"sha": "",
+			"allowUpdates": 1,
+			"platforms": [ "BeagleBone Black" ]
+		},
+		{
+			"minFPPVersion": "10.0",
+			"maxFPPVersion": "0",
+			"branch": "main",
+			"sha": "",
+			"allowUpdates": 1,
+			"platforms": [ "Raspberry Pi" ],
+			"dependencies": { "packages": [ "python3-gpiozero" ] }
+		}
 	]
 }
