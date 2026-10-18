@@ -76,14 +76,24 @@ class hardwarePWM(basicPWM):
                  capture_output=True,
                  text=True,
                  check=True,
+                 timeout=5,
                )
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except FileNotFoundError:
+      logging.error('pinctrl not found - unable to check GPIO%s function', gpioPin)
+      return None
+    except subprocess.CalledProcessError as e:
+      logging.error('pinctrl get %s failed (exit %s): %s', gpioPin, e.returncode, (e.stderr or e.stdout).strip())
+      return None
+    except subprocess.TimeoutExpired:
+      logging.error('pinctrl get %s timed out', gpioPin)
       return None
 
     m = PWM_FULL_RE.search(result.stdout)
     if not m:
+      logging.error('GPIO%s is not set to a PWM function, pinctrl reports: %s', gpioPin, result.stdout.strip())
       return None
 
+    logging.debug('pinctrl reports: %s', result.stdout.strip())
     return m.group(2) or m.group(3)
     # "pwm": m.group(1).lower()
 
