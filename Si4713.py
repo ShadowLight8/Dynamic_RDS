@@ -87,7 +87,7 @@ class Si4713(Transmitter):
       self.resetPin.off()
       self.resetPin.close()
       self.resetPin = None
-  
+
   def startup(self):
     logging.info('Starting Si4713 transmitter')
     logging.info('Executing Reset with Pin %s', config['DynRDSSi4713GPIOReset'])
@@ -281,8 +281,8 @@ class Si4713(Transmitter):
       self._send_command(self.CMD_TX_RDS_BUFF, rtBytes)
       rdsBuffData = self.I2C.readRaw(6)
       segmentOffset += 1
-  if rdsBuffData:
-    logging.info('Circular Buffer: %d/%d', rdsBuffData[3], rdsBuffData[2] + rdsBuffData[3])
+    if rdsBuffData:
+      logging.info('Circular Buffer: %d/%d', rdsBuffData[3], rdsBuffData[2] + rdsBuffData[3])
 
   def sendNextRDSGroup(self):
     logging.excessive('Si4713 sendNextRDSGroup')
