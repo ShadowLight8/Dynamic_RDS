@@ -265,12 +265,8 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
         logging.info('Processing init')
         read_config()
 
-        if isinstance(transmitter, Si4713):
-          # Release the retained reset GPIO before replacing this instance.
-          try:
-            transmitter.shutdown()
-          finally:
-            transmitter.resetPin.close()
+        if transmitter is not None:
+          transmitter.shutdown()
         transmitter = None
         if config['DynRDSTransmitter'] == "QN8066":
           transmitter = QN8066()
