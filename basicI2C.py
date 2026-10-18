@@ -30,7 +30,13 @@ class basicI2C():
     logging.excessive('I2C write at 0x%02x of %s', address, ' '.join(f'0x{b:02X}' for b in values))
     for i in range(8):
       try:
-        self.bus.write_i2c_block_data(self.address, address, values)
+        if values:
+          self.bus.write_i2c_block_data(self.address, address, values)
+        else:
+          # A zero-length I2C block write is rejected with EINVAL by kernels carrying
+          # upstream 3051cd060fa4 (backported to 6.12.y, Sept 2026). SMBus "send byte"
+          # puts the identical START/addr/cmd/STOP sequence on the wire.
+          self.bus.write_byte(self.address, address)
       except Exception:
         logging.exception('write_i2c_block_data error')
         if i >= 1:
