@@ -43,11 +43,8 @@ class QN8066(Transmitter):
     self.I2C.write(0x19, [0b00100000 | tempFreq>>8], True)
     self.I2C.write(0x1b, [0b11111111 & tempFreq], True)
 
-    # Enable RDS TX and set pre-emphasis
-    if config['DynRDSPreemphasis'] == "50us":
-      self.I2C.write(0x01, [0b00000000 | int(config['DynRDSEnableRDS'])<<6])
-    else:
-      self.I2C.write(0x01, [0b00000001 | int(config['DynRDSEnableRDS'])<<6])
+    # SYSTEM2: pre-emphasis time constant (bit 0), mono/stereo (bit 4), RDS enable (bit 6)
+    self.I2C.write(0x01, [self.system2Bits()])
 
     # Exit standby, enter TX
     self.I2C.write(0x00, [0b00001011], True)
@@ -62,7 +59,19 @@ class QN8066(Transmitter):
 
     self.basicPWM.startup(dutyCycle=int(config['DynRDSQN8066AmpPower']))
 
+  def system2Bits(self):
+    # Bit 0: 0 = 50us, 1 = 75us pre-emphasis.  Bit 4: 1 = mono (no 19 kHz pilot, no L-R subcarrier).  Bit 6: RDS enable
+    return (0 if config['DynRDSPreemphasis'] == "50us" else 1) \
+         | int(config['DynRDSQN8066Mono'])<<4 \
+         | int(config['DynRDSEnableRDS'])<<6
+
   def update(self):
+    # Mono/stereo can change live: read-modify-write so the RDS ready toggle bit (bit 1) is left as-is
+    current = self.I2C.read(0x01, 1)[0]
+    wanted = (current & 0b11101111) | int(config['DynRDSQN8066Mono'])<<4
+    if wanted != current:
+      self.I2C.write(0x01, [wanted], True)
+
     # Try without 0x25 0b01111101 - TX Freq Dev of 86.25KHz
     # Try without 0x26 0b00111100 - RDS Freq Dev of 21KHz
 
