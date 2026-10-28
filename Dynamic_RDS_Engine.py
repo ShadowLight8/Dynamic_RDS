@@ -103,6 +103,23 @@ def buildStatus():
 
 lastStatus = None
 
+def replyToCLI(request_id, success, message):
+  if not request_id:
+    return
+  if len(request_id) != 32 or any(c not in '0123456789abcdef' for c in request_id):
+    logging.warning('Invalid CLI request ID')
+    return
+  response = json.dumps({
+    'success': success,
+    'message': message
+  }).encode('utf-8')
+  try:
+    with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as reply:
+      reply.settimeout(1)
+      reply.sendto(response, '\0Dynamic_RDS_CLI_' + request_id)
+  except OSError:
+    logging.exception('Unable to reply to CLI request')
+
 def writeStatus():
   # Status file for Dynamic_RDS.php - written on RDS data changes and
   # transmitter state transitions, so mtime reflects the last real change
@@ -314,9 +331,34 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
             transmitter.update()
         writeStatus()
 
+      elif line.split(' ', 1)[0] in ('TXSTART', 'TXSTOP'):
+        command, _, request_id = line.partition(' ')
+        logging.info('Processing manual transmitter command %s', command)
+        try:
+          if transmitter is None:
+            raise RuntimeError('Transmitter is not initialized')
+
+          desired_active = command == 'TXSTART'
+          if desired_active and not transmitter.active:
+            transmitter.startup()
+          elif not desired_active and transmitter.active:
+            transmitter.shutdown()
+
+          if transmitter.active != desired_active:
+            raise RuntimeError('Transmitter did not reach the requested state')
+
+          writeStatus()
+          message = 'Transmitter started' if desired_active else 'Transmitter stopped'
+          replyToCLI(request_id, True, message)
+        except (Exception, SystemExit) as error:
+          logging.exception('Manual transmitter command failed')
+          replyToCLI(request_id, False, str(error))
+          if isinstance(error, SystemExit):
+            raise
+
       elif line == 'START':
         logging.info('Processing start')
-        if config['DynRDSStart'] == "PlaylistStart" or not transmitter.active:
+        if config['DynRDSStart'] == "PlaylistStart" and not transmitter.active:
           transmitter.startup()
         activePlaylist = True
         writeStatus()

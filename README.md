@@ -215,3 +215,29 @@ Set the log levels to Debug, reproduce the problem, then use **Download log and 
 
 ### Advanced Options
 Software I<sup>2</sup>C mode for the Raspberry Pi, and PWM pin selection for both the Pi and BeagleBone Black. Most setups won't need to touch these.
+
+## Manual transmitter control
+
+For remotely scheduled systems, set **Start with** and **Stop with** to
+**Never**, then control FM transmission with:
+
+```sh
+sudo python3 /home/fpp/media/plugins/Dynamic_RDS/callbacks.py --start
+sudo python3 /home/fpp/media/plugins/Dynamic_RDS/callbacks.py --stop
+```
+
+`--start` launches and initializes the engine if needed, then starts the
+transmitter. `--stop` stops the transmitter without exiting the engine.
+Stopping an engine that is already absent succeeds without launching it.
+
+These commands do not change playlist state. After Hours title polling
+can resume when transmission is active and no playlist is active.
+
+Repeated start/stop commands are harmless. Exit status 0 indicates
+success; nonzero indicates failure or missing confirmation. A timeout
+does not cancel a command already sent to the engine.
+
+The callback allows up to 60 seconds to open the engine FIFO, followed
+by up to 60 seconds for confirmation.
+
+`--exit` retains its existing behavior of shutting down the engine.
