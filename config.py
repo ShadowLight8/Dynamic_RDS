@@ -15,6 +15,7 @@ config = {
 'DynRDSPreemphasis': '75us',
 
 'DynRDSQN8066Gain': '0',
+'DynRDSQN8066Mono': '0',
 'DynRDSQN8066SoftClipping': '0',
 'DynRDSQN8066AGC': '0',
 'DynRDSQN8066ChipPower': '122',

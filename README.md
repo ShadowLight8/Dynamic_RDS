@@ -184,6 +184,7 @@ Formatting rules:
 | Setting | Default | Notes |
 | --- | --- | --- |
 | Gain Adjustment | 0 | Range -15 to +20. Too high or too low causes distortion, random dropouts, or silence |
+| Transmit in Mono *(QN8066)* | Off | Drops the 19 kHz pilot and L-R subcarrier. About 20 dB better signal-to-noise at the edge of coverage and full deviation for the audio. Recommended when the show audio is mono |
 | Enable Soft Clipping | On | |
 | Enable AGC | Off | Not recommended |
 
