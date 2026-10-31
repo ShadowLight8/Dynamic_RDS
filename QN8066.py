@@ -78,8 +78,10 @@ class QN8066(Transmitter):
     self.I2C.write(0x28, [int(config['DynRDSQN8066SoftClipping'])<<7 | int(config['DynRDSQN8066BufferGain'])<<4 | int(config['DynRDSQN8066DigitalGain'])<<2 | int(config['DynRDSQN8066InputImpedance'])], True)
     #self.I2C.write(0x28, [0b01011011])
 
-    # PWM get updated
-    self.basicPWM.update(int(config['DynRDSQN8066AmpPower']))
+    # PWM gets updated, but only once started - startup() calls update() before
+    # basicPWM.startup(), and hardware PWM rejects duty_cycle while period is still 0
+    if self.basicPWM.active:
+      self.basicPWM.update(int(config['DynRDSQN8066AmpPower']))
 
   def shutdown(self):
     logging.info('Stopping QN8066 transmitter')
