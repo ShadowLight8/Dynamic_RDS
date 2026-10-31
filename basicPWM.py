@@ -8,7 +8,7 @@ from config import config
 
 
 PWM_FULL_RE = re.compile(
-    r"(PWM\d+)(?:_CHAN(\d+)|_(\d+))",
+    r"\bPWM(\d+)(?:_CHAN(\d+)|_(\d+))?\b",
     re.IGNORECASE
 )
 
@@ -94,9 +94,10 @@ class hardwarePWM(basicPWM):
       return None
 
     logging.debug('pinctrl reports: %s', result.stdout.strip())
-    return m.group(2) or m.group(3)
-    # "pwm": m.group(1).lower()
-
+    # Pi 5 (RP1): PWM0_CHAN2, Pi 4 (BCM2711): PWM0_0 -> channel is the suffix
+    # Pi <=3 (BCM2835/7): bare PWM0 or PWM1 -> the number itself is the channel
+    return m.group(2) or m.group(3) or m.group(1)
+    
   def startup(self, period=18300, dutyCycle=0):
     logging.debug('Starting hardware PWM channel %s with period of %s', self.pwmToUse, period)
     with open(f'/sys/class/pwm/pwmchip0/pwm{self.pwmToUse}/period', 'w', encoding='UTF-8') as p:
