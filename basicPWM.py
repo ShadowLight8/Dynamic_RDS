@@ -20,11 +20,16 @@ def createPWM() -> 'basicPWM':
   platform = os.getenv('FPPPLATFORM', '')
   match platform:
     case 'Raspberry Pi':
-      if ',' in config['DynRDSAdvPIPWMPin']:
-        logging.info('Using hardware PWM config: %s', config['DynRDSAdvPIPWMPin'])
-        return hardwarePWM(int(config['DynRDSAdvPIPWMPin'].split(',', 1)[0]))
-      logging.info('Using software PWM pin: %s', config['DynRDSAdvPIPWMPin'])
-      return softwarePWM(int(config['DynRDSAdvPIPWMPin']))
+      try:
+        if ',' in config['DynRDSAdvPIPWMPin']:
+          logging.info('Using hardware PWM config: %s', config['DynRDSAdvPIPWMPin'])
+          return hardwarePWM(int(config['DynRDSAdvPIPWMPin'].split(',', 1)[0]))
+        logging.info('Using software PWM pin: %s', config['DynRDSAdvPIPWMPin'])
+        return softwarePWM(int(config['DynRDSAdvPIPWMPin']))
+      except (RuntimeError, OSError, ValueError) as e:
+        # Losing amp power control shouldn't take down RDS and the transmitter
+        logging.error('PWM setup failed, continuing without PWM: %s', e)
+        return basicPWM()
     case 'BeagleBone Black':
       logging.info('Using BBB hardware PWM config: %s', config['DynRDSAdvBBBPWMPin'])
       return hardwareBBBPWM(config['DynRDSAdvBBBPWMPin'])
@@ -53,8 +58,7 @@ class hardwarePWM(basicPWM):
   def __init__(self, pwmGPIOPin=18):
     pwmInfo = self._getPWMInfoFromPinctrl(pwmGPIOPin)
     if pwmInfo is None:
-      logging.error('Unable to determine PWM channel for GPIO%s', pwmGPIOPin)
-      sys.exit(-1)
+      raise RuntimeError(f'Unable to determine PWM channel for GPIO{pwmGPIOPin}')
 
     self.pwmToUse = pwmInfo
     if os.path.isdir('/sys/class/pwm/pwmchip0') and os.access('/sys/class/pwm/pwmchip0/export', os.W_OK):
