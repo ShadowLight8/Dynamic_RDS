@@ -27,6 +27,7 @@
             "description": "Audio Settings",
             "settings": [
                 "DynRDSQN8066Gain",
+                "DynRDSQN8066Mono",
                 "DynRDSQN8066SoftClipping",
                 "DynRDSQN8066AGC"
             ]
@@ -94,6 +95,7 @@
                   "DynRDSPSUpdateRate",
                   "DynRDSRTUpdateRate",
                   "DynRDSQN8066Gain",
+                  "DynRDSQN8066Mono",
                   "DynRDSQN8066SoftClipping",
                   "DynRDSQN8066AGC",
                   "DynRDSQN8066ChipPower",
@@ -275,6 +277,18 @@
             "max": 20,
             "step": 1,
             "default": 0,
+            "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i>"
+        },
+        "DynRDSQN8066Mono": {
+            "name": "DynRDSQN8066Mono",
+            "description": "Transmit in Mono",
+            "tip": "Turns off the 19 kHz stereo pilot and the L-R subcarrier. Receivers stay in mono, which removes the stereo noise penalty at the edge of coverage (roughly 20 dB better signal-to-noise on a weak signal) and gives the audio the full deviation budget. Recommended for light shows, where the audio is usually mono anyway.",
+            "restart": 0,
+            "reboot": 0,
+            "type": "checkbox",
+            "checkedValue": "1",
+            "uncheckedValue": "0",
+            "default": "0",
             "suffix": "<i class='fas fa-fw fa-bolt fa-nbsp ui-level-1' title='Takes effect immediately - no FPP restart'></i>"
         },
         "DynRDSQN8066SoftClipping": {
