@@ -203,6 +203,13 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
 
     logging.info(' Action %s', j['Action'])
 
+    # Remotes have no playlists, so FPPD fakes a single 'start' the first time it opens
+    # media and never sends a matching 'stop' (see OpenMediaOutput in FPP's mediaoutput.cpp).
+    # Treating it as a real START would mark a playlist active forever and block mpc polling.
+    if playlist_action == 'start' and j.get('name') == 'FPP Remote' and j.get('desc') == 'FPP Remote Mode':
+      fifo.write('REMOTESTART\n')
+      sys.exit()
+
     if playlist_action == 'start': # or playlist_action == 'playing':
       fifo.write('START\n')
     elif playlist_action == 'stop':

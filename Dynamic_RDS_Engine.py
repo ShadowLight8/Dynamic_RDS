@@ -226,6 +226,8 @@ rdsValues = {'{T}': '', '{A}': '', '{B}': '', '{G}': '', '{N}': '','{L}': '', '{
 transmitter = None
 mqtt = None
 activePlaylist = False
+# Set once FPPD sends its one-time remote-mode 'start'; remotes never get a playlist 'stop'
+remoteMode = False
 nextMPCUpdate = datetime.now()
 pendingPlaylistUpdate = False
 pendingMediaUpdate = False
@@ -338,6 +340,14 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
         activePlaylist = True
         writeStatus()
 
+      elif line == 'REMOTESTART':
+        logging.info('Processing remote start')
+        if config['DynRDSStart'] == "PlaylistStart" or not transmitter.active:
+          transmitter.startup()
+        # Intentionally not setting activePlaylist - no 'stop' will ever clear it on a remote
+        remoteMode = True
+        writeStatus()
+
       elif line == 'STOP':
         logging.info('Processing stop')
         for key in rdsValues:
@@ -421,7 +431,16 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
         nextMPCUpdate = datetime.now() + timedelta(seconds=60)
         mpcLatest = rdsValues['{T}']
 
-      if rdsValues['{T}'] != mpcLatest:
+      if remoteMode:
+        # A remote is never told when synced show media ends, so an empty mpc result only means
+        # After Hours isn't playing - keep the media values. Once mpc has a title, it takes over
+        # and stale media fields (artist, length, etc.) are cleared the same way STOP does.
+        if mpcLatest not in ('', rdsValues['{T}']):
+          for key in rdsValues:
+            rdsValues[key] = ''
+          rdsValues['{T}'] = mpcLatest
+          updateRDSData()
+      elif rdsValues['{T}'] != mpcLatest:
         rdsValues['{T}'] = mpcLatest
         updateRDSData()
 
