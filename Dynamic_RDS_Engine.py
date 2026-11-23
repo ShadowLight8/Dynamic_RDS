@@ -261,7 +261,7 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
           transmitter.startup()
         writeStatus()
 
-      elif line == 'INIT': # From --list with callback.py
+      elif line == 'INIT': # From lifecycle startup or a callback launching the engine
         logging.info('Processing init')
         read_config()
 

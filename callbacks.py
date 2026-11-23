@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 
+import sys
+
+# Discovery must not wait for engine imports or FIFO readiness.
+if sys.argv[1:] == ['--list']:
+  print('media,playlist,lifecycle')
+  sys.exit(0)
+
 import logging
 import json
 import os
 import errno
 import subprocess
 import socket
-import sys
 import time
 
 from sys import argv
@@ -26,7 +32,7 @@ def check_engine_running():
 
 if len(argv) <= 1:
   print('Usage:')
-  print('   --list                              | Used by FPPD at startup. Starts Dynamic_RDS_Engine.py')
+  print('   --list                              | Lists supported FPP callbacks without starting the engine')
   print('   --update                            | Used by Dynamic_RDS.php to apply dynamic settings to the transmitter')
   print('   --reset                             | Used by Dynamic_RDS.php to reset the GPIO pin')
   print('   --exit                              | Used by FPPD or manually to shutdown Dynamic_RDS_Engine.py')
@@ -101,17 +107,12 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
   else:
     logging.info('Args %s', argv[1])
 
-  # If Engine was started AND the argument isn't --list, INIT must be sent to Engine before the requested argument
-  if engineStarted and argv[1] != '--list':
-    logging.info(' Engine restart detected, sending INIT')
+  # Initialize a newly launched engine, or refresh it when FPPD starts.
+  if engineStarted or argv[1:] == ['--type', 'lifecycle', 'startup']:
+    logging.info('Initializing engine')
     fifo.write('INIT\n')
 
-  if argv[1] == '--list':
-    # Typically called first by FPPD and will block if read side isn't open
-    fifo.write('INIT\n')
-    print('media,playlist,lifecycle')
-
-  elif argv[1] == '--update':
+  if argv[1] == '--update':
     # Not used by FPPD, but used by Dynamic_RDS.php
     fifo.write('UPDATE\n')
 
