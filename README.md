@@ -234,11 +234,9 @@ Stopping an engine that is already absent succeeds without launching it.
 These commands do not change playlist state. After Hours title polling
 can resume when transmission is active and no playlist is active.
 
-Repeated start/stop commands are harmless. Exit status 0 indicates
-success; nonzero indicates failure or missing confirmation. A timeout
-does not cancel a command already sent to the engine.
-
-The callback allows up to 60 seconds to open the engine FIFO, followed
-by up to 60 seconds for confirmation.
+Repeated start/stop commands are harmless. The commands are passed to the
+engine without waiting for a result, so exit status 0 means the command was
+sent. Check the plugin log or the status section of the config page to
+confirm the transmitter state.
 
 `--exit` retains its existing behavior of shutting down the engine.

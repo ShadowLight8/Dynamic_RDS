@@ -8,7 +8,6 @@ import subprocess
 import socket
 import sys
 import time
-import uuid
 
 from sys import argv
 from config import config,read_config_from_file
@@ -24,48 +23,6 @@ def check_engine_running():
       return False  # Not running
   except socket.error:
     return True  # Running
-
-def openCallbackFIFO(path):
-  if argv[1] not in ('--start', '--stop'):
-    return open(path, 'w', encoding='UTF-8')
-
-  deadline = time.monotonic() + 60
-  while True:
-    try:
-      fd = os.open(path, os.O_WRONLY | os.O_NONBLOCK)
-    except OSError as error:
-      if error.errno not in (errno.ENXIO, errno.ENOENT):
-        print('Cannot open engine FIFO: ' + str(error), file=sys.stderr)
-        sys.exit(1)
-      if time.monotonic() >= deadline:
-        print('Timed out waiting for the engine FIFO.', file=sys.stderr)
-        sys.exit(1)
-      time.sleep(0.1)
-    else:
-      return os.fdopen(fd, 'w', encoding='UTF-8')
-
-def sendManualCommand(fifo, command):
-  request_id = uuid.uuid4().hex
-  try:
-    with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as reply:
-      reply.bind('\0Dynamic_RDS_CLI_' + request_id)
-      reply.settimeout(60)
-      fifo.write(command + ' ' + request_id + '\n')
-      fifo.flush()
-      response = json.loads(reply.recv(4096).decode('utf-8'))
-      if not isinstance(response, dict):
-        raise ValueError('Invalid engine response')
-      success = response.get('success') is True
-      print(response.get('message', 'No result message'),
-            file=sys.stdout if success else sys.stderr)
-      return 0 if success else 1
-  except socket.timeout:
-    print('Timed out waiting for engine confirmation; the command may still complete.',
-          file=sys.stderr)
-    return 1
-  except (OSError, ValueError) as error:
-    print('Transmitter command failed: ' + str(error), file=sys.stderr)
-    return 1
 
 if len(argv) <= 1:
   print('Usage:')
@@ -140,7 +97,7 @@ if proc is not None and proc.poll() is not None:
   logging.error('%s failed to stay running - %s', updater_path, proc.stderr.read())
   sys.exit(1)
 
-with openCallbackFIFO(fifo_path) as fifo:
+with open(fifo_path, 'w', encoding='UTF-8') as fifo:
   if len(argv) >= 4:
     logging.info('Args %s %s %s', argv[1], argv[2], argv[3])
   else:
@@ -157,10 +114,10 @@ with openCallbackFIFO(fifo_path) as fifo:
     print('media,playlist,lifecycle')
 
   elif argv[1] == '--start':
-    sys.exit(sendManualCommand(fifo, 'MANUALSTART'))
+    fifo.write('MANUALSTART\n')
 
   elif argv[1] == '--stop':
-    sys.exit(sendManualCommand(fifo, 'MANUALSTOP'))
+    fifo.write('MANUALSTOP\n')
 
   elif argv[1] == '--update':
     # Not used by FPPD, but used by Dynamic_RDS.php
