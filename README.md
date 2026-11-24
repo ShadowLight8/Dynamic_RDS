@@ -243,7 +243,7 @@ confirm the transmitter state.
 
 ### FPP Command
 
-The plugin also registers an FPP Command, **Dynamic_RDS Transmitter**, with an Action of **Start** or **Stop**. It runs the same `--start`/`--stop` commands, and can be used anywhere FPP Commands are - command presets, playlist Command entries, the scheduler, GPIO inputs, MQTT, or `/api/command/Dynamic_RDS Transmitter/Start`.
+The plugin also registers an FPP Command, **Dynamic_RDS Transmitter State**, with an Action of **Start** or **Stop**. It runs the same `--start`/`--stop` commands, and can be used anywhere FPP Commands are - command presets, playlist Command entries, the scheduler, GPIO inputs, MQTT, or `/api/command/Dynamic_RDS Transmitter State/Start`.
 
 For a master and remotes, enable MultiSync on the command in the command editor and pick the remote hosts. The master sends the command over MultiSync and each remote runs it locally, so no scripts are needed on the remotes. Each remote needs the plugin installed.
 
