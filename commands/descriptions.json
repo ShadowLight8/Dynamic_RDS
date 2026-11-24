@@ -1,6 +1,6 @@
 [
     {
-        "name": "Dynamic_RDS Transmitter",
+        "name": "Dynamic_RDS Transmitter State",
         "description": "Start or stop FM transmission without changing playlist state",
         "script": "transmitter.py",
         "args": [
