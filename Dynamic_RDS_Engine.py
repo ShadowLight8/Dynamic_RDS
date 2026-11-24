@@ -360,7 +360,9 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
 
       elif line == 'START':
         logging.info('Processing start')
-        if config['DynRDSStart'] == "PlaylistStart" and not transmitter.active:
+        # Any playlist start brings an inactive transmitter back up (e.g. after a Playlist Stop with
+        # FPPD Start), unless Start with is Never, which leaves control to the CLI --start/--stop commands
+        if config['DynRDSStart'] != "Never" and not transmitter.active:
           transmitter.startup()
         activePlaylist = True
         writeStatus()
