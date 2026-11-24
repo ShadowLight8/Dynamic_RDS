@@ -333,14 +333,16 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
             transmitter.update()
         writeStatus()
 
-      elif line.split(' ', 1)[0] in ('TXSTART', 'TXSTOP'):
+      # Command names must not start with an rdsValues letter (T, A, B, G, N, L, C, P) - those lines carry
+      # media values, so a song titled 'XSTOP' would arrive as 'TXSTOP'
+      elif line.split(' ', 1)[0] in ('MANUALSTART', 'MANUALSTOP'):
         command, _, request_id = line.partition(' ')
         logging.info('Processing manual transmitter command %s', command)
         try:
           if transmitter is None:
             raise RuntimeError('Transmitter is not initialized')
 
-          desired_active = command == 'TXSTART'
+          desired_active = command == 'MANUALSTART'
           if desired_active and not transmitter.active:
             transmitter.startup()
           elif not desired_active and transmitter.active:

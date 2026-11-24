@@ -157,10 +157,10 @@ with openCallbackFIFO(fifo_path) as fifo:
     print('media,playlist,lifecycle')
 
   elif argv[1] == '--start':
-    sys.exit(sendManualCommand(fifo, 'TXSTART'))
+    sys.exit(sendManualCommand(fifo, 'MANUALSTART'))
 
   elif argv[1] == '--stop':
-    sys.exit(sendManualCommand(fifo, 'TXSTOP'))
+    sys.exit(sendManualCommand(fifo, 'MANUALSTOP'))
 
   elif argv[1] == '--update':
     # Not used by FPPD, but used by Dynamic_RDS.php
