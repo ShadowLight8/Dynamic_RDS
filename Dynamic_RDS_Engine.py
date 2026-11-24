@@ -342,7 +342,8 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
 
       elif line == 'REMOTESTART':
         logging.info('Processing remote start')
-        if config['DynRDSStart'] == "PlaylistStart" or not transmitter.active:
+        # Same rule as START - Never leaves control to the CLI --start/--stop commands
+        if config['DynRDSStart'] != "Never" and not transmitter.active:
           transmitter.startup()
         # Intentionally not setting activePlaylist - no 'stop' will ever clear it on a remote
         remoteMode = True

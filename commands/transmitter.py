@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# FPP Command script for "Dynamic_RDS Transmitter", registered from commands/descriptions.json.
+# FPP Command script for "Dynamic_RDS Transmitter State", registered from commands/descriptions.json.
 # FPP runs it with the Action arg as argv[1] and replaces the whole environment with only
 # MEDIADIR, FPPDIR, and SCRIPTDIR, so the normal paths are restored before handing off to
 # callbacks.py - an engine launched from here inherits this environment.
