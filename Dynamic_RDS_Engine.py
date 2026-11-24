@@ -1,12 +1,25 @@
 #!/usr/bin/env python3
 
+import socket
+import sys
+
+# Claim the single-instance lock before anything slow. The hardware and MQTT imports below can take
+# several seconds on a Pi Zero at boot, and callbacks.py treats a missing lock as "engine not running",
+# so taking it late let a second callback launch a second engine. Logging isn't set up yet, so a
+# failure goes to stderr, which callbacks.py logs when the engine exits early.
+try:
+  lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+  lock_socket.bind('\0Dynamic_RDS_Engine')
+except OSError:
+  print('Unable to create lock. Another instance of Dynamic_RDS_Engine.py running?', file=sys.stderr)
+  sys.exit(1)
+
+# pylint: disable=wrong-import-position
 import logging
 import json
 import os
 import errno
 import atexit
-import socket
-import sys
 import subprocess
 import time
 import unicodedata
@@ -19,6 +32,7 @@ from config import config, read_config_from_file
 from QN8066 import QN8066
 from Si4713 import Si4713
 from basicMQTT import basicMQTT, pahoMQTT
+# pylint: enable=wrong-import-position
 
 def logUnhandledException(eType, eValue, eTraceback):
   logging.error("Unhandled exception", exc_info=(eType, eValue, eTraceback))
@@ -191,15 +205,6 @@ logging.excessive = excessive
 logging.Logger.excessive = excessive
 
 logging.info('--- %s', date.today())
-
-# Establish lock via socket or exit if failed
-try:
-  lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-  lock_socket.bind('\0Dynamic_RDS_Engine')
-  logging.debug('Lock created')
-except:
-  logging.error('Unable to create lock. Another instance of Dynamic_RDS_Engine.py running?')
-  sys.exit(1)
 
 # Status file for the web UI
 status_path = script_dir + '/Dynamic_RDS_Status.json'
