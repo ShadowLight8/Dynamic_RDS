@@ -401,7 +401,10 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
         # TODO: This will likely change as more data is added, so a new way will have to be determined
         pendingMediaUpdate = True
         lastUpdateTime = time.monotonic()
-        transmitter.status()
+        # Media keeps arriving while the transmitter is off (Start with: Never, or after --stop), and an
+        # inactive Si4713 is held in reset - querying it stalls the main loop ~21s on I2C retries
+        if transmitter.active:
+          transmitter.status()
 
       # All of the rdsValues that are stored as is
       else:

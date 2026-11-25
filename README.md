@@ -199,8 +199,8 @@ Formatting rules:
 ### Plugin Activation
 | Setting | Default | Notes |
 | --- | --- | --- |
-| Start with | FPPD Start | Or Playlist Start, or Never. On start the transmitter is reset, settings initialized, audio broadcast begins, and static RDS messages are sent |
-| Stop with | Never | Or Playlist Stop. On stop the transmitter is reset and listeners hear static |
+| Start with | FPPD Start | **FPPD Start** turns the transmitter on when FPPD starts. **Playlist Start** turns it on when a playlist starts. With either, a playlist start also turns the transmitter back on if it is off (e.g. after a Playlist Stop or `--stop`). **Never** leaves it off until started manually - see [Manual transmitter control](#manual-transmitter-control). On start the transmitter is reset, settings initialized, audio broadcast begins, and static RDS messages are sent. A transmitter that is already on is left as is |
+| Stop with | Never | Or Playlist Stop. On stop the transmitter is turned off and listeners hear static |
 
 ### MPC / After Hours Music
 Enable to pull `%title%` from mpc and display it as `{T}` when FPP is otherwise idle. Only appears if the After Hours Music Player plugin is installed.
