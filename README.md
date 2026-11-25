@@ -13,6 +13,8 @@ Dynamic_RDS turns a small FM transmitter board into a light show radio station. 
 * Song titles from the [FPP After Hours Music plugin](https://github.com/jcrossbdn/fpp-after-hours) between shows
 * Optional status publishing to MQTT
 
+![A radio tuned to 100.1 MHz showing Dynamic_RDS text: Merry / Merry Christmas!](images/radio_showing_Dynamic_RDS.jpg)
+
 > [!IMPORTANT]
 > FM broadcasting is regulated in most countries. Keep the frequency, power, and antenna within what your local rules allow (in the US, see FCC Part 15).
 
@@ -45,7 +47,7 @@ Dynamic_RDS turns a small FM transmitter board into a light show radio station. 
 5. **Restart FPPD** - With the default **Start with: FPPD Start**, the transmitter turns on when FPPD starts.
 6. **Play something** - Tune a radio to your frequency. You should hear the audio and see the RDS text change with each song. The status section at the top of the config page shows what is being broadcast.
 
-![Dynamic RDS status section, broadcasting from an Si4713](images/plugin-status-screenshot.png)
+![Dynamic RDS status section, broadcasting from an Si4713](images/plugin_status_screenshot.png)
 
 The status section shows:
 * **Now Broadcasting** - the detected transmitter, I<sup>2</sup>C bus, and address, with **ON AIR** lit while the transmitter is on
@@ -71,7 +73,7 @@ The status section shows:
 ## Si4713 setup
 The Si4713 breakout board was originally from [Adafruit](https://www.adafruit.com/product/1958), which is now out of stock. Clones are on [AliExpress](https://www.aliexpress.us/w/wholesale-Si4713-transmitter.html) and elsewhere. Pin labels can differ slightly between clones.
 
-![Si4713 Breakout Board](images/Si4713-transmitter.jpg)
+![Si4713 Breakout Board](images/Si4713_transmitter.jpg)
 
 ### Wiring to a Raspberry Pi
 | Si4713 board | Raspberry Pi |
@@ -81,6 +83,8 @@ The Si4713 breakout board was originally from [Adafruit](https://www.adafruit.co
 | SDA | Pin 3 (GPIO 2 / SDA) |
 | SCL | Pin 5 (GPIO 3 / SCL) |
 | RST | Pin 7 (GPIO 4) by default |
+
+![Raspberry Pi wired to an Si4713 breakout board on a breadboard](images/pi_to_Si4713.jpg)
 
 The reset pin can be changed under **Transmitter Type and Settings -> Reset Pin / GPIO**. The Si4713 only runs while its reset line is held high, and the plugin keeps it high while the transmitter is on. When the transmitter is turned off, the chip is held in reset and won't show up on the I<sup>2</sup>C bus until it's turned on again.
 
@@ -154,6 +158,7 @@ An FM transmitter right next to a Pi/BBB can cause interference, which usually s
 
 ![Grounded case setup](images/pi_transmitter_setup1.jpg)
 ![Grounded case setup](images/pi_transmitter_setup2.jpg)
+![Grounded case setup](images/pi_transmitter_setup3.jpg)
 
 ### Amplifier power with PWM
 The QN8066 board's amplifier output is controlled with a PWM signal, set by **Amp Power** (0-100) once **Enable PWM** is on.
@@ -171,6 +176,10 @@ The PWM pin can be changed under **Advanced Options**, which is also where softw
 RDS has two text fields that radios display:
 * **PS (Program Service)** - 8 characters at a time. This is what most radios show, often as the "station name." Longer text is broken into 8-character screens that change every **PS Update Rate** seconds.
 * **RT (RadioText)** - longer messages, up to 64 characters at a time (32 recommended). Not every radio shows RT, and some only show it on a button press.
+
+![A radio showing RDS from an FM station](images/radio_showing_RDS.jpg)
+
+On this radio, the large text next to **RDS** is the PS, and **Text** is the RT. It also shows the **PI** code and **PTY** (program type), which are set in the plugin's RDS Settings.
 
 The **PS Style Text** and **RT Style Text** settings control what is sent. They mix static text with values from the currently playing media:
 
@@ -198,7 +207,9 @@ The defaults show how this works:
 * PS: `{T}|{A}[|{P} of {C}]|Merry|Christ-|   -mas!` shows the title, the artist, "3 of 12" (only when in a playlist), then "Merry Christmas!" across three screens
 * RT: `{T}[ by {A}][|Track {P} of {C}] Merry Christmas!`
 
-Changes to the style text and update rates take effect immediately.
+Changes to the style text and update rates take effect immediately - they have the lightning bolt icon on the config page:
+
+![RDS Settings on the config page](images/plugin_RDS_settings.png)
 
 ### Changing the text on a schedule
 During install, an example script is copied to FPP's `media/scripts` folder as `Dynamic_RDS_config.sh`. It changes the PS and/or RT style text without restarting FPP - for example, to show different messages during the show and after it. Edit the script, then run it from the scheduler or a playlist with the **Run Script** command. Keep the single quotes around the style text so bash doesn't interpret it. The original is in [scripts/src_Dynamic_RDS_config.sh](scripts/src_Dynamic_RDS_config.sh).
@@ -219,6 +230,10 @@ To control the transmitter yourself - for example, from an FPP master's schedule
 
 ### FPP Command
 The plugin registers an FPP Command, **Dynamic_RDS Transmitter State**, with an Action of **Start** or **Stop**. It can be used anywhere FPP Commands are: command presets, playlist Command entries, the scheduler, GPIO inputs, MQTT, or the API at `/api/command/Dynamic_RDS%20Transmitter%20State/Start`.
+
+For example, scheduled to turn the transmitter on every evening:
+
+![FPP scheduler entry running the Dynamic_RDS Transmitter State command with Start](images/plugin_FPP_command.png)
 
 **For a master and remotes**, enable MultiSync on the command in the command editor and pick the remote hosts. The master sends the command over MultiSync and each remote runs it locally - no scripts or SSH needed. Each remote needs the plugin installed.
 
