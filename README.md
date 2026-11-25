@@ -199,8 +199,8 @@ Formatting rules:
 ### Plugin Activation
 | Setting | Default | Notes |
 | --- | --- | --- |
-| Start with | FPPD Start | Or Playlist Start, or Never. On start the transmitter is reset, settings initialized, audio broadcast begins, and static RDS messages are sent |
-| Stop with | Never | Or Playlist Stop. On stop the transmitter is reset and listeners hear static |
+| Start with | FPPD Start | **FPPD Start** turns the transmitter on when FPPD starts. **Playlist Start** turns it on when a playlist starts. With either, a playlist start also turns the transmitter back on if it is off (e.g. after a Playlist Stop or `--stop`). **Never** leaves it off until started manually - see [Manual transmitter control](#manual-transmitter-control). On start the transmitter is reset, settings initialized, audio broadcast begins, and static RDS messages are sent. A transmitter that is already on is left as is |
+| Stop with | Never | Or Playlist Stop. On stop the transmitter is turned off and listeners hear static |
 
 ### MPC / After Hours Music
 Enable to pull `%title%` from mpc and display it as `{T}` when FPP is otherwise idle. Only appears if the After Hours Music Player plugin is installed.
@@ -216,3 +216,35 @@ Set the log levels to Debug, reproduce the problem, then use **Download log and 
 
 ### Advanced Options
 Software I<sup>2</sup>C mode for the Raspberry Pi, and PWM pin selection for both the Pi and BeagleBone Black. Most setups won't need to touch these.
+
+## Manual transmitter control
+
+For remotely scheduled systems, set **Start with** and **Stop with** to
+**Never**, then control FM transmission with:
+
+```sh
+sudo python3 /home/fpp/media/plugins/Dynamic_RDS/callbacks.py --start
+sudo python3 /home/fpp/media/plugins/Dynamic_RDS/callbacks.py --stop
+```
+
+`--start` launches and initializes the engine if needed, then starts the
+transmitter. `--stop` stops the transmitter without exiting the engine.
+Stopping an engine that is already absent succeeds without launching it.
+
+These commands do not change playlist state. After Hours title polling
+can resume when transmission is active and no playlist is active.
+
+Repeated start/stop commands are harmless. The commands are passed to the
+engine without waiting for a result, so exit status 0 means the command was
+sent. Check the plugin log or the status section of the config page to
+confirm the transmitter state.
+
+`--exit` retains its existing behavior of shutting down the engine.
+
+### FPP Command
+
+The plugin also registers an FPP Command, **Dynamic_RDS Transmitter State**, with an Action of **Start** or **Stop**. It runs the same `--start`/`--stop` commands, and can be used anywhere FPP Commands are - command presets, playlist Command entries, the scheduler, GPIO inputs, MQTT, or `/api/command/Dynamic_RDS%20Transmitter%20State/Start`.
+
+For a master and remotes, enable MultiSync on the command in the command editor and pick the remote hosts. The master sends the command over MultiSync and each remote runs it locally, so no scripts are needed on the remotes. Each remote needs the plugin installed.
+
+FPP reports the command as complete once it has been sent. Check the plugin log or the status section of the config page to confirm the transmitter state.
