@@ -27,6 +27,8 @@ def check_engine_running():
 if len(argv) <= 1:
   print('Usage:')
   print('   --list                              | Used by FPPD at startup. Starts Dynamic_RDS_Engine.py')
+  print('   --start                             | Manually enable FM transmission')
+  print('   --stop                              | Disable FM transmission without exiting the engine')
   print('   --update                            | Used by Dynamic_RDS.php to apply dynamic settings to the transmitter')
   print('   --reset                             | Used by Dynamic_RDS.php to reset the GPIO pin')
   print('   --exit                              | Used by FPPD or manually to shutdown Dynamic_RDS_Engine.py')
@@ -61,7 +63,7 @@ if check_engine_running():
 else:
   logging.debug('Lock not found')
   # Short circuit if Engine isn't running and command is to shut it down
-  if argv[1] == '--exit' or (argv[1] == '--type' and argv[2] == 'lifecycle' and argv[3] == 'shutdown'):
+  if argv[1] in ('--exit', '--stop') or (argv[1] == '--type' and argv[2] == 'lifecycle' and argv[3] == 'shutdown'):
     logging.info('Exit, but not running')
     sys.exit()
   logging.info('Starting %s', updater_path)
@@ -110,6 +112,12 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
     # Typically called first by FPPD and will block if read side isn't open
     fifo.write('INIT\n')
     print('media,playlist,lifecycle')
+
+  elif argv[1] == '--start':
+    fifo.write('MANUALSTART\n')
+
+  elif argv[1] == '--stop':
+    fifo.write('MANUALSTOP\n')
 
   elif argv[1] == '--update':
     # Not used by FPPD, but used by Dynamic_RDS.php
@@ -194,6 +202,13 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
     playlist_action = j['Action'] if 'Action' in j else 'stop'
 
     logging.info(' Action %s', j['Action'])
+
+    # Remotes have no playlists, so FPPD fakes a single 'start' the first time it opens
+    # media and never sends a matching 'stop' (see OpenMediaOutput in FPP's mediaoutput.cpp).
+    # Treating it as a real START would mark a playlist active forever and block mpc polling.
+    if playlist_action == 'start' and j.get('name') == 'FPP Remote' and j.get('desc') == 'FPP Remote Mode':
+      fifo.write('REMOTESTART\n')
+      sys.exit()
 
     if playlist_action == 'start': # or playlist_action == 'playing':
       fifo.write('START\n')

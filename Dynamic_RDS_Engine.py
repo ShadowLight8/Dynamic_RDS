@@ -226,6 +226,8 @@ rdsValues = {'{T}': '', '{A}': '', '{B}': '', '{G}': '', '{N}': '','{L}': '', '{
 transmitter = None
 mqtt = None
 activePlaylist = False
+# Set once FPPD sends its one-time remote-mode 'start'; remotes never get a playlist 'stop'
+remoteMode = False
 nextMPCUpdate = datetime.now()
 pendingPlaylistUpdate = False
 pendingMediaUpdate = False
@@ -316,11 +318,35 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
             transmitter.update()
         writeStatus()
 
+      # Command names must not start with an rdsValues letter (T, A, B, G, N, L, C, P) - those lines carry
+      # media values, so a song titled 'XSTOP' would arrive as 'TXSTOP'
+      elif line in ('MANUALSTART', 'MANUALSTOP'):
+        # From callbacks.py --start/--stop. Doesn't change activePlaylist, so After Hours polling is unaffected
+        logging.info('Processing manual transmitter command %s', line)
+        if transmitter is None:
+          logging.error('Manual transmitter command ignored - transmitter is not initialized')
+        elif line == 'MANUALSTART' and not transmitter.active:
+          transmitter.startup()
+        elif line == 'MANUALSTOP' and transmitter.active:
+          transmitter.shutdown()
+        writeStatus()
+
       elif line == 'START':
         logging.info('Processing start')
-        if config['DynRDSStart'] == "PlaylistStart" or not transmitter.active:
+        # Any playlist start brings an inactive transmitter back up (e.g. after a Playlist Stop with
+        # FPPD Start), unless Start with is Never, which leaves control to the CLI --start/--stop commands
+        if config['DynRDSStart'] != "Never" and not transmitter.active:
           transmitter.startup()
         activePlaylist = True
+        writeStatus()
+
+      elif line == 'REMOTESTART':
+        logging.info('Processing remote start')
+        # Same rule as START - Never leaves control to the CLI --start/--stop commands
+        if config['DynRDSStart'] != "Never" and not transmitter.active:
+          transmitter.startup()
+        # Intentionally not setting activePlaylist - no 'stop' will ever clear it on a remote
+        remoteMode = True
         writeStatus()
 
       elif line == 'STOP':
@@ -375,7 +401,10 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
         # TODO: This will likely change as more data is added, so a new way will have to be determined
         pendingMediaUpdate = True
         lastUpdateTime = time.monotonic()
-        transmitter.status()
+        # Media keeps arriving while the transmitter is off (Start with: Never, or after --stop), and an
+        # inactive Si4713 is held in reset - querying it stalls the main loop ~21s on I2C retries
+        if transmitter.active:
+          transmitter.status()
 
       # All of the rdsValues that are stored as is
       else:
@@ -406,7 +435,16 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
         nextMPCUpdate = datetime.now() + timedelta(seconds=60)
         mpcLatest = rdsValues['{T}']
 
-      if rdsValues['{T}'] != mpcLatest:
+      if remoteMode:
+        # A remote is never told when synced show media ends, so an empty mpc result only means
+        # After Hours isn't playing - keep the media values. Once mpc has a title, it takes over
+        # and stale media fields (artist, length, etc.) are cleared the same way STOP does.
+        if mpcLatest not in ('', rdsValues['{T}']):
+          for key in rdsValues:
+            rdsValues[key] = ''
+          rdsValues['{T}'] = mpcLatest
+          updateRDSData()
+      elif rdsValues['{T}'] != mpcLatest:
         rdsValues['{T}'] = mpcLatest
         updateRDSData()
 
