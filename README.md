@@ -355,7 +355,7 @@ Radios need a stronger signal to decode RDS than to play audio, so missing RDS i
   * Check the connections and wire continuity
 
 ### Plugin load messages at startup
-* **"Could not load plugin Dynamic_RDS"** - FPP gives each plugin 10 seconds to answer at startup. Older versions of the plugin could take longer than that on slower boards like the Pi Zero W ([#88](...)). Update the plugin from the Plugin Manager - current versions answer immediately and start the engine afterwards
+* **"Could not load plugin Dynamic_RDS"** - FPP gives each plugin 10 seconds to answer at startup. Older versions of the plugin could take longer than that on slower boards like the Pi Zero W ([#88](https://github.com/ShadowLight8/Dynamic_RDS/issues/88)). Update the plugin from the Plugin Manager - current versions answer immediately and start the engine afterwards
 * **"Plugin Dynamic_RDS: startup callback still running after 5 seconds; continuing without it"** in the FPPD log is harmless. On slower boards the engine takes a few seconds to start, and FPP carries on while it finishes
 
 ### After Hours titles not showing
