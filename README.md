@@ -1,6 +1,11 @@
-# Dynamic_RDS - FM Transmitter Plugin for Falcon Player
+<img src="icon.png" alt="Dynamic RDS icon" width="96" align="right" />
+
+# Dynamic_RDS - FM Transmitter Plugin for Falcon Player<br clear="right">
 
 Dynamic_RDS turns a small FM transmitter board into a light show radio station. It controls a **QN8066** or **Si4713** transmitter from Falcon Player (FPP) over I<sup>2</sup>C, broadcasts your show audio, and sends RDS (Radio Data System) text so car radios show the song title, artist, and your own messages - just like a commercial station.
+
+> [!NOTE]
+> Dynamic_RDS supports the **QN8066** and **Si4713** FM transmitter chips
 
 * Fully customizable RDS text using static text and the song's title, artist, album, genre, track number, track length, and playlist position
 * Live view of what's being broadcast on the plugin's config page
@@ -39,6 +44,14 @@ Dynamic_RDS turns a small FM transmitter board into a light show radio station. 
 4. **Pick a frequency** - Find an empty spot on the FM dial where you are, and set the **Frequency**. Set **Preemphasis** for your region (75 &mu;s in the US and South Korea, 50 &mu;s most other places).
 5. **Restart FPPD** - With the default **Start with: FPPD Start**, the transmitter turns on when FPPD starts.
 6. **Play something** - Tune a radio to your frequency. You should hear the audio and see the RDS text change with each song. The status section at the top of the config page shows what is being broadcast.
+
+![Dynamic RDS status section, broadcasting from an Si4713](images/plugin-status-screenshot.png)
+
+The status section shows:
+* **Now Broadcasting** - the detected transmitter, I<sup>2</sup>C bus, and address, with **ON AIR** lit while the transmitter is on
+* **PS** and **RT** - the text as a radio would show it, stepping through each screen at the configured update rates. This is simulated in the browser to show the timing - it isn't read back from the transmitter
+* **Full PS** and **Full RT** - every screen in the current message
+* **Engine status** - whether the plugin's engine is running, and how long ago the broadcast text last changed
 
 > [!TIP]
 > Settings marked with a lightning bolt icon on the config page take effect immediately. Others need an FPPD restart.
