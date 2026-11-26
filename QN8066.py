@@ -211,7 +211,10 @@ class QN8066(Transmitter):
       if self.currentGroup == 0 and (datetime.now() - self.lastFragmentTime).total_seconds() >= self.delay:
         self.currentFragment = (self.currentFragment + 1) % len(self.fragments)
         self.lastFragmentTime = datetime.now()
-        self.ab = not self.ab
+        # A/B tells radios the text changed. With one fragment the text is the same each period, and
+        # toggling would make radios clear and redraw it. updateData() toggles when new text arrives
+        if len(self.fragments) > 1:
+          self.ab = not self.ab
         # Change \r (0x0d) to be [0d] for logging so it is visible in case of debugging
         logging.debug('Send RT Fragment \'%s\'', self.fragments[self.currentFragment].replace('\r','<0d>'))
 

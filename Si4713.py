@@ -15,6 +15,11 @@ class Si4713(Transmitter):
     self.I2C = basicI2C(0x63)  # Si4713 default I2C address
     self.totalCircularBuffers = 0
     self.resetPin = None # Will claim in startup(), release in shutdown()
+    # RT A/B flag of the last fragment loaded. Kept across updates so new text starts with the opposite
+    # flag - radios only clear the RT display when the flag changes (NRSC-4-B 6.1.5.3)
+    self.rtAB = False
+    # RT text currently in the chip's circular buffer, None when the buffer is empty or unknown
+    self.loadedRT = None
 
   # Si4713 Commands
   CMD_POWER_UP = 0x01
@@ -46,6 +51,11 @@ class Si4713(Transmitter):
 
   # Status bits
   STATUS_CTS = 0x80
+
+  # Each RT message is a fixed 32-character fragment (known limitation: DynRDSRTSize is ignored).
+  # A full 32 chars plus the 0x0D terminator needs a 9th 2A group, so every fragment gets 9 slots
+  RT_FRAG_SIZE = 32
+  RT_GROUPS_PER_FRAG = 9
 
   def _wait_for_cts(self, timeout=100):
     # Poll status-only reads until CTS is set (AN332 6.1). Each iteration is ~1ms.
@@ -188,6 +198,8 @@ class Si4713(Transmitter):
         self._send_command(self.CMD_POWER_DOWN, [])
     finally:
       self._releaseResetPin()
+      # Held in reset, the chip loses its RDS buffers - startup() must reload them
+      self.loadedRT = None
       super().shutdown()
 
   def reset(self, resetdelay=1):
@@ -250,37 +262,54 @@ class Si4713(Transmitter):
   def _updateRT(self, rtText):
     logging.debug('Si4713 _updateRT')
 
-    # Calculate max number of complete BCD groups * 4 chars per group, down to the nearest 32, back to characters
-    rtMaxLength = self.totalCircularBuffers // 3 * 4 // 32 * 32
+    # Same text already cycling on the chip (e.g. a settings save) - reloading would toggle A/B and
+    # make radios clear and redraw identical text
+    if rtText == self.loadedRT:
+      logging.debug('RT unchanged, not reloading buffer')
+      return
+    requestedRT = rtText # Before truncation, so the check above matches the next identical update
+
+    # Each 2A group takes 3 circular buffer blocks (B, C, D) and each fragment takes 9 groups
+    rtMaxLength = self.totalCircularBuffers // 3 // self.RT_GROUPS_PER_FRAG * self.RT_FRAG_SIZE
     logging.debug('RT length: %d, Abs Max Length: %d', len(rtText), rtMaxLength)
 
     if len(rtText) > rtMaxLength:
-      rtText = rtText[:rtMaxLength]
       logging.warning('RT text too long: %d (max %d) - truncating', len(rtText), rtMaxLength)
+      rtText = rtText[:rtMaxLength]
 
-    # Pad the last group so transmitting takes the same time as prior blocks
-    if len(rtText) % 32 != 0:
-      rtText = rtText.ljust((len(rtText) + 31) // 32 * 32)
+    # Every message under 64 chars needs a 0x0D terminator (IEC 62106) - each fragment is its own
+    # message, so each gets one. Trailing spaces are stripped first so radios don't show the padding
+    fragments = []
+    for i in range(0, len(rtText), self.RT_FRAG_SIZE):
+      fragments.append(rtText[i:i + self.RT_FRAG_SIZE].rstrip() + '\r')
+    if not fragments:
+      fragments.append('\r')
 
-    logging.info('RT \'%s\'', rtText.replace('\r','<0d>'))
+    logging.info('RT %s', [f.replace('\r', '<0d>') for f in fragments])
 
     # Empty circular buffer
-    self._send_command(self.CMD_TX_RDS_BUFF, [0b00000010, 0, 0, 0, 0, 0, 0])
+    loaded = self._send_command(self.CMD_TX_RDS_BUFF, [0b00000010, 0, 0, 0, 0, 0, 0])
 
-    segmentOffset = 0
-    ab_flag = True
+    # Known limitation: the chip doesn't report which fragment is on air, so with several old
+    # fragments the first new one can still match the flag on air. With an odd fragment count the
+    # buffer also wraps from the last fragment to the first with the same flag. A single fragment
+    # (the common case) always gets a toggle on new text and never toggles while it repeats.
     rdsBuffData = []
-    for i in range(0, len(rtText), 4):
-      if i % 32 == 0:
-        ab_flag = not ab_flag
-        segmentOffset = 0
-
-      rtBytes = [0b00000100, 0b00100000, ab_flag<<4 | segmentOffset]
-      rtBytes.extend(list(rtText[i:i+4].encode('ascii')))
-      # TODO: Can add to buffer twice as a way to slow down update speed
-      self._send_command(self.CMD_TX_RDS_BUFF, rtBytes)
-      rdsBuffData = self.I2C.readRaw(6)
-      segmentOffset += 1
+    for fragment in fragments:
+      self.rtAB = not self.rtAB
+      # Pad to whole 4-char segments - the chars after 0x0D in its segment are ignored by radios
+      fragment = fragment.ljust((len(fragment) + 3) // 4 * 4)
+      segmentCount = len(fragment) // 4
+      # Fill all 9 slots so every fragment is on air for the same time. A short fragment repeats its
+      # own segments rather than sending segments past the 0x0D
+      for slot in range(self.RT_GROUPS_PER_FRAG):
+        segment = slot % segmentCount
+        rtBytes = [0b00000100, 0b00100000, self.rtAB<<4 | segment]
+        rtBytes.extend(list(fragment[segment * 4:segment * 4 + 4].encode('ascii')))
+        loaded = self._send_command(self.CMD_TX_RDS_BUFF, rtBytes) and loaded
+        rdsBuffData = self.I2C.readRaw(6)
+    # Only skip a later identical update if every write made it - otherwise retry it next time
+    self.loadedRT = requestedRT if loaded else None
     if rdsBuffData:
       logging.info('Circular Buffer: %d/%d', rdsBuffData[3], rdsBuffData[2] + rdsBuffData[3])
 

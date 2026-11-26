@@ -29,7 +29,8 @@ function DynRDSStatus() {
     // Writes only happen when the broadcast content changes, so file age is not
     // a heartbeat - minutes of silence during a long track is normal. Liveness
     // comes from checking the recorded pid is still a running Engine.
-    $status['age'] = time() - filemtime($statusFile);
+    // Clamped at 0 - an NTP clock jump after boot can put the mtime in the future
+    $status['age'] = max(0, time() - filemtime($statusFile));
     $status['running'] = DynRDSEngineAlive($status['pid'] ?? 0);
 
     return json_encode($status);
