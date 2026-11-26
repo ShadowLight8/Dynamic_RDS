@@ -1,12 +1,25 @@
 #!/usr/bin/env python3
 
+import socket
+import sys
+
+# Claim the single-instance lock before anything slow. The hardware and MQTT imports below can take
+# several seconds on a Pi Zero at boot, and callbacks.py treats a missing lock as "engine not running",
+# so taking it late let a second callback launch a second engine. Logging isn't set up yet, so a
+# failure goes to stderr, which callbacks.py logs when the engine exits early.
+try:
+  lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+  lock_socket.bind('\0Dynamic_RDS_Engine')
+except OSError:
+  print('Unable to create lock. Another instance of Dynamic_RDS_Engine.py running?', file=sys.stderr)
+  sys.exit(1)
+
+# pylint: disable=wrong-import-position
 import logging
 import json
 import os
 import errno
 import atexit
-import socket
-import sys
 import subprocess
 import time
 import unicodedata
@@ -19,6 +32,7 @@ from config import config, read_config_from_file
 from QN8066 import QN8066
 from Si4713 import Si4713
 from basicMQTT import basicMQTT, pahoMQTT
+# pylint: enable=wrong-import-position
 
 def logUnhandledException(eType, eValue, eTraceback):
   logging.error("Unhandled exception", exc_info=(eType, eValue, eTraceback))
@@ -192,15 +206,6 @@ logging.Logger.excessive = excessive
 
 logging.info('--- %s', date.today())
 
-# Establish lock via socket or exit if failed
-try:
-  lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-  lock_socket.bind('\0Dynamic_RDS_Engine')
-  logging.debug('Lock created')
-except:
-  logging.error('Unable to create lock. Another instance of Dynamic_RDS_Engine.py running?')
-  sys.exit(1)
-
 # Status file for the web UI
 status_path = script_dir + '/Dynamic_RDS_Status.json'
 
@@ -220,6 +225,43 @@ rdsValues = {'{T}': '', '{A}': '', '{B}': '', '{G}': '', '{N}': '','{L}': '', '{
 # TODO: Check for existance of After Hours plugin by dir
 # TODO: Check for existance of mpc program to get status
 
+def initialize():
+  # Creates the transmitter and MQTT client from the current config. Run for INIT, or on demand when
+  # another command arrives first (see the main loop)
+  global transmitter, mqtt # pylint: disable=global-statement
+  logging.info('Processing init')
+  read_config()
+
+  if transmitter is not None:
+    transmitter.shutdown()
+  transmitter = None
+  if config['DynRDSTransmitter'] == "QN8066":
+    transmitter = QN8066()
+  elif config['DynRDSTransmitter'] == "Si4713":
+    transmitter = Si4713()
+
+  if transmitter is None:
+    logging.error('Transmitter not set. Check Transmitter Type.')
+    return
+
+  if config['DynRDSmqttEnable'] == "1":
+    try:
+      mqtt = pahoMQTT()
+    except Exception:
+      logging.exception('Unable to initialize pahoMQTT')
+      mqtt = basicMQTT()
+  else:
+    mqtt = basicMQTT()
+  mqtt.connect()
+  mqtt.publish('ready', '1')
+  mqtt.publish('config', json.dumps(config, indent=8))
+
+  updateRDSData()
+
+  if config['DynRDSStart'] == "FPPDStart":
+    transmitter.startup()
+  writeStatus()
+
 # =========
 # Main Loop
 # =========
@@ -232,6 +274,7 @@ nextMPCUpdate = datetime.now()
 pendingPlaylistUpdate = False
 pendingMediaUpdate = False
 lastUpdateTime = None
+onDemandInitTime = None
 
 # Check if new information is in the FIFO and process accordingly
 with open(fifo_path, 'r', encoding='UTF-8') as fifo:
@@ -247,11 +290,25 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
     line = fifo.readline().rstrip()
     if len(line) > 0:
       logging.debug('line %s', line)
+      # FPPD only waits 5 seconds for the lifecycle startup callback that sends INIT, so on a slow boot a
+      # playlist or media callback can reach the FIFO first - and the order of lines from separate
+      # callbacks isn't guaranteed. Initialize on demand rather than act on a transmitter that doesn't exist.
+      if transmitter is None and line not in ('INIT', 'EXIT'):
+        logging.info('Received %s before INIT - initializing first', line)
+        initialize()
+        onDemandInitTime = time.monotonic()
+        if transmitter is None:
+          logging.warning('Ignoring %s - transmitter is not initialized', line)
+          continue
+
       if line == 'EXIT':
         logging.info('Processing exit')
-        transmitter.shutdown() # TODO: Can fail if transmitter wasn't set - Can fix with an if statement or look into using Transmitter base class initially
-        writeStatus()
-        mqtt.disconnect()
+        # EXIT can arrive before INIT has created the transmitter or MQTT client
+        if transmitter is not None:
+          transmitter.shutdown()
+          writeStatus()
+        if mqtt is not None:
+          mqtt.disconnect()
         sys.exit()
 
       elif line == 'RESET':
@@ -263,39 +320,14 @@ with open(fifo_path, 'r', encoding='UTF-8') as fifo:
           transmitter.startup()
         writeStatus()
 
-      elif line == 'INIT': # From --list with callback.py
-        logging.info('Processing init')
-        read_config()
-
-        if transmitter is not None:
-          transmitter.shutdown()
-        transmitter = None
-        if config['DynRDSTransmitter'] == "QN8066":
-          transmitter = QN8066()
-        elif config['DynRDSTransmitter'] == "Si4713":
-          transmitter = Si4713()
-
-        if transmitter is None:
-          logging.error('Transmitter not set. Check Transmitter Type.')
-          continue
-
-        if config['DynRDSmqttEnable'] == "1":
-          try:
-            mqtt = pahoMQTT()
-          except Exception:
-            logging.exception('Unable to initialize pahoMQTT')
-            mqtt = basicMQTT()
+      elif line == 'INIT': # From lifecycle startup or a callback launching the engine
+        # The INIT that was still on its way when another command forced initialization - running it
+        # again would power cycle the transmitter and open a second MQTT connection
+        if onDemandInitTime is not None and time.monotonic() - onDemandInitTime < 30:
+          logging.info('Skipping INIT - already initialized on demand')
         else:
-          mqtt = basicMQTT()
-        mqtt.connect()
-        mqtt.publish('ready', '1')
-        mqtt.publish('config', json.dumps(config, indent=8))
-
-        updateRDSData()
-
-        if config['DynRDSStart'] == "FPPDStart":
-          transmitter.startup()
-        writeStatus()
+          initialize()
+        onDemandInitTime = None
 
       elif line == 'UPDATE':
         priorMPCEnable = config['DynRDSmpcEnable']
