@@ -15,6 +15,11 @@ class Si4713(Transmitter):
     self.I2C = basicI2C(0x63)  # Si4713 default I2C address
     self.totalCircularBuffers = 0
     self.resetPin = None # Will claim in startup(), release in shutdown()
+    # RT A/B flag of the last fragment loaded. Kept across updates so new text starts with the opposite
+    # flag - radios only clear the RT display when the flag changes (NRSC-4-B 6.1.5.3)
+    self.rtAB = False
+    # RT text currently in the chip's circular buffer, None when the buffer is empty or unknown
+    self.loadedRT = None
 
   # Si4713 Commands
   CMD_POWER_UP = 0x01
@@ -193,6 +198,8 @@ class Si4713(Transmitter):
         self._send_command(self.CMD_POWER_DOWN, [])
     finally:
       self._releaseResetPin()
+      # Held in reset, the chip loses its RDS buffers - startup() must reload them
+      self.loadedRT = None
       super().shutdown()
 
   def reset(self, resetdelay=1):
@@ -255,6 +262,13 @@ class Si4713(Transmitter):
   def _updateRT(self, rtText):
     logging.debug('Si4713 _updateRT')
 
+    # Same text already cycling on the chip (e.g. a settings save) - reloading would toggle A/B and
+    # make radios clear and redraw identical text
+    if rtText == self.loadedRT:
+      logging.debug('RT unchanged, not reloading buffer')
+      return
+    requestedRT = rtText # Before truncation, so the check above matches the next identical update
+
     # Each 2A group takes 3 circular buffer blocks (B, C, D) and each fragment takes 9 groups
     rtMaxLength = self.totalCircularBuffers // 3 // self.RT_GROUPS_PER_FRAG * self.RT_FRAG_SIZE
     logging.debug('RT length: %d, Abs Max Length: %d', len(rtText), rtMaxLength)
@@ -274,12 +288,15 @@ class Si4713(Transmitter):
     logging.info('RT %s', [f.replace('\r', '<0d>') for f in fragments])
 
     # Empty circular buffer
-    self._send_command(self.CMD_TX_RDS_BUFF, [0b00000010, 0, 0, 0, 0, 0, 0])
+    loaded = self._send_command(self.CMD_TX_RDS_BUFF, [0b00000010, 0, 0, 0, 0, 0, 0])
 
-    ab_flag = True
+    # Known limitation: the chip doesn't report which fragment is on air, so with several old
+    # fragments the first new one can still match the flag on air. With an odd fragment count the
+    # buffer also wraps from the last fragment to the first with the same flag. A single fragment
+    # (the common case) always gets a toggle on new text and never toggles while it repeats.
     rdsBuffData = []
     for fragment in fragments:
-      ab_flag = not ab_flag
+      self.rtAB = not self.rtAB
       # Pad to whole 4-char segments - the chars after 0x0D in its segment are ignored by radios
       fragment = fragment.ljust((len(fragment) + 3) // 4 * 4)
       segmentCount = len(fragment) // 4
@@ -287,10 +304,12 @@ class Si4713(Transmitter):
       # own segments rather than sending segments past the 0x0D
       for slot in range(self.RT_GROUPS_PER_FRAG):
         segment = slot % segmentCount
-        rtBytes = [0b00000100, 0b00100000, ab_flag<<4 | segment]
+        rtBytes = [0b00000100, 0b00100000, self.rtAB<<4 | segment]
         rtBytes.extend(list(fragment[segment * 4:segment * 4 + 4].encode('ascii')))
-        self._send_command(self.CMD_TX_RDS_BUFF, rtBytes)
+        loaded = self._send_command(self.CMD_TX_RDS_BUFF, rtBytes) and loaded
         rdsBuffData = self.I2C.readRaw(6)
+    # Only skip a later identical update if every write made it - otherwise retry it next time
+    self.loadedRT = requestedRT if loaded else None
     if rdsBuffData:
       logging.info('Circular Buffer: %d/%d', rdsBuffData[3], rdsBuffData[2] + rdsBuffData[3])
 
