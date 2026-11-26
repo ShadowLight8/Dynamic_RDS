@@ -103,7 +103,29 @@ if proc is not None and proc.poll() is not None:
   logging.error('%s failed to stay running - %s', updater_path, proc.stderr.read())
   sys.exit(1)
 
-with open(fifo_path, 'w', encoding='UTF-8') as fifo:
+def open_fifo_for_write(openTimeout=10):
+  # A plain open() for write blocks until the engine opens the read side - forever if the engine is
+  # hung or exiting. FPPD waits on playlist and media callbacks without a timeout, so that would stall
+  # FPPD's playlist handling. A non-blocking open fails with ENXIO while there is no reader, so retry
+  # until the deadline. The timeout covers the engine's slow imports on a Pi Zero at boot.
+  deadline = time.monotonic() + openTimeout
+  while True:
+    try:
+      fd = os.open(fifo_path, os.O_WRONLY | os.O_NONBLOCK)
+      break
+    except OSError as error:
+      if error.errno != errno.ENXIO:
+        logging.error('Unable to open FIFO %s (%s) - dropping %s', fifo_path, error, argv[1:])
+        sys.exit(1)
+      if time.monotonic() >= deadline:
+        logging.error('Engine did not open the FIFO within %ss - dropping %s', openTimeout, argv[1:])
+        sys.exit(1)
+      time.sleep(0.05)
+  # Back to blocking writes once connected - only the open needed to be non-blocking
+  os.set_blocking(fd, True)
+  return os.fdopen(fd, 'w', encoding='UTF-8')
+
+with open_fifo_for_write() as fifo:
   if len(argv) >= 4:
     logging.info('Args %s %s %s', argv[1], argv[2], argv[3])
   else:
@@ -197,12 +219,14 @@ with open(fifo_path, 'w', encoding='UTF-8') as fifo:
   elif argv[1] == '--type' and argv[2] == 'playlist':
     try:
       j = json.loads(argv[4])
-    except ValueError:
+    except Exception:
+      # An empty dict is treated as a stop below
       logging.exception('Playlist JSON')
+      j = {}
 
     playlist_action = j['Action'] if 'Action' in j else 'stop'
 
-    logging.info(' Action %s', j['Action'])
+    logging.info(' Action %s', playlist_action)
 
     # Remotes have no playlists, so FPPD fakes a single 'start' the first time it opens
     # media and never sends a matching 'stop' (see OpenMediaOutput in FPP's mediaoutput.cpp).

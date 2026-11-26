@@ -202,6 +202,7 @@ Formatting rules:
 * The end of the style text acts as a line break
 * `{P}` is left empty when both it and `{C}` are 1, to prevent "1 of 1" messages
 * Accented and other non-ASCII characters are converted to their closest plain letters
+* **Si4713:** RT is always sent as 32-character screens (the **RT Update Size** setting isn't used yet), and the total RT text is limited by the chip's RDS buffer. Longer text is cut off, with a warning in the log that gives the maximum
 
 The defaults show how this works:
 * PS: `{T}|{A}[|{P} of {C}]|Merry|Christ-|   -mas!` shows the title, the artist, "3 of 12" (only when in a playlist), then "Merry Christmas!" across three screens
@@ -357,6 +358,11 @@ Radios need a stronger signal to decode RDS than to play audio, so missing RDS i
 ### Plugin load messages at startup
 * **"Could not load plugin Dynamic_RDS"** - FPP gives each plugin 10 seconds to answer at startup. Older versions of the plugin could take longer than that on slower boards like the Pi Zero W ([#88](https://github.com/ShadowLight8/Dynamic_RDS/issues/88)). Update the plugin from the Plugin Manager - current versions answer immediately and start the engine afterwards
 * **"Plugin Dynamic_RDS: startup callback still running after 5 seconds; continuing without it"** in the FPPD log is harmless. On slower boards the engine takes a few seconds to start, and FPP carries on while it finishes
+
+### MQTT status not publishing
+* Check **FPP Settings -> MQTT** - the plugin uses the same broker host, port, and credentials
+* Look for `MQTT broker refused the connection` in the plugin log. It gives the broker's reason, such as bad credentials or not authorized, and the plugin keeps retrying in the background
+* If MQTT can't be set up at all (for example, `python3-paho-mqtt` isn't installed), the log shows `Unable to initialize pahoMQTT` and the plugin keeps running without MQTT
 
 ### After Hours titles not showing
 * Make sure **Enable MPC support** is on in the MPC / After Hours Music section

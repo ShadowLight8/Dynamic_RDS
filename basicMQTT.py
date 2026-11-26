@@ -53,7 +53,11 @@ class pahoMQTT(basicMQTT):
     if self.MQTTSettings["MQTTPrefix"] != '':
       self.topicBase = f'{self.MQTTSettings["MQTTPrefix"]}/{self.topicBase}'
 
-    self.client = paho.Client()
+    # paho-mqtt 2.x (Debian trixie) requires a callback API version; 1.x (bookworm) has no such argument
+    if hasattr(paho, 'CallbackAPIVersion'):
+      self.client = paho.Client(paho.CallbackAPIVersion.VERSION2)
+    else:
+      self.client = paho.Client()
     self.client.enable_logger()
     super().__init__()
 
@@ -79,9 +83,13 @@ class pahoMQTT(basicMQTT):
   def status(self):
     pass
 
-  def on_connect(self, _client, _userdata, _flags, _rc):
+  def on_connect(self, _client, _userdata, _flags, rc, _properties=None):
+    # 1.x passes an int rc; 2.x (VERSION2 callbacks) passes a ReasonCode plus properties. Both compare to 0
+    if rc != 0:
+      # Refused (bad credentials, not authorized, etc.). paho keeps retrying in the background
+      logging.warning('MQTT broker refused the connection: %s', paho.connack_string(rc) if isinstance(rc, int) else rc)
+      return
     logging.info('Connected to broker with pahoMQTT')
-    # TODO: Deal with rc for failures
     super().connect()
 
   def on_publish(self):

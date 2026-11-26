@@ -136,6 +136,11 @@ def writeStatus():
     logging.excessive('Status file written')
   except Exception:
     logging.exception('writeStatus')
+    # Don't leave a partial temp file behind in the plugin folder - it ends up in the support zip
+    try:
+      os.unlink(status_path + '.tmp')
+    except OSError:
+      pass
 
 def rdsStyleToString(rdsStyle, groupSize):
   outputRDS = []
@@ -243,6 +248,14 @@ def initialize():
   if transmitter is None:
     logging.error('Transmitter not set. Check Transmitter Type.')
     return
+
+  # A repeat INIT (e.g. lifecycle startup on a running engine) would otherwise leave the old client's
+  # network loop thread running with its own broker connection
+  if mqtt is not None:
+    try:
+      mqtt.disconnect()
+    except Exception:
+      logging.exception('Disconnecting previous MQTT client')
 
   if config['DynRDSmqttEnable'] == "1":
     try:
